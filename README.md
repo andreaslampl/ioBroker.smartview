@@ -23,7 +23,7 @@ Instanz anlegen, dann SmartView über den Link der Instanz (Weltkugel) öffnen:
 
 Oben rechts **✎** antippen:
 
-- **+ Seite** – Name, Symbol und Art: **Kacheln** oder **Grundriss**.
+- **+ Seite** – Name, Symbol und Art: **Kacheln**, **Liste** oder **Grundriss**.
 - **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
   Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
 - Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
@@ -44,12 +44,30 @@ ausschalten.
 | Taste | schreibt einen festen Wert (Szene, Tor-Impuls), optional mit Rückfrage | antippen |
 | Heizung | Sollwert, optional Istwert | antippen = − / + |
 | Kamera | Kamera aus dem livecam-Adapter | antippen = Vollbild |
-| Link | andere Seite (z. B. Sonos-Radio, Kamerawand) | antippen = öffnet sie |
+| Link | andere Webseite (z. B. Sonos-Radio, Kamerawand) | antippen = öffnet sie |
+| Seite öffnen | – (Menü-Knopf für eine SmartView-Seite) | antippen = wechselt zur Seite |
+| Mehrere Werte | bis zu 8 Datenpunkte mit Bezeichnung (z. B. Helligkeit Ost/West, 3 Temperaturfühler) | antippen = groß anzeigen |
 | Überschrift | – | – |
 
 Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.
 „Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
 erscheinen als Text.
+
+### Liste
+
+Seite der Art **Liste**: eine Zeile pro Eintrag – Licht mit **EIN / AUS** und Statuslampe, Dimmer mit
+**− / +** und Balken, Rollladen mit **▲ ▼ STOPP**, Heizung mit − Sollwert +, Werte rechts. Gut bei
+vielen Lichtern am Touch-PC. Kacheln und Liste lassen sich jederzeit umschalten (Seite bearbeiten).
+
+### Optionale Darstellung (wie beim Gira-HomeServer)
+
+Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig aus:
+
+- **Datum in der Kopfzeile** (Touch-PC).
+- **Seitenleiste ausblenden** – Navigation wie ein Menü: die erste Seite bekommt „Seite öffnen“-Kacheln
+  für die Bereiche, oben erscheint **zurück**.
+- **Geteilter Bildschirm am Touch-PC** – rechts oben und rechts unten feste Bereiche mit Reitern,
+  z. B. oben Kameras | Photovoltaik, unten Wetterstation. Am Handy bleiben das normale Seiten.
 
 ### Grundriss
 

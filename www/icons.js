@@ -42,6 +42,7 @@ const ICON_PATHS = {
   up: '<path d="M6 15l6-6 6 6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   stop: '<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',

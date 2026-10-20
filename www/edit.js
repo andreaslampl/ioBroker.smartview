@@ -10,7 +10,9 @@ const TYPE_LABELS = {
   button: 'Taste (schreibt einen Wert, z. B. Szene)',
   thermostat: 'Heizung / Sollwert',
   camera: 'Kamera',
-  link: 'Link / andere Seite',
+  link: 'Link / andere Webseite',
+  page: 'Seite öffnen (Menü-Knopf)',
+  multi: 'Mehrere Werte (z. B. 3 Temperaturen)',
   heading: 'Überschrift',
 };
 
@@ -52,6 +54,8 @@ const TYPE_FIELDS = {
   ],
   camera: [['camera', 'Kamera (aus dem livecam-Adapter)', 'camera']],
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
+  page: [['target', 'Seite, die geöffnet wird', 'page']],
+  multi: [['rows', 'Werte', 'rows']],
   heading: [],
 };
 
@@ -89,6 +93,7 @@ const Editor = (() => {
   }
 
   async function save() {
+    SV.saving = true;
     try {
       const saved = await api('layout', { method: 'PUT', body: JSON.stringify(SV.draft) });
       SV.layout = saved;
@@ -96,8 +101,12 @@ const Editor = (() => {
       SV.draft = null;
       render();
       toast('Gespeichert');
+      // reconnect: the server sends the values of newly used data points with the new init
+      if (SV.ws) SV.ws.close();
     } catch (e) {
       toast('Speichern fehlgeschlagen: ' + e.message, true);
+    } finally {
+      SV.saving = false;
     }
   }
 
@@ -247,6 +256,60 @@ const Editor = (() => {
     return s;
   }
 
+  /** Editor for the rows of a "several values" tile. */
+  function rowsField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Werte (bis zu 8)', wrap, 'Ein Wert = groß angezeigt, mehrere = als kleine Liste (wie Helligkeit Ost/West)');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), state: x.state.value.trim(), unit: x.unit.value.trim(), decimals: x.decimals.value === '' ? undefined : Number(x.decimals.value) }));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Bezeichnung', textInput(r.label));
+        x.label.placeholder = 'z. B. Ost';
+        x.state = stateField(b, 'Datenpunkt', r.state, false);
+        x.unit = field(b, 'Einheit (leer = vom Datenpunkt)', textInput(r.unit));
+        x.decimals = field(b, 'Nachkommastellen (leer = automatisch)', textInput(r.decimals, 'number'));
+        if (list.length > 1) {
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'danger';
+          del.textContent = 'Wert entfernen';
+          del.style.marginTop = '8px';
+          del.onclick = () => {
+            const cur = read();
+            cur.splice(i, 1);
+            list.splice(0, list.length, ...cur);
+            draw();
+          };
+          b.appendChild(del);
+        }
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      if (list.length < 8) {
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.textContent = '+ Wert';
+        add.onclick = () => {
+          const cur = read();
+          cur.push({ label: '', state: '' });
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        wrap.appendChild(add);
+      }
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state) };
+  }
+
   // ---------------- tiles ----------------
 
   function addTile(page, pos) {
@@ -288,10 +351,12 @@ const Editor = (() => {
         } else if (kind === 'number') inputs[key] = field(body, label, textInput(t[key], 'number'), help);
         else if (kind.startsWith('select:')) inputs[key] = field(body, label, select(kind.slice(7).split(';').map(x => x.split('=')), t[key] || 'none'), help);
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
+        else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
+        else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') iconField(body, t.icon || DEFAULT_ICON[t.type], name => (t.icon = name));
-      if (!isPlan && t.type !== 'heading') inputs.size = field(body, 'Größe', select([['1', 'normal'], ['w', 'breit (2 Spalten)'], ['l', 'groß (2 × 2)']], t.size || '1'));
+      if (page.type === 'tiles' && t.type !== 'heading') inputs.size = field(body, 'Größe', select([['1', 'normal'], ['w', 'breit (2 Spalten)'], ['l', 'groß (2 × 2)']], t.size || '1'));
       inputs.device = field(body, 'Anzeigen auf', select([['all', 'allen Geräten'], ['phone', 'nur Handy'], ['touch', 'nur Touch-PC / großem Bildschirm']], t.device || 'all'));
 
       const buttons = document.createElement('div');
@@ -365,7 +430,8 @@ const Editor = (() => {
 
     function collect() {
       for (const [key, input] of Object.entries(inputs)) {
-        if (input.type === 'checkbox') t[key] = input.checked;
+        if (input.type === 'custom') t[key] = input.get();
+        else if (input.type === 'checkbox') t[key] = input.checked;
         else if (input.type === 'number') t[key] = input.value === '' ? undefined : Number(input.value);
         else t[key] = input.value.trim();
       }
@@ -388,8 +454,10 @@ const Editor = (() => {
     d.sh.appendChild(body);
     const name = field(body, 'Name', textInput(p.name));
     name.placeholder = 'z. B. Erdgeschoss';
-    const type = field(body, 'Art', select([['tiles', 'Kacheln'], ['plan', 'Grundriss (Bild mit Symbolen)']], p.type), 'Beim Grundriss lädst du ein Bild hoch und setzt Taster, Lichter, Kontakte usw. auf den Plan.');
-    if (!isNew && p.tiles.length) type.disabled = true;
+    // plan <-> tiles/list only while the page is empty (markers have positions, tiles don't)
+    let kinds = [['tiles', 'Kacheln'], ['list', 'Liste (Zeilen mit EIN/AUS, wie beim Gira)'], ['plan', 'Grundriss (Bild mit Symbolen)']];
+    if (!isNew && p.tiles.length) kinds = p.type === 'plan' ? kinds.slice(2) : kinds.slice(0, 2);
+    const type = field(body, 'Art', select(kinds, p.type), 'Kacheln und Liste lassen sich jederzeit tauschen. Beim Grundriss lädst du ein Bild hoch und setzt Taster, Lichter, Kontakte usw. auf den Plan.');
     iconField(body, p.icon, n => (p.icon = n));
     const buttons = document.createElement('div');
     buttons.className = 'buttons';
@@ -533,6 +601,44 @@ const Editor = (() => {
     const title = field(body, 'Titel', textInput(l.title));
     const theme = field(body, 'Design', select([['dark', 'Dunkel'], ['light', 'Hell'], ['auto', 'wie das Gerät']], l.theme));
 
+    const h0 = document.createElement('h3');
+    h0.textContent = 'Darstellung (optional)';
+    h0.style.marginTop = '22px';
+    body.appendChild(h0);
+    const showDate = check('Datum in der Kopfzeile anzeigen (Touch-PC)', l.showDate);
+    body.appendChild(showDate);
+    const hideNav = check('Seitenleiste ausblenden – Navigation nur über „Seite öffnen“-Kacheln und „zurück“', l.hideNav);
+    body.appendChild(hideNav);
+    const hn = document.createElement('div');
+    hn.className = 'help';
+    hn.textContent = 'Wie ein Menü: die erste Seite enthält „Seite öffnen“-Kacheln für die Bereiche, „zurück“ führt immer zur ersten Seite.';
+    body.appendChild(hn);
+    const sideOn = check('Geteilter Bildschirm am Touch-PC: rechts feste Bereiche mit Reitern', l.side.enabled);
+    body.appendChild(sideOn);
+    const sideBox = document.createElement('div');
+    body.appendChild(sideBox);
+    const sideChecks = { top: [], bottom: [] };
+    for (const [key, label] of [['top', 'Rechts oben (z. B. Kameras, Photovoltaik)'], ['bottom', 'Rechts unten (z. B. Wetterstation)']]) {
+      const lab = document.createElement('label');
+      lab.textContent = label;
+      sideBox.appendChild(lab);
+      for (const p of l.pages) {
+        const c = check(p.name, l.side[key].includes(p.id));
+        c.input.value = p.id;
+        sideBox.appendChild(c);
+        sideChecks[key].push(c.input);
+      }
+    }
+    const sh = document.createElement('div');
+    sh.className = 'help';
+    sh.textContent = 'Die gewählten Seiten erscheinen am Touch-PC rechts als Reiter (nicht mehr in der Seitenleiste). Am Handy bleiben sie normale Seiten.';
+    sideBox.appendChild(sh);
+    const showSide = () => {
+      sideBox.hidden = !sideOn.input.checked;
+    };
+    sideOn.input.onchange = showSide;
+    showSide();
+
     const h1 = document.createElement('h3');
     h1.textContent = 'Klingel';
     h1.style.marginTop = '22px';
@@ -633,6 +739,13 @@ const Editor = (() => {
       collectRules();
       l.title = title.value.trim() || 'SmartView';
       l.theme = theme.value;
+      l.showDate = showDate.input.checked;
+      l.hideNav = hideNav.input.checked;
+      l.side = {
+        enabled: sideOn.input.checked,
+        top: sideChecks.top.filter(i => i.checked).map(i => i.value),
+        bottom: sideChecks.bottom.filter(i => i.checked).map(i => i.value),
+      };
       l.ring = { state: ringState.value.trim(), camera: ringCam ? ringCam.value : l.ring.camera, door: door.value.trim() };
       l.push = rules;
       d.close();

@@ -106,6 +106,12 @@ function demoHouse(a, camBase) {
     a.add('spc-edp.0.areas.1.state', { name: 'Bereich Garage', type: 'number', role: 'value', states: { 0: 'Unscharf', 1: 'Intern scharf', 3: 'Scharf' }, write: false }, 0);
     a.add('0_userdata.0.Szene.Fernsehen', { name: 'Szene Fernsehen', type: 'boolean', role: 'button', write: true }, false);
     a.add('dimplex-nwpm.0.values.Vorlauf', { name: 'Vorlauftemperatur', type: 'number', role: 'value.temperature', unit: '°C', write: false }, 34.25);
+    a.add('0_userdata.0.Wetter.Helligkeit', { name: 'Helligkeit', type: 'number', role: 'value.brightness', unit: 'Lux', write: false }, 72376.3);
+    a.add('0_userdata.0.Wetter.HelligkeitOst', { name: 'Helligkeit Ost', type: 'number', role: 'value.brightness', unit: 'Lux', write: false }, 14397.4);
+    a.add('0_userdata.0.Wetter.HelligkeitWest', { name: 'Helligkeit West', type: 'number', role: 'value.brightness', unit: 'Lux', write: false }, 34385.9);
+    a.add('0_userdata.0.Wetter.Wind', { name: 'Wind', type: 'number', role: 'value.speed.wind', unit: 'm/s', write: false }, 0.8);
+    a.add('0_userdata.0.Wetter.Aussentemperatur', { name: 'Außentemperatur', type: 'number', role: 'value.temperature', unit: '°C', write: false }, 22.6);
+    a.add('0_userdata.0.Wetter.Feuchte', { name: 'Außenfeuchte', type: 'number', role: 'value.humidity', unit: '%', write: false }, 61.28);
     a.add('livecam.0.intercom.ringing', { name: 'Läutet', type: 'boolean', role: 'indicator', write: false }, false);
     a.add('livecam.0.intercom.openDoor', { name: 'Tür öffnen', type: 'boolean', role: 'button', write: true }, false);
     for (const [id, name] of [['haustuer', 'Haustür'], ['einfahrt', 'Einfahrt']]) {

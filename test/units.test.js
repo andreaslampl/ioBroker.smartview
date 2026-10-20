@@ -51,6 +51,39 @@ test('layout: only control data points are writable', () => {
     assert.deepEqual(cameraIds(l), ['livecam.0.cameras.a', 'livecam.0.cameras.b']);
 });
 
+test('layout: optional parts - list pages, menu and multi-value tiles, date, hidden page bar, split screen', () => {
+    const plain = cleanLayout({ pages: [{ id: 'a', tiles: [{}] }] });
+    assert.equal(plain.showDate, false);
+    assert.equal(plain.hideNav, false);
+    assert.deepEqual(plain.side, { enabled: false, top: [], bottom: [] });
+    assert.equal(plain.pages[0].tiles[0].id, 't1');
+
+    const l = cleanLayout({
+        showDate: true,
+        hideNav: 1,
+        side: { enabled: true, top: ['cams', 'gone'], bottom: ['wetter'] },
+        pages: [
+            { id: 'menu', tiles: [{ type: 'page', target: 'eg' }, { type: 'page', target: '../x' }] },
+            { id: 'eg', type: 'list', tiles: [{ type: 'switch', state: 'knx.0.l' }] },
+            { id: 'cams', tiles: [] },
+            {
+                id: 'wetter',
+                tiles: [{ type: 'multi', rows: [{ label: 'Ost', state: 'w.0.ost', decimals: '1', evil: 1 }, { label: 'West', state: 'w.0.west' }] }],
+            },
+        ],
+    });
+    assert.equal(l.showDate, true);
+    assert.equal(l.hideNav, true);
+    assert.deepEqual(l.side, { enabled: true, top: ['cams'], bottom: ['wetter'] });
+    assert.equal(l.pages[0].tiles[0].target, 'eg');
+    assert.equal(l.pages[0].tiles[1].target, '');
+    assert.equal(l.pages[1].type, 'list');
+    assert.deepEqual(l.pages[3].tiles[0].rows, [{ label: 'Ost', state: 'w.0.ost', unit: '', decimals: 1 }, { label: 'West', state: 'w.0.west', unit: '' }]);
+    const { read, write } = stateIds(l);
+    assert.ok(read.includes('w.0.ost') && read.includes('w.0.west'));
+    assert.ok(!write.includes('w.0.ost'), 'values of a multi tile are read only');
+});
+
 test('push rules: fire when the condition becomes true, not again while it stays true', () => {
     assert.equal(triggers({ cond: 'true' }, true, false), true);
     assert.equal(triggers({ cond: 'true' }, true, true), false);

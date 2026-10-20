@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "news": {
+      "0.2.0": {
+        "en": "Optional: list pages (ON/OFF rows), menu tiles to open pages, tiles with several values, date in the header, hidden page bar with back button, split screen with tabbed panels on the touch PC",
+        "de": "Optional: Listen-Seiten (Zeilen mit EIN/AUS), Menü-Kacheln zum Öffnen von Seiten, Kacheln mit mehreren Werten, Datum in der Kopfzeile, Seitenleiste ausblendbar mit Zurück-Knopf, geteilter Bildschirm mit Reitern am Touch-PC"
+      },
       "0.1.0": {
         "en": "Initial release: visualization for phone and touch PC with tiles, floor plans, livecam cameras, doorbell and push notifications",
         "de": "Erste Version: Visualisierung für Handy und Touch-PC mit Kacheln, Grundriss, Kameras (livecam), Klingel und Push-Mitteilungen"

@@ -117,14 +117,14 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop'].map(k => t[k]).filter(Boolean);
+  return ['state', 'status', 'switchState', 'stop'].map(k => t[k]).concat((t.rows || []).map(r => r.state)).filter(Boolean);
 }
 
 // ---------------- tile logic ----------------
@@ -267,6 +267,15 @@ function currentPage() {
   return l.pages.find(p => p.id === id) || l.pages[0] || null;
 }
 
+function sidePages() {
+  const l = layout();
+  if (!l.side || !l.side.enabled || device() !== 'touch') return null;
+  const get = ids => ids.map(id => l.pages.find(p => p.id === id)).filter(Boolean);
+  const top = get(l.side.top);
+  const bottom = get(l.side.bottom);
+  return top.length || bottom.length ? { top, bottom } : null;
+}
+
 function render() {
   const l = layout();
   if (!l) return;
@@ -279,15 +288,23 @@ function render() {
   document.body.classList.toggle('editing', SV.editing);
   $('editBar').hidden = !SV.editing;
   $('editBtn').hidden = !SV.allowEdit || SV.editing;
+  // without page bar: "zurück" leads to the first page (the menu)
+  $('backBtn').hidden = !(l.hideNav && !SV.editing && page && l.pages[0] && page.id !== l.pages[0].id);
+  tickClock();
   renderNav();
   renderPage();
+  renderSide();
 }
 
 function renderNav() {
   const nav = $('nav');
   nav.textContent = '';
   const l = layout();
+  const side = sidePages();
+  const inSide = new Set(side ? side.top.concat(side.bottom).map(p => p.id) : []);
   for (const p of l.pages) {
+    // pages shown in the right panel need no entry on the touch PC (still there in edit mode)
+    if (inSide.has(p.id) && !SV.editing) continue;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'navitem' + (SV.page && p.id === SV.page.id ? ' active' : '');
@@ -316,8 +333,8 @@ function renderNav() {
     add.onclick = () => Editor.addPage();
     nav.appendChild(add);
   }
-  nav.hidden = !SV.editing && l.pages.length < 2;
-  document.getElementById('app').classList.toggle('nonav', nav.hidden);
+  nav.hidden = !SV.editing && (l.hideNav || nav.children.length < 2);
+  $('app').classList.toggle('nonav', nav.hidden);
 }
 
 function renderPage() {
@@ -328,10 +345,16 @@ function renderPage() {
     main.innerHTML = '<p class="muted">Noch keine Seite. Oben auf ✎ tippen und mit „+ Seite“ beginnen.</p>';
     return;
   }
-  if (page.type === 'plan') return renderPlan(main, page);
+  renderPageInto(main, page);
+}
+
+/** Content of a page (tiles, list or floor plan) into a container. */
+function renderPageInto(box, page) {
+  if (page.type === 'plan') return renderPlan(box, page);
+  if (page.type === 'list') return renderList(box, page);
   const grid = document.createElement('div');
   grid.className = 'grid';
-  for (const t of visibleTiles(page)) grid.appendChild(renderTile(t));
+  for (const t of visibleTiles(page)) grid.appendChild(renderTile(t, page));
   if (SV.editing) {
     const add = document.createElement('div');
     add.className = 'tile addtile';
@@ -339,24 +362,170 @@ function renderPage() {
     add.onclick = () => Editor.addTile(page);
     grid.appendChild(add);
   }
-  main.appendChild(grid);
+  box.appendChild(grid);
 }
 
-function renderTile(t) {
+/** Optional split screen on the touch PC: panels with tabs on the right. */
+function renderSide() {
+  const side = $('side');
+  const pages = sidePages();
+  $('app').classList.toggle('split', Boolean(pages));
+  side.hidden = !pages;
+  side.textContent = '';
+  if (!pages) return;
+  SV.sideTab = SV.sideTab || {};
+  for (const [key, list] of [['top', pages.top], ['bottom', pages.bottom]]) {
+    if (!list.length) continue;
+    const box = document.createElement('section');
+    box.className = 'sidebox';
+    const tabs = document.createElement('div');
+    tabs.className = 'sidetabs';
+    const cur = list.find(p => p.id === SV.sideTab[key]) || list[0];
+    for (const p of list) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p.name;
+      b.className = p.id === cur.id ? 'active' : '';
+      b.onclick = () => {
+        SV.sideTab[key] = p.id;
+        renderSide();
+      };
+      tabs.appendChild(b);
+    }
+    if (list.length > 1) box.appendChild(tabs);
+    const content = document.createElement('div');
+    content.className = 'sidecontent';
+    renderPageInto(content, cur);
+    box.appendChild(content);
+    side.appendChild(box);
+  }
+}
+
+function renderTile(t, page) {
   const el = document.createElement('div');
   el.className = 'tile ' + t.type + ' size-' + (t.size || '1');
   el.dataset.tile = t.id;
+  el.dataset.page = page.id;
   el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
   fillTile(el, t);
   el.addEventListener('click', e => {
-    if (SV.editing) return Editor.editTile(SV.page, t);
+    if (SV.editing) return Editor.editTile(page, t);
     if (e.target.closest('button, input')) return;
     tileTap(t);
   });
   return el;
 }
 
+// ---------------- list page (rows like a classic touch panel) ----------------
+
+function renderList(box, page) {
+  const list = document.createElement('div');
+  list.className = 'list';
+  for (const t of visibleTiles(page)) {
+    const el = document.createElement('div');
+    el.className = 'lrow ' + t.type;
+    el.dataset.tile = t.id;
+    el.dataset.page = page.id;
+    el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
+    fillRow(el, t);
+    el.addEventListener('click', e => {
+      if (SV.editing) return Editor.editTile(page, t);
+      if (e.target.closest('button, input')) return;
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind'].includes(t.type)) tileTap(t);
+    });
+    list.appendChild(el);
+  }
+  if (SV.editing) {
+    const add = document.createElement('div');
+    add.className = 'lrow addrow';
+    add.innerHTML = icon('plus') + '<span>Eintrag</span>';
+    add.onclick = () => Editor.addTile(page);
+    list.appendChild(add);
+  }
+  box.appendChild(list);
+}
+
+function fillRow(el, t) {
+  const stt = tileState(t);
+  el.classList.toggle('on', stt === 'on');
+  el.classList.toggle('alert', stt === 'alert');
+  el.classList.toggle('missing', missing(t));
+  const head = '<span class="lic">' + icon(tileIcon(t)) + '</span><span class="lname">' + esc(t.label || '') + '</span>';
+  let ctl = '';
+  switch (t.type) {
+    case 'heading':
+      el.innerHTML = '<span class="lname">' + esc(t.label) + '</span>';
+      return;
+    case 'switch': {
+      const known = val(t.status || t.state) !== undefined && val(t.status || t.state) !== null;
+      ctl = '<button type="button" class="lon" data-a="on">EIN</button><button type="button" class="loff" data-a="off">AUS</button>' +
+        '<span class="lamp' + (known ? (switchOn(t) ? ' on' : ' off') : '') + '"></span>';
+      break;
+    }
+    case 'dimmer': {
+      const lvl = Math.round(dimOn(t) ? dimLevel(t) : 0);
+      ctl = '<button type="button" data-a="dimdown" aria-label="dunkler">' + icon('minus') + '</button><button type="button" data-a="dimup" aria-label="heller">' + icon('plus') + '</button>' +
+        '<span class="lbar"><span style="width:' + lvl + '%"></span></span><span class="lval">' + lvl + ' %</span>';
+      break;
+    }
+    case 'blind':
+      ctl = '<button type="button" data-a="up" aria-label="Auf">' + icon('up') + '</button><button type="button" data-a="down" aria-label="Ab">' + icon('down') + '</button>' +
+        (t.stop ? '<button type="button" data-a="stop">STOPP</button>' : '') + '<span class="lval">' + blindText(t) + '</span>';
+      break;
+    case 'thermostat': {
+      const f = fmt({ decimals: 1, unit: t.unit }, t.state);
+      const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
+      ctl = (a ? '<span class="lsub">Ist ' + esc(a.text) + ' ' + esc(a.unit || '°C') + '</span>' : '') +
+        '<button type="button" data-a="minus" aria-label="weniger">' + icon('minus') + '</button><span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span><button type="button" data-a="plus" aria-label="mehr">' + icon('plus') + '</button>';
+      break;
+    }
+    case 'value': {
+      const f = fmt(t, t.state);
+      ctl = '<span class="lval big">' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</span>';
+      break;
+    }
+    case 'multi':
+      ctl = '<span class="lmulti">' + (t.rows || []).map(r => {
+        const f = fmt({ decimals: r.decimals, unit: r.unit }, r.state);
+        return '<span><small>' + esc(r.label) + '</small> ' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</span>';
+      }).join('') + '</span>';
+      break;
+    case 'button':
+      ctl = '<button type="button" data-a="press">Auslösen</button>';
+      break;
+    case 'camera':
+      el.innerHTML = head + (t.camera ? '<img class="camimg lcam" alt="" data-cam="' + esc(t.camera) + '">' : '');
+      const img = el.querySelector('img.camimg');
+      if (img) {
+        loadCam(img);
+        startCams();
+      }
+      return;
+    case 'link':
+    case 'page':
+      ctl = '<span class="lval">›</span>';
+      break;
+  }
+  el.innerHTML = head + '<span class="lctl">' + ctl + '</span>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
+  bindControls(el, t);
+}
+
+function pageName(id) {
+  const p = layout().pages.find(x => x.id === id);
+  return p ? p.name : '';
+}
+
+function pageIcon(id) {
+  const p = layout().pages.find(x => x.id === id);
+  return p ? p.icon : 'home';
+}
+
 function tileTap(t) {
+  if (t.type === 'page') {
+    if (t.target) location.hash = encodeURIComponent(t.target);
+    return;
+  }
+  if (t.type === 'multi') return openSheet(t);
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
@@ -414,10 +583,28 @@ function fillTile(el, t) {
     case 'link':
       html = '<div class="row1">' + ic + '</div>' + label;
       break;
+    case 'page':
+      // menu button: name top left, large symbol bottom right
+      html = '<div class="pname">' + esc(t.label || pageName(t.target)) + '</div><span class="pic">' + icon(t.icon || pageIcon(t.target)) + '</span>';
+      break;
+    case 'multi': {
+      const rows = t.rows || [];
+      if (rows.length === 1) {
+        const f = fmt({ decimals: rows[0].decimals, unit: rows[0].unit }, rows[0].state);
+        html = '<div class="row1">' + ic + '</div><div class="big">' + esc(f.text) + (f.unit ? '<small>' + esc(f.unit) + '</small>' : '') + '</div>' + label;
+      } else {
+        html = '<div class="mhead">' + ic + '<span class="mlabel">' + esc(t.label || '') + '</span></div><div class="mrows">' + rows.map(r => {
+          const f = fmt({ decimals: r.decimals, unit: r.unit }, r.state);
+          return '<div class="mrow"><span>' + esc(r.label) + '</span><b>' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</b></div>';
+        }).join('') + '</div>';
+      }
+      break;
+    }
   }
   if (missing(t)) html += '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>';
   el.innerHTML = html;
   bindControls(el, t);
+  el.classList.toggle('multirow', t.type === 'multi' && (t.rows || []).length > 1);
   if (t.type === 'camera') {
     const img = el.querySelector('img.camimg');
     if (img) loadCam(img);
@@ -429,8 +616,19 @@ function bindControls(el, t) {
   for (const b of el.querySelectorAll('button[data-a]')) {
     b.onclick = e => {
       e.stopPropagation();
-      if (SV.editing) return Editor.editTile(SV.page, t);
+      if (SV.editing) {
+        const p = pageOf(el);
+        return p && Editor.editTile(p, t);
+      }
       const a = b.dataset.a;
+      if (a === 'dimup' || a === 'dimdown') {
+        const cur = dimOn(t) ? dimLevel(t) : 0;
+        const next = Math.max(0, Math.min(100, Math.round((cur + (a === 'dimup' ? 10 : -10)) / 10) * 10));
+        if (t.switchState && next > 0 && !dimOn(t)) send(t.switchState, true);
+        if (t.state) send(t.state, next);
+        else if (t.switchState) send(t.switchState, next > 0);
+        return;
+      }
       if (a === 'up') blindWrite(t, 100);
       else if (a === 'down') blindWrite(t, 0);
       else if (a === 'stop') send(t.stop, true);
@@ -470,18 +668,25 @@ function refresh(id) {
   const sel = '[data-ids~="' + CSS.escape(id) + '"]';
   for (const el of document.querySelectorAll(sel)) {
     if (el.contains(document.activeElement) && document.activeElement.type === 'range' && SV.dragging) continue;
-    const t = findTile(el.dataset.tile);
+    const t = el.classList.contains('sheet') ? SV.sheet && SV.sheet.tile : findTile(el.dataset.page, el.dataset.tile);
     if (!t) continue;
-    if (el.classList.contains('marker')) fillMarker(el, t);
+    if (el.classList.contains('lrow')) fillRow(el, t);
+    else if (el.classList.contains('marker')) fillMarker(el, t);
     else if (el.classList.contains('sheet')) fillSheet(el, t);
     else fillTile(el, t);
   }
   if (layout() && id === layout().ring.state) checkRing();
 }
 
-function findTile(id) {
-  const page = SV.page;
+function findTile(pageId, id) {
+  const page = layout().pages.find(p => p.id === pageId);
   return page ? page.tiles.find(t => t.id === id) : null;
+}
+
+/** Page of a rendered tile/row/marker element. */
+function pageOf(el) {
+  const holder = el.closest('[data-page]');
+  return holder ? layout().pages.find(p => p.id === holder.dataset.page) : null;
 }
 
 // ---------------- floor plan ----------------
@@ -544,6 +749,7 @@ function renderMarker(t, page) {
   const el = document.createElement('div');
   el.className = 'marker ' + t.type;
   el.dataset.tile = t.id;
+  el.dataset.page = page.id;
   el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
   el.style.left = t.x + '%';
   el.style.top = t.y + '%';
@@ -632,6 +838,11 @@ function fillSheet(sh, t) {
       (s && s.ts ? '<p class="muted" style="text-align:center">aktualisiert ' + new Date(s.ts).toLocaleString('de-DE') + '</p>' : '');
   } else if (t.type === 'button') {
     body = '<div class="row"><button type="button" data-a="press" class="primary">Auslösen</button></div>';
+  } else if (t.type === 'multi') {
+    body = '<div class="mrows sheetrows">' + (t.rows || []).map(r => {
+      const f = fmt({ decimals: r.decimals, unit: r.unit }, r.state);
+      return '<div class="mrow"><span>' + esc(r.label) + '</span><b>' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</b></div>';
+    }).join('') + '</div>';
   }
   sh.innerHTML = '<h3>' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || '') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' + body;
   sh.querySelector('[data-close]').onclick = closeSheet;
@@ -864,6 +1075,7 @@ function connect() {
       SV.states[msg.id] = msg.state;
       refresh(msg.id);
     } else if (msg.type === 'layout') {
+      if (SV.saving) return; // our own save, handled in Editor.save
       if (SV.editing) toast('Die Ansicht wurde auf einem anderen Gerät geändert.');
       else loadLayout().then(() => ws.close());
     } else if (msg.type === 'error') {
@@ -888,7 +1100,9 @@ async function loadLayout() {
 
 function tickClock() {
   const d = new Date();
-  $('clock').textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const l = layout();
+  $('clock').textContent = l && l.showDate ? d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '') + '  ' + time : time;
 }
 
 (async () => {
@@ -896,6 +1110,10 @@ function tickClock() {
   $('editBtn').innerHTML = icon('edit');
   $('menuBtn').onclick = openMenu;
   $('editBtn').onclick = () => Editor.start();
+  $('backBtn').innerHTML = icon('back') + '<span>zurück</span>';
+  $('backBtn').onclick = () => {
+    location.hash = encodeURIComponent(layout().pages[0].id);
+  };
   window.addEventListener('hashchange', () => {
     closeSheet();
     render();

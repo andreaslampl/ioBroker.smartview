@@ -7,9 +7,9 @@ switches/buttons on them.
 
 ## Layout
 
-- `lib/layout.js` – layout model and validation (`cleanLayout`): pages (`tiles` or `plan` with an
-  uploaded image; plan tiles have x/y in %), tile types in `TYPES` (data point fields r/w + options),
-  ring (doorbell state/camera/door), push rules. `stateIds()` = what the page reads / may write -
+- `lib/layout.js` – layout model and validation (`cleanLayout`): pages (`tiles`, `list` or `plan` with
+  an uploaded image; plan tiles have x/y in %), optional `showDate`, `hideNav`, `side` (split
+  screen), tile types in `TYPES` (data point fields r/w + options), ring (doorbell state/camera/door), push rules. `stateIds()` = what the page reads / may write -
   the server refuses writes to anything else. `LayoutStore`: layout.json + files/ (uploads).
 - `lib/certs.js` – own CA (10 years) + server cert (800 days, iOS limit 825, SAN with all local
   IPs/hostnames + publicHost, renewed 30 days before expiry or when an address is new; old names
@@ -24,8 +24,8 @@ switches/buttons on them.
   Access key: ?key= once -> HttpOnly cookie.
 - `main.js` – subscribes layout + push rule data points, `stateInfo` (val/ack/ts + type/role/unit/
   states/min/max), writes commands with the object's type (ack=false), push rules, push.message.
-- `www/` – vanilla JS: `app.js` (render, tiles, plan markers, control sheet, cameras by single image
-  polling, ring overlay, menu with push enable), `edit.js` (edit mode: tile/page dialogs, plan upload,
+- `www/` – vanilla JS: `app.js` (render, `renderPageInto` for main and side panels, tiles, list rows,
+  plan markers, control sheet, cameras by single image polling, ring overlay, menu with push enable), `edit.js` (edit mode: tile/page dialogs, plan upload,
   tap to add marker, drag to move, settings with ring + push rules), `picker.js` (same object
   browser as ioBroker.logik), `icons.js` (own SVG line icons), `sw.js` (push + notificationclick).
 - `test/` – `node --test`; `fake-iobroker.js` (adapter-core stub, demo house with KNX/Shelly/livecam
@@ -35,6 +35,11 @@ switches/buttons on them.
 
 ## Status
 
+- 0.2.0: owner showed their Gira HomeServer QuadClient (menu of area buttons, room pages as rows with
+  EIN/AUS + status lamp, right half with tabbed panels for cameras/intercom and weather, multi-value
+  weather tiles, date in the header). The owner likes SmartView's own look too, so everything from it is
+  optional: list pages, `page` and `multi` tile types, `showDate`, `hideNav` (back button to the first
+  page), `side` panels (touch only; those pages leave the page bar). Defaults keep 0.1.0's look.
 - 0.1.0: built and checked in headless Chromium (desktop + phone viewport) against the fake house.
   Not yet on the owner's ioBroker / iPhone: real push delivery via Apple, iOS profile install and
   trust, standalone app behaviour are untested.
