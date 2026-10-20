@@ -1,0 +1,183 @@
+{
+  "common": {
+    "name": "smartview",
+    "version": "0.1.0",
+    "news": {
+      "0.1.0": {
+        "en": "Initial release: visualization for phone and touch PC with tiles, floor plans, livecam cameras, doorbell and push notifications",
+        "de": "Erste Version: Visualisierung für Handy und Touch-PC mit Kacheln, Grundriss, Kameras (livecam), Klingel und Push-Mitteilungen"
+      }
+    },
+    "titleLang": {
+      "en": "SmartView",
+      "de": "SmartView"
+    },
+    "desc": {
+      "en": "Visualization for phone and touch panel: tiles and floor plans set up in the browser, live values, cameras from livecam, push notifications to the iPhone home screen app",
+      "de": "Visualisierung für Handy und Touch-Panel: Kacheln und Grundrisse im Browser einrichten, Live-Werte, Kameras aus livecam, Push-Mitteilungen an die iPhone-Home-Bildschirm-App"
+    },
+    "authors": [
+      "andreaslampl"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "icon": "smartview.png",
+    "extIcon": "https://raw.githubusercontent.com/andreaslampl/ioBroker.smartview/main/admin/smartview.png",
+    "readme": "https://github.com/andreaslampl/ioBroker.smartview/blob/main/README.md",
+    "enabled": true,
+    "type": "visualization",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "localLinks": {
+      "_default": {
+        "link": "http://%ip%:%port%/",
+        "pro": false
+      },
+      "Zertifikat": {
+        "link": "http://%ip%:%port%/zertifikat",
+        "pro": false
+      }
+    },
+    "tier": 3,
+    "dependencies": [
+      {
+        "js-controller": ">=5.0.19"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=6.0.0"
+      }
+    ]
+  },
+  "native": {
+    "port": 8098,
+    "https": true,
+    "httpsPort": 8099,
+    "publicHost": "",
+    "accessKey": "",
+    "allowEdit": true
+  },
+  "protectedNative": [
+    "accessKey"
+  ],
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Web server running",
+          "de": "Webserver läuft"
+        },
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.url",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Address (HTTP)",
+          "de": "Adresse (HTTP)"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.httpsUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Address (HTTPS)",
+          "de": "Adresse (HTTPS)"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.certUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Certificate install page",
+          "de": "Seite zum Installieren des Zertifikats"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "push",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Push notifications",
+          "de": "Push-Mitteilungen"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "push.message",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Send a message (text or JSON {title, text, page})",
+          "de": "Mitteilung senden (Text oder JSON {title, text, page})"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": true
+      },
+      "native": {}
+    },
+    {
+      "_id": "push.devices",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Registered devices",
+          "de": "Angemeldete Geräte"
+        },
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmartView">
+<meta name="theme-color" content="#0f1216">
+<title>SmartView</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div id="titleBox"><span id="title">SmartView</span><span id="pageTitle"></span></div>
+    <div id="clock"></div>
+    <span id="conn" title="Verbindung"></span>
+    <button id="editBtn" class="iconbtn" type="button" title="Bearbeiten" hidden></button>
+    <button id="menuBtn" class="iconbtn" type="button" title="Einstellungen"></button>
+  </header>
+  <div id="editBar" hidden>
+    <span>Bearbeiten</span>
+    <button id="layoutSettings" type="button">⚙ Allgemein &amp; Mitteilungen</button>
+    <span class="grow"></span>
+    <button id="editCancel" type="button">Abbrechen</button>
+    <button id="editSave" type="button" class="primary">Speichern</button>
+  </div>
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast"></div>
+<datalist id="stateList"></datalist>
+<script src="icons.js"></script>
+<script src="picker.js"></script>
+<script src="app.js"></script>
+<script src="edit.js"></script>
+</body>
+</html>

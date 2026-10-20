@@ -1,0 +1,127 @@
+# ioBroker.smartview
+
+**SmartView** – Visualisierung für Handy und Touch-PC: Kacheln und Grundrisse direkt in der App
+einrichten, Live-Werte, Kameras aus dem livecam-Adapter, Klingel mit „Tür öffnen“ und
+Push-Mitteilungen aufs iPhone (auch außerhalb des WLANs). Dieselbe Seite passt sich an: am Handy
+Reiter unten, am großen Bildschirm Seitenleiste.
+
+## Installation
+
+```
+iob url https://github.com/andreaslampl/ioBroker.smartview
+```
+
+Instanz anlegen, dann SmartView über den Link der Instanz (Weltkugel) öffnen:
+
+| Adresse | Wofür |
+| --- | --- |
+| `http://<ioBroker-IP>:8098/` | Touch-PC, VIS-2 (HTML-Widget/iframe), schnell ausprobieren |
+| `https://<ioBroker-IP>:8099/` | iPhone-App mit Mitteilungen (Zertifikat nötig, siehe unten) |
+| `http://<ioBroker-IP>:8098/zertifikat` | Anleitung und Download des Zertifikats |
+
+## Einrichten
+
+Oben rechts **✎** antippen:
+
+- **+ Seite** – Name, Symbol und Art: **Kacheln** oder **Grundriss**.
+- **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
+  Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
+- Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
+- **⚙ Allgemein & Mitteilungen** – Titel, Design, Klingel, Push-Regeln.
+- **Speichern** – alle Geräte zeigen sofort die neue Ansicht.
+
+Wenn alles fertig ist, kann man in den Instanz-Einstellungen **„Bearbeiten in der App erlauben“**
+ausschalten.
+
+### Kachel-Arten
+
+| Art | Datenpunkte | Bedienung |
+| --- | --- | --- |
+| Schalter / Taster | Schalten, optional Rückmeldung (z. B. KNX-Status) | antippen = ein/aus |
+| Dimmer | Helligkeit 0–100, optional Ein/Aus, Rückmeldung | antippen = ein/aus, Schieberegler |
+| Rollladen | Position, optional Stopp, Rückmeldung; „100 % = geschlossen“ für KNX | ▲ ■ ▼, antippen = Schieberegler |
+| Anzeige | beliebiger Wert mit Einheit, Texte (`true=Offen;false=Zu`), rot hervorheben | antippen = Details |
+| Taste | schreibt einen festen Wert (Szene, Tor-Impuls), optional mit Rückfrage | antippen |
+| Heizung | Sollwert, optional Istwert | antippen = − / + |
+| Kamera | Kamera aus dem livecam-Adapter | antippen = Vollbild |
+| Link | andere Seite (z. B. Sonos-Radio, Kamerawand) | antippen = öffnet sie |
+| Überschrift | – | – |
+
+Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.
+„Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
+erscheinen als Text.
+
+### Grundriss
+
+Seite der Art **Grundriss** anlegen → **Bild wählen** (PNG, JPG oder SVG, z. B. ein Foto oder
+Export des Plans) → **auf den Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine
+Kamera sitzt → Art und Datenpunkt wählen. Symbole lassen sich ziehen. In der Ansicht schaltet ein
+Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
+Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
+
+### Klingel
+
+Unter ⚙: Datenpunkt „läutet“ (livecam: `livecam.0.intercom.ringing`), Kamera und optional
+„Tür öffnen“ (`livecam.0.intercom.openDoor`). Beim Läuten zeigt SmartView die Kamera groß.
+
+### Kameras
+
+Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht sie weiter – so
+funktionieren sie auch auf der HTTPS-Seite und über VPN. Kachel = Einzelbilder (1 pro Sekunde,
+schont die Verbindungen), Vollbild = Video (MJPEG).
+
+## iPhone: App und Mitteilungen
+
+1. Am iPhone in **Safari** `http://<ioBroker-IP>:8098/zertifikat` öffnen → **Profil laden** →
+   Einstellungen → Profil **installieren** → *Allgemein → Info → Zertifikatsvertrauenseinstellungen*
+   → „SmartView CA“ **einschalten**.
+2. `https://<ioBroker-IP>:8099/` öffnen → Teilen **□↑** → **Zum Home-Bildschirm**.
+3. SmartView **vom Home-Bildschirm** starten → **⚙ → Mitteilungen aktivieren** → erlauben.
+   **Test-Mitteilung senden** prüft alles.
+
+Mitteilungen gehen von ioBroker über Apples Push-Dienst ans iPhone – auch im Mobilfunk, **ohne
+VPN** (ioBroker braucht nur Internet). Zum Ansehen der Seite von unterwegs braucht es das VPN; in
+der WireGuard-App „Bei Bedarf aktivieren“ (alles außer Heim-WLAN) macht das automatisch.
+
+### Push-Regeln
+
+Unter ⚙ **+ Mitteilung**: Datenpunkt, Bedingung (wird Ein / Aus / gleich / größer / kleiner /
+ändert sich), Titel, Text (`{value}` = Wert) und welche Seite beim Antippen aufgeht. Gesendet wird
+einmal, wenn die Bedingung eintritt.
+
+Aus Skripten/Blockly/Logik: Datenpunkt `smartview.0.push.message` mit Text beschreiben oder mit
+JSON `{"title": "Alarm", "text": "Garage offen", "page": "garage"}`.
+
+## Touch-PC
+
+`http://<ioBroker-IP>:8098/` im Browser (Vollbild über ⚙ → Vollbild bzw. Kiosk-Modus) oder in VIS-2
+als HTML-Widget: `<iframe src="http://<ioBroker-IP>:8098/" style="width:100%;height:100%;border:0"></iframe>`.
+Mit `?device=touch` bzw. `?device=phone` lässt sich die Darstellung erzwingen.
+
+## Einstellungen
+
+| Einstellung | Bedeutung |
+| --- | --- |
+| Port (HTTP) | Standard 8098 |
+| HTTPS / Port (HTTPS) | eigenes Zertifikat, Standard 8099 – nötig für Mitteilungen |
+| Adresse des ioBroker-Servers | leer = automatisch; kommt auch ins Zertifikat |
+| Zugriffsschlüssel | optional; dann auf jedem Gerät einmal mit `?key=…` öffnen |
+| Bearbeiten erlauben | aus = Ansicht kann in der App nicht mehr geändert werden |
+
+Geschaltet werden können nur Datenpunkte, die in einer Kachel als Schalt-Datenpunkt eingetragen
+sind. Wer SmartView öffnen kann, kann diese schalten – ohne Zugriffsschlüssel jeder im Heimnetz.
+
+Ansicht, hochgeladene Bilder, Zertifikat und angemeldete Geräte liegen im Datenverzeichnis der
+Instanz (`layout.json`, `files/`, `certs.json`, `push.json`) und sind in der ioBroker-Sicherung
+enthalten.
+
+## Entwicklung
+
+```
+npm install
+npm test
+```
+
+## Lizenz
+
+MIT

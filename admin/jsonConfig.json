@@ -1,0 +1,58 @@
+{
+  "i18n": true,
+  "type": "panel",
+  "items": {
+    "help": {
+      "type": "staticText",
+      "text": "Open SmartView with the instance link (globe icon). Pages and tiles are set up in the app itself (✎ at the top right). For push notifications on the iPhone install the certificate once: page /zertifikat.",
+      "xs": 12
+    },
+    "port": {
+      "type": "port",
+      "label": "Port (HTTP)",
+      "default": 8098,
+      "newLine": true,
+      "xs": 12,
+      "sm": 3
+    },
+    "https": {
+      "type": "checkbox",
+      "label": "HTTPS with own certificate (needed for push notifications)",
+      "default": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "httpsPort": {
+      "type": "port",
+      "label": "Port (HTTPS)",
+      "default": 8099,
+      "hidden": "!data.https",
+      "xs": 12,
+      "sm": 3
+    },
+    "publicHost": {
+      "type": "text",
+      "label": "Address of the ioBroker server (optional)",
+      "help": "Empty = detected automatically. Also used for the certificate.",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "accessKey": {
+      "type": "password",
+      "label": "Access key (optional)",
+      "help": "If set, SmartView must be opened once with ?key=... per device",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "allowEdit": {
+      "type": "checkbox",
+      "label": "Allow editing in the app",
+      "help": "Switch off when the layout is finished, so nobody changes it by accident",
+      "default": true,
+      "xs": 12,
+      "sm": 5
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "iobroker.smartview",
+  "version": "0.1.0",
+  "description": "SmartView: touch and phone visualization for ioBroker (web app with push notifications)",
+  "author": "andreaslampl",
+  "license": "MIT",
+  "homepage": "https://github.com/andreaslampl/ioBroker.smartview",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreaslampl/ioBroker.smartview.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andreaslampl/ioBroker.smartview/issues"
+  },
+  "keywords": [
+    "ioBroker",
+    "Visualisierung",
+    "visualization",
+    "touch",
+    "PWA",
+    "push"
+  ],
+  "main": "main.js",
+  "files": [
+    "admin/",
+    "lib/",
+    "www/",
+    "main.js",
+    "io-package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.4.3",
+    "node-forge": "^1.4.0",
+    "web-push": "^3.6.7",
+    "ws": "^8.22.0"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=60000 test/*.test.js"
+  }
+}

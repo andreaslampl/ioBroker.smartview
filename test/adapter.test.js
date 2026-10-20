@@ -1,0 +1,186 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const http = require('node:http');
+const https = require('node:https');
+const path = require('node:path');
+const WebSocket = require('ws');
+const { install, demoHouse } = require('./fake-iobroker');
+
+install();
+
+async function until(fn, ms = 5000) {
+    const end = Date.now() + ms;
+    while (!(await fn())) {
+        if (Date.now() > end) {
+            throw new Error('timeout');
+        }
+        await new Promise(r => setTimeout(r, 20));
+    }
+}
+
+/** Fake livecam: /cam/<id>.jpg */
+async function fakeLivecam() {
+    const server = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+        res.end(Buffer.from(`JPEG ${req.url}`));
+    });
+    await new Promise(r => server.listen(0, '127.0.0.1', r));
+    return { server, base: `http://127.0.0.1:${server.address().port}` };
+}
+
+async function startAdapter(t, config = {}) {
+    const port = 30000 + Math.floor(Math.random() * 20000);
+    const cam = await fakeLivecam();
+    const adapter = require('../main.js')({ config: { port, httpsPort: port + 1, publicHost: '127.0.0.1', ...config } });
+    demoHouse(adapter, cam.base);
+    const pushed = [];
+    adapter.pushSender = async (sub, payload) => pushed.push(JSON.parse(payload));
+    adapter.emit('ready');
+    await until(() => adapter.foreign['smartview.0.info.connection'] && adapter.foreign['smartview.0.info.connection'].val === true, 30000);
+    t.after(async () => {
+        await new Promise(resolve => adapter.emit('unload', resolve));
+        cam.server.close();
+    });
+    const base = `http://127.0.0.1:${port}/`;
+    const api = async (p, opts = {}) => {
+        const res = await fetch(base + 'api/' + p, { headers: { 'Content-Type': 'application/json' }, ...opts });
+        const text = await res.text();
+        return { status: res.status, body: text && res.headers.get('content-type').includes('json') ? JSON.parse(text) : text };
+    };
+    return { adapter, port, base, api, pushed };
+}
+
+function wsClient(url, headers) {
+    const ws = new WebSocket(url, { headers });
+    const msgs = [];
+    ws.on('message', d => msgs.push(JSON.parse(d.toString())));
+    return { ws, msgs, open: new Promise((resolve, reject) => ws.once('open', resolve).once('error', reject)) };
+}
+
+const LAYOUT = {
+    title: 'Haus',
+    pages: [
+        {
+            id: 'start',
+            name: 'Start',
+            tiles: [
+                { id: 'l1', type: 'switch', label: 'Licht', state: 'knx.0.EG.Licht.Wohnzimmer' },
+                { id: 'f1', type: 'value', label: 'Fenster', state: 'knx.0.EG.Fenster.Kueche' },
+                { id: 'c1', type: 'camera', label: 'Haustür', camera: 'livecam.0.cameras.haustuer' },
+            ],
+        },
+        { id: 'eg', name: 'EG', type: 'plan', tiles: [{ id: 'd1', type: 'dimmer', label: 'Essen', state: 'knx.0.EG.Licht.Essen_Dimmer', x: 30, y: 60 }] },
+    ],
+    ring: { state: 'livecam.0.intercom.ringing', camera: 'livecam.0.cameras.haustuer', door: 'livecam.0.intercom.openDoor' },
+    push: [{ id: 'r1', state: 'knx.0.EG.Fenster.Kueche', cond: 'true', title: 'Fenster', text: 'Küchenfenster offen' }],
+};
+
+test('adapter: layout, live values, commands only for layout data points, push rule, cameras, upload, https', async t => {
+    const { adapter, port, base, api, pushed } = await startAdapter(t);
+    assert.match(adapter.foreign['smartview.0.info.httpsUrl'].val, /^https:\/\/127\.0\.0\.1:\d+\/$/);
+    assert.match(await (await fetch(base)).text(), /app\.js/);
+    assert.match(await (await fetch(base + 'zertifikat')).text(), /Zum Home-Bildschirm/);
+    const manifest = await (await fetch(base + 'manifest.json')).json();
+    assert.equal(manifest.display, 'standalone');
+
+    // editor saves the layout -> data points get subscribed
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(LAYOUT) });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.pages[1].tiles[0].x, 30);
+    assert.ok(adapter.subs.has('knx.0.EG.Licht.Essen_Dimmer'));
+    assert.equal((await api('layout')).body.layout.title, 'Haus');
+
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    const init = c.msgs.find(m => m.type === 'init');
+    assert.equal(init.states['knx.0.EG.Licht.Wohnzimmer'].val, false);
+    assert.equal(init.states['knx.0.EG.Fenster.Kueche'].role, 'sensor.window');
+    assert.deepEqual(init.writable.sort(), ['knx.0.EG.Licht.Essen_Dimmer', 'knx.0.EG.Licht.Wohnzimmer', 'livecam.0.intercom.openDoor']);
+
+    // command: written as command (ack=false) with the data point's type, the confirmation comes back live
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: 1 }));
+    await until(() => adapter.writes.length === 1);
+    assert.deepEqual(adapter.writes[0], ['knx.0.EG.Licht.Wohnzimmer', true, false]);
+    await until(() => c.msgs.some(m => m.type === 'state' && m.id === 'knx.0.EG.Licht.Wohnzimmer' && m.state.ack === true && m.state.val === true));
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Essen_Dimmer', val: '40' }));
+    await until(() => adapter.writes.length === 2);
+    assert.deepEqual(adapter.writes[1], ['knx.0.EG.Licht.Essen_Dimmer', 40, false]);
+
+    // not in the layout or only displayed -> refused
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Fenster.Kueche', val: false }));
+    c.ws.send(JSON.stringify({ type: 'set', id: 'system.adapter.admin.0.alive', val: false }));
+    await until(() => c.msgs.filter(m => m.type === 'error').length === 2);
+    assert.equal(adapter.writes.length, 2);
+
+    // a phone registers for push
+    const reg = await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: { endpoint: 'https://web.push.apple.com/xyz', keys: { p256dh: 'p', auth: 'a' } }, name: 'iPhone' }) });
+    assert.equal(reg.status, 200);
+    assert.equal(adapter.foreign['smartview.0.push.devices'].val, 1);
+    // push rule: window opens -> one message; stays open -> no second one
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    await new Promise(r => setTimeout(r, 50));
+    adapter.change('knx.0.EG.Fenster.Kueche', true);
+    await until(() => pushed.length === 1);
+    assert.deepEqual(pushed[0], { title: 'Fenster', body: 'Küchenfenster offen', url: './', tag: 'r1' });
+    adapter.change('knx.0.EG.Fenster.Kueche', true);
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(pushed.length, 1);
+    // push.message state
+    await adapter.onStateChange('smartview.0.push.message', { val: '{"title":"Hallo","text":"Test","page":"eg"}', ack: false });
+    assert.deepEqual(pushed[1], { title: 'Hallo', body: 'Test', url: './#eg' });
+
+    // cameras: list and image through the proxy
+    const cams = await api('cameras');
+    assert.deepEqual(cams.body.map(x => x.id), ['livecam.0.cameras.einfahrt', 'livecam.0.cameras.haustuer']);
+    const img = await fetch(base + 'cam/' + encodeURIComponent('livecam.0.cameras.haustuer') + '.jpg');
+    assert.equal(img.headers.get('content-type'), 'image/jpeg');
+    assert.match(await img.text(), /^JPEG \/cam\/haustuer\.jpg\?fresh=1$/);
+    assert.equal((await fetch(base + 'cam/' + encodeURIComponent('knx.0.x') + '.jpg')).status, 404);
+
+    // floor plan upload
+    const up = await fetch(base + 'api/upload?name=Grundriss%20EG.png', { method: 'POST', body: Buffer.from('PNGDATA') });
+    const { file } = await up.json();
+    assert.match(file, /^Grundriss_EG-[a-z0-9]+\.png$/);
+    const f = await fetch(base + 'files/' + file);
+    assert.equal(f.headers.get('content-type'), 'image/png');
+    assert.equal(await f.text(), 'PNGDATA');
+    assert.equal((await fetch(base + 'api/upload?name=boese.html', { method: 'POST', body: 'x' })).status, 400);
+
+    // https with the own CA
+    const certs = JSON.parse(fs.readFileSync(path.join(adapter.dataDir, 'certs.json'), 'utf8'));
+    const body = await new Promise((resolve, reject) => {
+        https.get({ host: '127.0.0.1', port: port + 1, path: '/api/push/key', ca: certs.ca.cert }, res => {
+            let d = '';
+            res.on('data', x => (d += x));
+            res.on('end', () => resolve(d));
+        }).on('error', reject);
+    });
+    assert.match(JSON.parse(body).publicKey, /^[A-Za-z0-9_-]+$/);
+    const ca = await fetch(base + 'smartview.mobileconfig');
+    assert.match(await ca.text(), /PayloadContent/);
+});
+
+test('adapter: access key protects API and live values, cookie after the first visit; editing can be locked', async t => {
+    const { port, base } = await startAdapter(t, { accessKey: 'geheim', allowEdit: false });
+    assert.equal((await fetch(base + 'api/layout')).status, 403);
+    const first = await fetch(base + 'api/layout?key=geheim');
+    assert.equal(first.status, 200);
+    assert.equal((await first.json()).allowEdit, false);
+    const cookie = first.headers.get('set-cookie').split(';')[0];
+    assert.equal((await fetch(base + 'api/layout', { headers: { cookie } })).status, 200);
+    assert.equal((await fetch(base + 'api/layout', { method: 'PUT', headers: { cookie }, body: '{}' })).status, 403);
+    const manifest = await (await fetch(base + 'manifest.json', { headers: { cookie } })).json();
+    assert.equal(manifest.start_url, './?key=geheim');
+
+    const denied = wsClient(`ws://127.0.0.1:${port}/ws`);
+    await assert.rejects(denied.open);
+    const ok = wsClient(`ws://127.0.0.1:${port}/ws`, { cookie });
+    t.after(() => ok.ws.close());
+    await ok.open;
+    await until(() => ok.msgs.some(m => m.type === 'init'));
+});

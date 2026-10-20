@@ -1,0 +1,12 @@
+{
+  "Open SmartView with the instance link (globe icon). Pages and tiles are set up in the app itself (✎ at the top right). For push notifications on the iPhone install the certificate once: page /zertifikat.": "SmartView über den Link der Instanz (Weltkugel) öffnen. Seiten und Kacheln werden direkt in der App eingerichtet (✎ oben rechts). Für Mitteilungen am iPhone einmal das Zertifikat installieren: Seite /zertifikat.",
+  "Port (HTTP)": "Port (HTTP)",
+  "HTTPS with own certificate (needed for push notifications)": "HTTPS mit eigenem Zertifikat (nötig für Push-Mitteilungen)",
+  "Port (HTTPS)": "Port (HTTPS)",
+  "Address of the ioBroker server (optional)": "Adresse des ioBroker-Servers (optional)",
+  "Empty = detected automatically. Also used for the certificate.": "Leer = automatisch erkannt. Wird auch für das Zertifikat verwendet.",
+  "Access key (optional)": "Zugriffsschlüssel (optional)",
+  "If set, SmartView must be opened once with ?key=... per device": "Wenn gesetzt, muss SmartView auf jedem Gerät einmal mit ?key=... geöffnet werden",
+  "Allow editing in the app": "Bearbeiten in der App erlauben",
+  "Switch off when the layout is finished, so nobody changes it by accident": "Ausschalten, wenn alles eingerichtet ist, damit niemand versehentlich etwas ändert"
+}
