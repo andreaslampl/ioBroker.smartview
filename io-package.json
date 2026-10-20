@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "news": {
+      "0.2.1": {
+        "en": "Floor plans can be imported from PDF (page selection, white margins cut away; converted in the browser with pdf.js)",
+        "de": "Grundrisse auch als PDF importierbar (Seite wählbar, weiße Ränder werden abgeschnitten; Umwandlung im Browser mit pdf.js)"
+      },
       "0.2.0": {
         "en": "Optional: list pages (ON/OFF rows), menu tiles to open pages, tiles with several values, date in the header, hidden page bar with back button, split screen with tabbed panels on the touch PC",
         "de": "Optional: Listen-Seiten (Zeilen mit EIN/AUS), Menü-Kacheln zum Öffnen von Seiten, Kacheln mit mehreren Werten, Datum in der Kopfzeile, Seitenleiste ausblendbar mit Zurück-Knopf, geteilter Bildschirm mit Reitern am Touch-PC"

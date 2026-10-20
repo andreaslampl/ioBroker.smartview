@@ -83,6 +83,11 @@ test('adapter: layout, live values, commands only for layout data points, push r
     assert.match(adapter.foreign['smartview.0.info.httpsUrl'].val, /^https:\/\/127\.0\.0\.1:\d+\/$/);
     assert.match(await (await fetch(base)).text(), /app\.js/);
     assert.match(await (await fetch(base + 'zertifikat')).text(), /Zum Home-Bildschirm/);
+    // pdf.js for the PDF import of floor plans is served as module
+    const pdfjs = await fetch(base + 'vendor/pdf.min.mjs');
+    assert.equal(pdfjs.status, 200);
+    assert.match(pdfjs.headers.get('content-type'), /javascript/);
+    assert.equal((await fetch(base + 'vendor/../main.js')).status, 404);
     const manifest = await (await fetch(base + 'manifest.json')).json();
     assert.equal(manifest.display, 'standalone');
 

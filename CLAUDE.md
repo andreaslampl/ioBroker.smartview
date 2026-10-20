@@ -28,6 +28,10 @@ switches/buttons on them.
   plan markers, control sheet, cameras by single image polling, ring overlay, menu with push enable), `edit.js` (edit mode: tile/page dialogs, plan upload,
   tap to add marker, drag to move, settings with ring + push rules), `picker.js` (same object
   browser as ioBroker.logik), `icons.js` (own SVG line icons), `sw.js` (push + notificationclick).
+- `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
+  pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
+  host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims
+  white margins, then uploads it as PNG.
 - `test/` – `node --test`; `fake-iobroker.js` (adapter-core stub, demo house with KNX/Shelly/livecam
   objects); units (layout, push rules, certificates incl. TLS with the CA) and adapter (API, ws,
   write permission, push rule, camera proxy, upload, https, access key). Browser checks with

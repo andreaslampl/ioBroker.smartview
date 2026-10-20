@@ -523,19 +523,27 @@ const Editor = (() => {
     bar.className = 'plantools';
     const file = document.createElement('input');
     file.type = 'file';
-    file.accept = 'image/png,image/jpeg,image/svg+xml,image/webp,image/gif';
+    file.accept = 'image/png,image/jpeg,image/svg+xml,image/webp,image/gif,application/pdf,.pdf';
     file.hidden = true;
     const pick = document.createElement('button');
     pick.type = 'button';
     pick.textContent = page.image ? 'Anderes Bild wählen' : 'Bild wählen';
     pick.onclick = () => file.click();
     file.onchange = async () => {
-      const f = file.files[0];
+      let f = file.files[0];
+      file.value = '';
       if (!f) return;
-      if (f.size > 20e6) return toast('Bild ist zu groß (max. 20 MB)', true);
+      let name = f.name;
       try {
+        if (/\.pdf$/i.test(name) || f.type === 'application/pdf') {
+          toast('PDF wird in ein Bild umgewandelt …');
+          f = await pdfToPng(f);
+          if (!f) return;
+          name = name.replace(/\.pdf$/i, '') + '.png';
+        }
+        if (f.size > 20e6) return toast('Bild ist zu groß (max. 20 MB)', true);
         toast('Bild wird hochgeladen …');
-        const res = await fetch('api/upload?name=' + encodeURIComponent(f.name), { method: 'POST', body: f, credentials: 'same-origin' });
+        const res = await fetch('api/upload?name=' + encodeURIComponent(name), { method: 'POST', body: f, credentials: 'same-origin' });
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || res.status);
         page.image = j.file;
@@ -549,9 +557,80 @@ const Editor = (() => {
     bar.appendChild(file);
     const hint = document.createElement('span');
     hint.className = 'muted';
-    hint.textContent = page.image ? 'Auf den Plan tippen = Symbol setzen · Symbol ziehen = verschieben · Symbol antippen = bearbeiten' : 'PNG, JPG oder SVG, z. B. ein Foto oder Export des Grundrisses';
+    hint.textContent = page.image ? 'Auf den Plan tippen = Symbol setzen · Symbol ziehen = verschieben · Symbol antippen = bearbeiten' : 'PNG, JPG, SVG oder PDF (z. B. der Plan vom Architekten) – PDFs werden automatisch in ein Bild umgewandelt';
     bar.appendChild(hint);
     return bar;
+  }
+
+  /**
+   * PDF (e.g. the architect's plan) -> PNG in the browser with pdf.js: choose the page, render it
+   * sharp (about 3000 px, below the canvas limit of iPhones) and cut away white margins.
+   */
+  async function pdfToPng(file) {
+    let pdfjs;
+    try {
+      pdfjs = await import('./vendor/pdf.min.mjs');
+    } catch (e) {
+      throw new Error('PDF-Unterstützung kann in diesem Browser nicht geladen werden – bitte als PNG speichern');
+    }
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.mjs', location.href).href;
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    let n = 1;
+    if (doc.numPages > 1) {
+      const a = prompt('Die PDF hat ' + doc.numPages + ' Seiten. Auf welcher Seite ist der Grundriss? (1–' + doc.numPages + ')', '1');
+      if (a === null) return null;
+      n = Math.min(doc.numPages, Math.max(1, parseInt(a, 10) || 1));
+    }
+    const page = await doc.getPage(n);
+    const base = page.getViewport({ scale: 1 });
+    const long = Math.max(base.width, base.height);
+    let scale = 3000 / long;
+    // at most ~16 million pixels (iOS canvas limit)
+    scale = Math.min(scale, Math.sqrt(16e6 / (base.width * base.height)));
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(vp.width);
+    canvas.height = Math.floor(vp.height);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const out = trimWhite(canvas);
+    doc.destroy();
+    return new Promise((resolve, reject) => out.toBlob(b => (b ? resolve(b) : reject(new Error('Umwandeln fehlgeschlagen'))), 'image/png'));
+  }
+
+  /** Cut away white margins (with a little border left). */
+  function trimWhite(canvas) {
+    const { width: w, height: h } = canvas;
+    const data = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+    let x0 = w;
+    let y0 = h;
+    let x1 = -1;
+    let y1 = -1;
+    for (let y = 0; y < h; y += 2) {
+      for (let x = 0; x < w; x += 2) {
+        const i = (y * w + x) * 4;
+        if (data[i] < 235 || data[i + 1] < 235 || data[i + 2] < 235) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (x1 < 0) return canvas;
+    const pad = Math.round(Math.max(w, h) * 0.015);
+    x0 = Math.max(0, x0 - pad);
+    y0 = Math.max(0, y0 - pad);
+    x1 = Math.min(w - 1, x1 + pad);
+    y1 = Math.min(h - 1, y1 + pad);
+    if (x1 - x0 > w * 0.97 && y1 - y0 > h * 0.97) return canvas;
+    const c = document.createElement('canvas');
+    c.width = x1 - x0 + 1;
+    c.height = y1 - y0 + 1;
+    c.getContext('2d').drawImage(canvas, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
+    return c;
   }
 
   function planClick(e, page, plan) {

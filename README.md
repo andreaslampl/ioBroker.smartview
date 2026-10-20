@@ -71,9 +71,10 @@ Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig
 
 ### Grundriss
 
-Seite der Art **Grundriss** anlegen → **Bild wählen** (PNG, JPG oder SVG, z. B. ein Foto oder
-Export des Plans) → **auf den Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine
-Kamera sitzt → Art und Datenpunkt wählen. Symbole lassen sich ziehen. In der Ansicht schaltet ein
+Seite der Art **Grundriss** anlegen → **Bild wählen** (PNG, JPG, SVG, WebP, GIF oder **PDF**, bis
+20 MB). Eine PDF (z. B. der Plan vom Architekten) wird im Browser in ein Bild umgewandelt: bei
+mehreren Seiten wird nachgefragt, welche, weiße Ränder werden abgeschnitten. Danach **auf den
+Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt → Art und Datenpunkt wählen. Symbole lassen sich ziehen. In der Ansicht schaltet ein
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
@@ -142,4 +143,4 @@ npm test
 
 ## Lizenz
 
-MIT
+MIT. Enthält [pdf.js](https://mozilla.github.io/pdf.js/) (Mozilla, Apache-2.0) in `www/vendor/`.
