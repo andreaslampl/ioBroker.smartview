@@ -46,7 +46,8 @@ class FakeAdapter extends EventEmitter {
         return out;
     }
     async getForeignStatesAsync(pattern) {
-        const re = new RegExp(`^${pattern.replace(/\./g, '\\.').replace(/\*/g, '[^.]*')}$`);
+        // like ioBroker: * matches anything, dots included
+        const re = new RegExp(`^${pattern.replace(/\./g, '\\.').replace(/\*/g, '.*')}$`);
         return Object.fromEntries(Object.entries(this.foreign).filter(([id]) => re.test(id)));
     }
     async getForeignStateAsync(id) {

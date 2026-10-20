@@ -62,7 +62,8 @@ const Intercom = (() => {
 
   /** Connect when an intercom is configured (called after every render). */
   function sync() {
-    const want = (layout() && layout().ring.intercom) || '';
+    // the saved layout, not the one being edited: the server only knows the saved one
+    const want = (SV.layout && SV.layout.ring.intercom) || '';
     if (want === inst) return;
     inst = want;
     if (ws) {
@@ -111,7 +112,7 @@ const Intercom = (() => {
   }
 
   function cameraId() {
-    return state.camera ? inst + '.cameras.' + state.camera : layout().ring.camera;
+    return state.camera ? inst + '.cameras.' + state.camera : SV.layout.ring.camera;
   }
 
   // ---------------- call screen ----------------

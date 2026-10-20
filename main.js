@@ -257,20 +257,58 @@ class SmartView extends utils.Adapter {
         return out;
     }
 
-    /** Address of the livecam instance chosen as intercom (from its camera URL states). */
+    /**
+     * Address of the livecam instance chosen as intercom: from its camera URL states (they carry
+     * host, port and access key), else from the instance settings (same host, configured port).
+     */
     async intercomTarget() {
         const inst = this.store.layout.ring.intercom;
         if (!inst) {
             return null;
         }
-        const states = await this.getForeignStatesAsync(`${inst}.cameras.*.snapshotUrl`).catch(() => ({}));
-        for (const st of Object.values(states || {})) {
-            const t = st && baseFromUrl(st.val);
-            if (t) {
-                return t;
+        if (this.icTarget && this.icTarget.inst === inst && Date.now() - this.icTarget.at < 60000) {
+            return this.icTarget.t;
+        }
+        let t = null;
+        let why = '';
+        // 1. all states below <inst>.cameras (one call, no pattern in the middle of the id)
+        const states = await this.getForeignStatesAsync(`${inst}.cameras.*`).catch(err => {
+            why = err.message;
+            return {};
+        });
+        for (const [id, st] of Object.entries(states || {})) {
+            if (/\.(snapshotUrl|mjpegUrl)$/.test(id) && st && (t = baseFromUrl(st.val))) {
+                break;
             }
         }
-        return null;
+        // 2. camera objects, then their URL states one by one
+        if (!t) {
+            const objs = await this.getForeignObjectsAsync(`${inst}.cameras.*`, 'state').catch(() => ({}));
+            for (const id of Object.keys(objs || {}).filter(x => /\.snapshotUrl$/.test(x))) {
+                const st = await this.getForeignStateAsync(id).catch(() => null);
+                if (st && (t = baseFromUrl(st.val))) {
+                    break;
+                }
+            }
+        }
+        // 3. instance settings: port (+ access key if readable), livecam on the same host
+        if (!t) {
+            const obj = await this.getForeignObjectAsync(`system.adapter.${inst}`).catch(() => null);
+            if (obj && obj.native) {
+                const port = Number(obj.native.port) || 8095;
+                t = { base: `http://127.0.0.1:${port}`, key: String(obj.native.accessKey || '') };
+                this.log.debug(`Intercom: no camera URL states of ${inst}, using port ${port} from its settings`);
+            }
+        }
+        if (!t) {
+            this.log.warn(
+                `Intercom: ${inst} not found - no states ${inst}.cameras.*.snapshotUrl and no instance object${why ? ` (${why})` : ''}. Is livecam installed and running?`,
+            );
+        } else if (!this.icTarget || this.icTarget.inst !== inst || (this.icTarget.t && this.icTarget.t.base) !== t.base) {
+            this.log.info(`Intercom: using ${inst} at ${t.base}`);
+        }
+        this.icTarget = { inst, t, at: Date.now() };
+        return t;
     }
 
     /** Cameras of the livecam adapter. */

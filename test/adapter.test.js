@@ -247,3 +247,17 @@ test('adapter: door intercom of livecam relayed on /intercom/ws, call list, ring
     assert.match(tones, /westminster/);
 });
 
+test('adapter: intercom address from the livecam instance settings when no camera URL states exist', async t => {
+    const { adapter, port, cam } = await startAdapter(t);
+    for (const id of Object.keys(adapter.foreign).filter(x => x.startsWith('livecam.0.cameras.'))) {
+        delete adapter.foreign[id];
+    }
+    adapter.objects['system.adapter.livecam.0'] = { type: 'instance', common: { name: 'livecam' }, native: { port: Number(new URL(cam.base).port), accessKey: '' } };
+    await fetch(`http://127.0.0.1:${port}/api/layout`, { method: 'PUT', body: JSON.stringify({ pages: [], ring: { intercom: 'livecam.0' } }) });
+    const c = wsClient(`ws://127.0.0.1:${port}/intercom/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'state'));
+    assert.equal(c.msgs.find(m => m.type === 'state').state, 'ringing');
+});
+

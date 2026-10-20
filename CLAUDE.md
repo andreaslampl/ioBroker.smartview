@@ -59,6 +59,9 @@ switches/buttons on them.
   real livecam CamServer + Intercom, fake 2N over SIP, Chromium with fake mic through SmartView.
   Background: on the touch PC the camera wall sometimes did not ring after long idle times; suspected
   Edge sleeping tabs (owner got Edge/kiosk settings), Windows only turns the monitor off.
+- 0.3.1 field: "Keine Sprechstelle" toast appeared while editing (Intercom.sync used the draft, the
+  server only knows the saved layout); gone after saving. Fixed + `intercomTarget()` now also tries
+  the objects and the instance settings (port, same host), logs what is missing, caches 60 s.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

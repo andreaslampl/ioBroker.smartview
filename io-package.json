@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "news": {
+      "0.3.1": {
+        "en": "Intercom: no false 'not found' message while editing; livecam address also found via its instance settings, log line explains what is missing",
+        "de": "Sprechstelle: keine falsche Meldung „nicht gefunden“ mehr beim Bearbeiten; livecam-Adresse wird auch über die Instanz-Einstellungen gefunden, Log-Zeile sagt, was fehlt"
+      },
       "0.3.0": {
         "en": "Door intercom from the livecam adapter: ring tone (chosen in livecam), answer and talk, reject/hang up, open the door, missed calls and call list with photos",
         "de": "Sprechstelle aus dem livecam-Adapter: Klingelton (wie in livecam gewählt), Abheben und Sprechen, Ablehnen/Auflegen, Tür öffnen, verpasste Anrufe und Anrufliste mit Fotos"
