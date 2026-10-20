@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
+const net = require('node:net');
 const https = require('node:https');
 const path = require('node:path');
 const WebSocket = require('ws');
@@ -43,10 +44,23 @@ async function fakeLivecam() {
     return { server, wss, received, base: `http://127.0.0.1:${server.address().port}` };
 }
 
+/** A port nobody uses right now (asked from the OS, not guessed). */
+function freePort() {
+    return new Promise((resolve, reject) => {
+        const s = net.createServer();
+        s.once('error', reject);
+        s.listen(0, '127.0.0.1', () => {
+            const { port } = s.address();
+            s.close(() => resolve(port));
+        });
+    });
+}
+
 async function startAdapter(t, config = {}) {
-    const port = 30000 + Math.floor(Math.random() * 20000);
+    const port = await freePort();
+    const httpsPort = await freePort();
     const cam = await fakeLivecam();
-    const adapter = require('../main.js')({ config: { port, httpsPort: port + 1, publicHost: '127.0.0.1', ...config } });
+    const adapter = require('../main.js')({ config: { port, httpsPort, publicHost: '127.0.0.1', ...config } });
     demoHouse(adapter, cam.base);
     const pushed = [];
     adapter.pushSender = async (sub, payload) => pushed.push(JSON.parse(payload));
@@ -65,7 +79,7 @@ async function startAdapter(t, config = {}) {
         const text = await res.text();
         return { status: res.status, body: text && res.headers.get('content-type').includes('json') ? JSON.parse(text) : text };
     };
-    return { adapter, port, base, api, pushed, cam };
+    return { adapter, port, httpsPort, base, api, pushed, cam };
 }
 
 function wsClient(url, headers) {
@@ -94,7 +108,7 @@ const LAYOUT = {
 };
 
 test('adapter: layout, live values, commands only for layout data points, push rule, cameras, upload, https', async t => {
-    const { adapter, port, base, api, pushed } = await startAdapter(t);
+    const { adapter, port, httpsPort, base, api, pushed } = await startAdapter(t);
     assert.match(adapter.foreign['smartview.0.info.httpsUrl'].val, /^https:\/\/127\.0\.0\.1:\d+\/$/);
     assert.match(await (await fetch(base)).text(), /app\.js/);
     assert.match(await (await fetch(base + 'zertifikat')).text(), /Zum Home-Bildschirm/);
@@ -174,7 +188,7 @@ test('adapter: layout, live values, commands only for layout data points, push r
     // https with the own CA
     const certs = JSON.parse(fs.readFileSync(path.join(adapter.dataDir, 'certs.json'), 'utf8'));
     const body = await new Promise((resolve, reject) => {
-        https.get({ host: '127.0.0.1', port: port + 1, path: '/api/push/key', ca: certs.ca.cert }, res => {
+        https.get({ host: '127.0.0.1', port: httpsPort, path: '/api/push/key', ca: certs.ca.cert }, res => {
             let d = '';
             res.on('data', x => (d += x));
             res.on('end', () => resolve(d));
