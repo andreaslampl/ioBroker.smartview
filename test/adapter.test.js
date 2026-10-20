@@ -21,14 +21,26 @@ async function until(fn, ms = 5000) {
     }
 }
 
-/** Fake livecam: /cam/<id>.jpg */
+/** Fake livecam: /cam/<id>.jpg, /history, intercom on /ws */
 async function fakeLivecam() {
+    const received = [];
     const server = http.createServer((req, res) => {
+        if (req.url.startsWith('/history')) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify([{ id: 1, time: '2026-10-20T10:00:00Z', result: 'missed', caller: 'Haustuer', image: false }]));
+            return;
+        }
         res.writeHead(200, { 'Content-Type': 'image/jpeg' });
         res.end(Buffer.from(`JPEG ${req.url}`));
     });
+    const wss = new WebSocket.WebSocketServer({ server, path: '/ws' });
+    wss.on('connection', ws => {
+        ws.send(JSON.stringify({ type: 'state', state: 'ringing', caller: 'Haustuer', camera: 'haustuer', mine: false, missed: 1 }));
+        ws.send(JSON.stringify({ type: 'view', ringTone: 'westminster', ringVolume: 60 }));
+        ws.on('message', d => received.push(JSON.parse(d.toString())));
+    });
     await new Promise(r => server.listen(0, '127.0.0.1', r));
-    return { server, base: `http://127.0.0.1:${server.address().port}` };
+    return { server, wss, received, base: `http://127.0.0.1:${server.address().port}` };
 }
 
 async function startAdapter(t, config = {}) {
@@ -42,6 +54,9 @@ async function startAdapter(t, config = {}) {
     await until(() => adapter.foreign['smartview.0.info.connection'] && adapter.foreign['smartview.0.info.connection'].val === true, 30000);
     t.after(async () => {
         await new Promise(resolve => adapter.emit('unload', resolve));
+        for (const c of cam.wss.clients) {
+            c.terminate();
+        }
         cam.server.close();
     });
     const base = `http://127.0.0.1:${port}/`;
@@ -50,7 +65,7 @@ async function startAdapter(t, config = {}) {
         const text = await res.text();
         return { status: res.status, body: text && res.headers.get('content-type').includes('json') ? JSON.parse(text) : text };
     };
-    return { adapter, port, base, api, pushed };
+    return { adapter, port, base, api, pushed, cam };
 }
 
 function wsClient(url, headers) {
@@ -189,3 +204,32 @@ test('adapter: access key protects API and live values, cookie after the first v
     await ok.open;
     await until(() => ok.msgs.some(m => m.type === 'init'));
 });
+
+test('adapter: door intercom of livecam relayed on /intercom/ws, call list, ring tones', async t => {
+    const { port, base, api, cam } = await startAdapter(t);
+    // without an intercom chosen: refused
+    const none = wsClient(`ws://127.0.0.1:${port}/intercom/ws`);
+    await none.open;
+    await until(() => none.msgs.some(m => m.type === 'error'));
+
+    await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [], ring: { intercom: 'livecam.0' } }) });
+    assert.equal((await api('layout')).body.layout.ring.intercom, 'livecam.0');
+    const c = wsClient(`ws://127.0.0.1:${port}/intercom/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'state') && c.msgs.some(m => m.type === 'view'));
+    assert.equal(c.msgs.find(m => m.type === 'state').state, 'ringing');
+    c.ws.send(JSON.stringify({ type: 'answer', sdp: 'v=0' }));
+    c.ws.send(JSON.stringify({ type: 'door' }));
+    await until(() => cam.received.length === 2);
+    assert.deepEqual(cam.received.map(m => m.type), ['answer', 'door']);
+    // one upstream connection per browser (livecam must know who answered)
+    assert.equal(cam.wss.clients.size, 1);
+
+    const hist = await api('intercom/history');
+    assert.equal(hist.body[0].result, 'missed');
+    const tones = await (await fetch(base + 'tones-engine.js')).text();
+    assert.match(tones, /const toneEngine = function toneEngine\(\)/);
+    assert.match(tones, /westminster/);
+});
+

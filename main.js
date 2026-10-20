@@ -6,6 +6,7 @@ const { LayoutStore, stateIds } = require('./lib/layout');
 const { Push, triggers, fill } = require('./lib/push');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
+const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
 
@@ -64,6 +65,7 @@ class SmartView extends utils.Adapter {
         }
 
         this.server = new SmartServer({
+            intercom: new IntercomProxy({ target: () => this.intercomTarget(), log: this.log }),
             store: this.store,
             push: this.push,
             certs,
@@ -253,6 +255,22 @@ class SmartView extends utils.Adapter {
             }),
         );
         return out;
+    }
+
+    /** Address of the livecam instance chosen as intercom (from its camera URL states). */
+    async intercomTarget() {
+        const inst = this.store.layout.ring.intercom;
+        if (!inst) {
+            return null;
+        }
+        const states = await this.getForeignStatesAsync(`${inst}.cameras.*.snapshotUrl`).catch(() => ({}));
+        for (const st of Object.values(states || {})) {
+            const t = st && baseFromUrl(st.val);
+            if (t) {
+                return t;
+            }
+        }
+        return null;
     }
 
     /** Cameras of the livecam adapter. */

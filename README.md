@@ -78,10 +78,26 @@ Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt �
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
-### Klingel
+### Klingel und Sprechstelle
 
-Unter ⚙: Datenpunkt „läutet“ (livecam: `livecam.0.intercom.ringing`), Kamera und optional
-„Tür öffnen“ (`livecam.0.intercom.openDoor`). Beim Läuten zeigt SmartView die Kamera groß.
+Unter ⚙ **Allgemein & Mitteilungen → Klingel**:
+
+- **Sprechstelle (livecam-Adapter)** wählen, z. B. `livecam.0` – dann kann SmartView alles wie die
+  Kamerawand: **Klingelton** (Melodie und Lautstärke wie in livecam unter `/tones` gewählt),
+  **Abheben und Sprechen**, **Ablehnen / Auflegen**, **Tür öffnen**, rotes **🔔 n** oben bei verpassten
+  Anrufen und die **Anrufliste mit Fotos** (auch im Menü ⚙). Läutet es, erscheint die Kamera der
+  läutenden Station groß; abgehoben wird an dem Gerät, an dem man zuerst „Abheben“ tippt.
+- Ohne Sprechstelle: Datenpunkt „läutet“, Kamera und optional „Tür öffnen“ – dann zeigt SmartView beim
+  Läuten nur das Kamerabild mit „Tür öffnen“.
+
+Im Menü ⚙ lässt sich pro Gerät der **Klingelton ein/aus** schalten und **testen**.
+
+**Mikrofon zum Sprechen:** Browser geben das Mikrofon nur auf sicheren Seiten frei – also SmartView
+über **https** (Zertifikat installiert) öffnen, oder am Touch-PC die http-Adresse in Edge unter
+`edge://flags/#unsafely-treat-insecure-origin-as-secure` eintragen (wie bei der Kamerawand, nur mit
+Port 8098). In VIS-2 als iframe: `allow="microphone; autoplay"`. Der Ton muss einmal durch Antippen
+der Seite freigegeben werden (Browser-Regel); im Kiosk-Betrieb hilft
+`--autoplay-policy=no-user-gesture-required` in der Edge-Verknüpfung.
 
 ### Kameras
 

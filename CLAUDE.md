@@ -28,6 +28,13 @@ switches/buttons on them.
   plan markers, control sheet, cameras by single image polling, ring overlay, menu with push enable), `edit.js` (edit mode: tile/page dialogs, plan upload,
   tap to add marker, drag to move, settings with ring + push rules), `picker.js` (same object
   browser as ioBroker.logik), `icons.js` (own SVG line icons), `sw.js` (push + notificationclick).
+- `lib/intercom.js` – `IntercomProxy`: livecam's intercom inside SmartView (layout `ring.intercom` =
+  'livecam.N'; livecam address + key taken from its `cameras.*.snapshotUrl` states). One upstream ws
+  to livecam /ws per browser on `/intercom/ws` (livecam must know who answered), `/api/intercom/
+  history[/<id>.jpg]` passthrough. WebRTC audio flows browser <-> livecam directly.
+  `lib/tones.js` is a copy of livecam's (keep in sync), served as `/tones-engine.js`;
+  `www/intercom.js` = call screen (answer/reject/hang up/door), ring tone from livecam's `view`
+  message, missed badge, call list, per-device ring tone switch.
 - `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
   pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
   host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims
@@ -47,8 +54,12 @@ switches/buttons on them.
 - 0.1.0: built and checked in headless Chromium (desktop + phone viewport) against the fake house.
   Not yet on the owner's ioBroker / iPhone: real push delivery via Apple, iOS profile install and
   trust, standalone app behaviour are untested.
-- Ideas not done yet: screen off for the touch PC (as in livecam's /view), answering the intercom
-  (WebRTC from livecam) inside SmartView, charts/history.
+- 0.3.0: owner wants to move the touch PC from livecam's camera wall to SmartView, so the intercom
+  (ring tone, answer/talk, door, call list) was added via livecam. Checked end to end in the scratchpad:
+  real livecam CamServer + Intercom, fake 2N over SIP, Chromium with fake mic through SmartView.
+  Background: on the touch PC the camera wall sometimes did not ring after long idle times; suspected
+  Edge sleeping tabs (owner got Edge/kiosk settings), Windows only turns the monitor off.
+- Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions
 

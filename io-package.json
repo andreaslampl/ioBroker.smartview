@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "news": {
+      "0.3.0": {
+        "en": "Door intercom from the livecam adapter: ring tone (chosen in livecam), answer and talk, reject/hang up, open the door, missed calls and call list with photos",
+        "de": "Sprechstelle aus dem livecam-Adapter: Klingelton (wie in livecam gewählt), Abheben und Sprechen, Ablehnen/Auflegen, Tür öffnen, verpasste Anrufe und Anrufliste mit Fotos"
+      },
       "0.2.1": {
         "en": "Floor plans can be imported from PDF (page selection, white margins cut away; converted in the browser with pdf.js)",
         "de": "Grundrisse auch als PDF importierbar (Seite wählbar, weiße Ränder werden abgeschnitten; Umwandlung im Browser mit pdf.js)"

@@ -277,3 +277,18 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .pfoot { display: flex; gap: 8px; align-items: center; padding: 10px 14px; }
 .pinfo { flex: 1; min-width: 0; }
 .pid { font-family: ui-monospace, monospace; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* door intercom (livecam) */
+.camfull.call .bar { flex-wrap: wrap; }
+.camfull.call .callbtns { display: flex; gap: 10px; flex-wrap: wrap; }
+.camfull.call .callbtns button { padding: 14px 22px; font-size: 18px; border-radius: 14px; }
+.camfull.call .callbtns button.answer { background: var(--ok); border-color: var(--ok); }
+.camfull.call .callbtns button.hangup { background: var(--bad); border-color: var(--bad); }
+.camfull.call .callbtns button.door { background: #2f81f7; border-color: #2f81f7; }
+#missedBtn { background: var(--bad); border-color: var(--bad); color: #fff; padding: 6px 12px; font-weight: 600; }
+.calllist { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.callitem { display: flex; gap: 12px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 12px; }
+.callitem img { width: 120px; height: 68px; object-fit: cover; border-radius: 8px; background: #000; flex: none; }
+.callitem.missed b { color: var(--bad); }
+.callitem.answered b { color: var(--ok); }
+.callitem.new { border-color: var(--bad); }

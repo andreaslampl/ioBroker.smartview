@@ -726,6 +726,18 @@ const Editor = (() => {
     help.className = 'help';
     help.textContent = 'Wenn der Datenpunkt „läutet“ ein wird, zeigt SmartView die Kamera groß – mit „Tür öffnen“. Beim livecam-Adapter: livecam.0.intercom.ringing und livecam.0.intercom.openDoor.';
     body.appendChild(help);
+    // door intercom of the livecam adapter: ring tone, answering, call list
+    const icSel = field(body, 'Sprechstelle (livecam-Adapter)', select([['', 'keine – nur Kamerabild beim Läuten']], l.ring.intercom || ''),
+      'Mit Sprechstelle: Klingelton, Abheben/Sprechen, Tür öffnen und Anrufliste wie an der Kamerawand. Die Felder darunter braucht es dann nicht (Kamera = Ersatz, falls die Sprechstelle keine meldet).');
+    api('cameras').then(list => {
+      for (const inst of [...new Set(list.map(c => c.id.split('.').slice(0, 2).join('.')))]) {
+        const o = document.createElement('option');
+        o.value = inst;
+        o.textContent = inst;
+        icSel.appendChild(o);
+      }
+      icSel.value = l.ring.intercom || '';
+    }).catch(() => {});
     const ringState = stateField(body, 'Läutet (Datenpunkt)', l.ring.state, false);
     if (!l.ring.state) ringState.placeholder = 'livecam.0.intercom.ringing';
     let ringCam = null;
@@ -825,7 +837,7 @@ const Editor = (() => {
         top: sideChecks.top.filter(i => i.checked).map(i => i.value),
         bottom: sideChecks.bottom.filter(i => i.checked).map(i => i.value),
       };
-      l.ring = { state: ringState.value.trim(), camera: ringCam ? ringCam.value : l.ring.camera, door: door.value.trim() };
+      l.ring = { state: ringState.value.trim(), camera: ringCam ? ringCam.value : l.ring.camera, door: door.value.trim(), intercom: icSel.value };
       l.push = rules;
       d.close();
       render();
