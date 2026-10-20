@@ -35,6 +35,12 @@ switches/buttons on them.
   `lib/tones.js` is a copy of livecam's (keep in sync), served as `/tones-engine.js`;
   `www/intercom.js` = call screen (answer/reject/hang up/door), ring tone from livecam's `view`
   message, missed badge, call list, per-device ring tone switch.
+- `lib/timers.js` – `Timers`: time switches per tile in timers.json (`page/tile` keys, not in the
+  layout so they work without edit mode), weekdays, fixed time or sunrise/sunset ± min (`lib/sun.js`
+  copied from ioBroker.logik, location from system.config); tick every 15 s, fires once per day up to
+  5 min late, passed times are not caught up at start. `main.fireTimer` writes like the buttons
+  (invert, switchState, closed100). API `GET /api/timers`, `PUT /api/timers/<page>/<tile>`, ws
+  `{type:'timers'}`. UI `www/timers.js` (editor, ⏰ badge, long press -> sheet with ⏰ button).
 - `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
   pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
   host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims
@@ -62,6 +68,7 @@ switches/buttons on them.
 - 0.3.1 field: "Keine Sprechstelle" toast appeared while editing (Intercom.sync used the draft, the
   server only knows the saved layout); gone after saving. Fixed + `intercomTarget()` now also tries
   the objects and the instance settings (port, same host), logs what is missing, caches 60 s.
+- 0.4.0: owner asked for a time switch with weekdays and astro on every switch/dimmer/blind.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

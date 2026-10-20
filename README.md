@@ -53,6 +53,21 @@ Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Beweg
 „Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
 erscheinen als Text.
 
+### Zeitschaltuhr
+
+Bei **Schaltern, Dimmern und Rollläden**: **lange auf die Kachel drücken** (auch in Listen und auf dem
+Grundriss) → **⏰ Zeitschaltuhr**. Beliebig viele Schaltzeiten, je mit
+
+- **Wochentagen** (einzeln antippen oder schnell „täglich“, „Mo–Fr“, „Sa–So“),
+- **Uhrzeit** oder **Sonnenaufgang / Sonnenuntergang** mit Verschiebung in Minuten (−30 = 30 min vorher),
+- **Aktion**: Ein / Aus, Dimmer auf %, Rollladen Auf / Ab / Position.
+
+Geschaltet wird **vom ioBroker** – auch wenn kein Gerät offen ist. Kacheln mit aktiver Zeitschaltuhr
+zeigen ⏰. Für Sonnenauf-/-untergang braucht ioBroker den Standort (Einstellungen → System → Breiten-
+und Längengrad). Verpasste Zeiten (z. B. während eines Neustarts) werden nicht nachgeholt; eine
+Schaltzeit, die bis zu 5 Minuten zu spät erkannt wird, schaltet noch. Die Zeitschaltuhren liegen in
+`timers.json` im Datenverzeichnis und lassen sich auch einstellen, wenn „Bearbeiten“ gesperrt ist.
+
 ### Liste
 
 Seite der Art **Liste**: eine Zeile pro Eintrag – Licht mit **EIN / AUS** und Statuslampe, Dimmer mit

@@ -7,6 +7,7 @@ const { Push, triggers, fill } = require('./lib/push');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
+const { Timers } = require('./lib/timers');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
 
@@ -41,6 +42,19 @@ class SmartView extends utils.Adapter {
         this.store = new LayoutStore(dir);
         this.push = new Push(dir, { log: this.log, sender: this.pushSender });
         await this.setState('push.devices', this.push.count, true);
+
+        // time switches of the tiles (location for sunrise/sunset from the ioBroker system settings)
+        const sys = await this.getForeignObjectAsync('system.config').catch(() => null);
+        const c = sys && sys.common;
+        const location = c && c.latitude !== '' && c.latitude !== undefined && Number.isFinite(Number(c.latitude)) ? { latitude: Number(c.latitude), longitude: Number(c.longitude) } : null;
+        this.timers = new Timers({
+            dir,
+            location,
+            log: this.log,
+            tile: key => this.tileByKey(key),
+            fire: (tile, action, value, key, entry) => this.fireTimer(tile, action, value, entry),
+        });
+        this.timers.start();
 
         const port = Number(this.config.port) || 8098;
         const httpsPort = Number(this.config.httpsPort) || 8099;
@@ -82,6 +96,8 @@ class SmartView extends utils.Adapter {
                 cameraUrl: (id, kind) => this.cameraUrl(id, kind),
                 layoutChanged: () => this.resubscribe(),
                 pushDevices: n => this.setState('push.devices', n, true),
+                timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
+                setTimer: (key, timer) => this.timers.set(key, timer),
             },
         });
         await this.resubscribe();
@@ -257,6 +273,34 @@ class SmartView extends utils.Adapter {
         return out;
     }
 
+    /** Tile for a timer key "pageId/tileId" of the saved layout. */
+    tileByKey(key) {
+        const [pageId, tileId] = String(key).split('/');
+        const page = this.store.layout.pages.find(p => p.id === pageId);
+        return (page && page.tiles.find(t => t.id === tileId)) || null;
+    }
+
+    /** A time switch is due: write like the buttons in the app do. */
+    async fireTimer(tile, action, value, entry) {
+        const when = entry.at === 'time' ? entry.time : `${entry.at === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang'}${entry.offset ? ` ${entry.offset > 0 ? '+' : ''}${entry.offset} min` : ''}`;
+        this.log.info(`Timer "${tile.label || tile.id}" (${when}): ${action}${value !== undefined ? ` ${value} %` : ''}`);
+        if (tile.type === 'switch') {
+            const on = action === 'on';
+            await this.setValue(tile.state, tile.invert ? !on : on);
+        } else if (tile.type === 'dimmer') {
+            const level = action === 'off' ? 0 : action === 'level' ? value : 100;
+            if (tile.switchState) {
+                await this.setValue(tile.switchState, level > 0);
+            }
+            if (tile.state && (level > 0 || !tile.switchState)) {
+                await this.setValue(tile.state, level);
+            }
+        } else if (tile.type === 'blind') {
+            const open = action === 'up' ? 100 : action === 'down' ? 0 : value;
+            await this.setValue(tile.state, tile.closed100 ? 100 - open : open);
+        }
+    }
+
     /**
      * Address of the livecam instance chosen as intercom: from its camera URL states (they carry
      * host, port and access key), else from the instance settings (same host, configured port).
@@ -332,6 +376,9 @@ class SmartView extends utils.Adapter {
     async onUnload(callback) {
         try {
             clearInterval(this.pingTimer);
+            if (this.timers) {
+                this.timers.stop();
+            }
             if (this.server) {
                 await this.server.close();
             }

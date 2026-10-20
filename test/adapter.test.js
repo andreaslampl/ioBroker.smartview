@@ -261,3 +261,41 @@ test('adapter: intercom address from the livecam instance settings when no camer
     assert.equal(c.msgs.find(m => m.type === 'state').state, 'ringing');
 });
 
+
+test('adapter: time switches per tile via the API, writes like the buttons', async t => {
+    const { adapter, api } = await startAdapter(t);
+    await api('layout', {
+        method: 'PUT',
+        body: JSON.stringify({
+            pages: [
+                {
+                    id: 'eg',
+                    tiles: [
+                        { id: 'l1', type: 'switch', state: 'knx.0.EG.Licht.Wohnzimmer', invert: false },
+                        { id: 'd1', type: 'dimmer', state: 'knx.0.EG.Licht.Essen_Dimmer' },
+                        { id: 'r1', type: 'blind', state: 'knx.0.EG.Rollladen.Wohnzimmer', closed100: true },
+                        { id: 'v1', type: 'value', state: 'knx.0.EG.Fenster.Kueche' },
+                    ],
+                },
+            ],
+        }),
+    });
+    const put = await api('timers/eg/l1', { method: 'PUT', body: JSON.stringify({ entries: [{ days: [1, 2, 3], at: 'time', time: '07:15', action: 'on' }] }) });
+    assert.equal(put.status, 200);
+    assert.equal((await api('timers/eg/v1', { method: 'PUT', body: JSON.stringify({ entries: [{}] }) })).status, 400);
+    const got = (await api('timers')).body;
+    assert.equal(got.timers['eg/l1'].entries[0].time, '07:15');
+    assert.ok(got.timers['eg/l1'].entries[0].next > Date.now());
+
+    const tile = id => adapter.tileByKey(`eg/${id}`);
+    await adapter.fireTimer(tile('l1'), 'on', undefined, { at: 'time', time: '07:15' });
+    await adapter.fireTimer(tile('d1'), 'level', 30, { at: 'sunset', offset: -15 });
+    await adapter.fireTimer(tile('r1'), 'down', undefined, { at: 'time', time: '20:00' });
+    await adapter.fireTimer(tile('r1'), 'position', 25, { at: 'time', time: '21:00' });
+    assert.deepEqual(adapter.writes.slice(-4), [
+        ['knx.0.EG.Licht.Wohnzimmer', true, false],
+        ['knx.0.EG.Licht.Essen_Dimmer', 30, false],
+        ['knx.0.EG.Rollladen.Wohnzimmer', 100, false], // closed100: down = 100
+        ['knx.0.EG.Rollladen.Wohnzimmer', 75, false], // 25 % open
+    ]);
+});

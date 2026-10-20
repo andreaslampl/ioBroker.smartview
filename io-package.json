@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "news": {
+      "0.4.0": {
+        "en": "Time switch for switch, dimmer and blind tiles: weekdays, fixed time or sunrise/sunset with offset; runs in the adapter. Long press on a tile opens its controls",
+        "de": "Zeitschaltuhr für Schalter, Dimmer und Rollläden: Wochentage, feste Uhrzeit oder Sonnenauf-/-untergang mit Verschiebung; schaltet im Adapter. Lange auf eine Kachel drücken öffnet ihre Bedienung"
+      },
       "0.3.1": {
         "en": "Intercom: no false 'not found' message while editing; livecam address also found via its instance settings, log line explains what is missing",
         "de": "Sprechstelle: keine falsche Meldung „nicht gefunden“ mehr beim Bearbeiten; livecam-Adresse wird auch über die Instanz-Einstellungen gefunden, Log-Zeile sagt, was fehlt"

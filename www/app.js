@@ -409,6 +409,7 @@ function renderTile(t, page) {
   el.dataset.page = page.id;
   el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
   fillTile(el, t);
+  if (!SV.editing && Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
   el.addEventListener('click', e => {
     if (SV.editing) return Editor.editTile(page, t);
     if (e.target.closest('button, input')) return;
@@ -429,6 +430,7 @@ function renderList(box, page) {
     el.dataset.page = page.id;
     el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
     fillRow(el, t);
+    if (!SV.editing && Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
@@ -509,6 +511,7 @@ function fillRow(el, t) {
   }
   el.innerHTML = head + '<span class="lctl">' + ctl + '</span>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
   bindControls(el, t);
+  Timers.mark(el, t);
 }
 
 function pageName(id) {
@@ -605,6 +608,7 @@ function fillTile(el, t) {
   if (missing(t)) html += '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>';
   el.innerHTML = html;
   bindControls(el, t);
+  Timers.mark(el, t);
   el.classList.toggle('multirow', t.type === 'multi' && (t.rows || []).length > 1);
   if (t.type === 'camera') {
     const img = el.querySelector('img.camimg');
@@ -758,6 +762,7 @@ function renderMarker(t, page) {
   if (SV.editing) {
     el.addEventListener('pointerdown', e => Editor.markerDown(e, page, t, el));
   } else {
+    if (Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
     el.addEventListener('click', () => {
       if (t.type === 'switch' || t.type === 'button') return tileTap(t);
       if (t.type === 'camera') return openCam(t.camera, t.label);
@@ -785,6 +790,7 @@ function fillMarker(el, t) {
   }
   el.title = t.label || '';
   el.innerHTML = '<div class="dot">' + icon(tileIcon(t)) + '</div>' + (v ? '<div class="mval">' + esc(v) + '</div>' : '');
+  Timers.mark(el, t);
 }
 
 // ---------------- control sheet ----------------
@@ -846,6 +852,11 @@ function fillSheet(sh, t) {
     }).join('') + '</div>';
   }
   sh.innerHTML = '<h3>' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || '') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' + body;
+  if (Timers.supports(t) && !SV.editing) {
+    body = '<div class="row"><button type="button" data-timer>⏰ Zeitschaltuhr' + (Timers.active(t) ? ' (aktiv)' : '') + '</button></div>';
+    sh.insertAdjacentHTML('beforeend', body);
+    sh.querySelector('[data-timer]').onclick = () => Timers.open(t);
+  }
   sh.querySelector('[data-close]').onclick = closeSheet;
   bindControls(sh, t);
 }
@@ -1073,10 +1084,13 @@ function connect() {
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
       render();
+      Timers.load();
       checkRing();
     } else if (msg.type === 'state') {
       SV.states[msg.id] = msg.state;
       refresh(msg.id);
+    } else if (msg.type === 'timers') {
+      Timers.load();
     } else if (msg.type === 'layout') {
       if (SV.saving) return; // our own save, handled in Editor.save
       if (SV.editing) toast('Die Ansicht wurde auf einem anderen Gerät geändert.');

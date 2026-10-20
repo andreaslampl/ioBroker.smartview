@@ -1,5 +1,8 @@
 'use strict';
 
+// the time switch test uses local times in Austria (sunset, weekdays)
+process.env.TZ = 'Europe/Vienna';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -162,4 +165,59 @@ test('certificates: CA + server certificate for the addresses, iOS limits, renew
     });
     server.close();
     assert.equal(body, 'ok');
+});
+
+test('timers: fire once at the time on the chosen weekdays, sun times with offset, no catching up after start', () => {
+    const { Timers, weekday } = require('../lib/timers');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sv-timer-'));
+    let now = new Date(2026, 9, 19, 6, 0, 0).getTime(); // Monday 19.10.2026 06:00 local time
+    assert.equal(weekday(now), 1);
+    const fired = [];
+    const tile = { id: 'l1', type: 'switch', state: 'knx.0.l' };
+    const timers = new Timers({
+        dir,
+        now: () => now,
+        log: { warn() {}, info() {} },
+        location: { latitude: 46.6, longitude: 14.3 },
+        tile: key => (key === 'start/l1' ? tile : null),
+        fire: (t, action, value, key, e) => fired.push([action, e.id, new Date(now).toTimeString().slice(0, 5)]),
+    });
+    assert.throws(() => timers.set('start/gone', { entries: [{}] }));
+    timers.set('start/l1', {
+        entries: [
+            { id: 'morning', days: [1, 2, 3, 4, 5], at: 'time', time: '6:30', action: 'on' },
+            { id: 'evening', days: [1, 2, 3, 4, 5, 6, 7], at: 'sunset', offset: -30, action: 'off' },
+            { id: 'weekend', days: [6, 7], at: 'time', time: '08:00', action: 'on' },
+            { id: 'off', enabled: false, days: [1], at: 'time', time: '06:45', action: 'off' },
+        ],
+    });
+    const list = timers.list()['start/l1'];
+    assert.equal(list.entries[0].time, '06:30');
+    assert.equal(new Date(list.entries[0].next).getHours(), 6);
+    const sunset = timers.sunToday().set;
+    assert.ok(new Date(sunset).getHours() >= 17 && new Date(sunset).getHours() <= 18, 'sunset in October around 18:00');
+    // run the clock through Monday in 15 s steps
+    const end = new Date(2026, 9, 19, 23, 0, 0).getTime();
+    for (; now < end; now += 15000) {
+        timers.tick();
+    }
+    assert.deepEqual(fired.map(f => f[1]), ['morning', 'evening']);
+    assert.equal(fired[0][2], '06:30');
+    const evening = Math.round((sunset - 30 * 60000) / 60000) * 60000;
+    assert.ok(Math.abs(new Date(2026, 9, 19, ...fired[1][2].split(':').map(Number)).getTime() - evening) < 60000);
+    // Saturday: weekend entry, not the weekday one
+    fired.length = 0;
+    now = new Date(2026, 9, 24, 7, 0, 0).getTime();
+    for (const stop = new Date(2026, 9, 24, 9, 0, 0).getTime(); now < stop; now += 15000) {
+        timers.tick();
+    }
+    assert.deepEqual(fired.map(f => f[1]), ['weekend']);
+    // a new instance (adapter restart) at 08:02 does not catch up the 08:00 entry
+    fired.length = 0;
+    now = new Date(2026, 9, 25, 8, 2, 0).getTime();
+    const again = new Timers({ dir, now: () => now, log: { warn() {}, info() {} }, tile: () => tile, fire: (t, a, v, k, e) => fired.push(e.id) });
+    again.tick();
+    assert.deepEqual(fired, []);
+    // without a location sun entries never fire but the rest works
+    assert.equal(again.list()['start/l1'].entries[1].next, null);
 });
