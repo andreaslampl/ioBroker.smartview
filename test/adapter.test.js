@@ -411,3 +411,58 @@ test('adapter: users switched off in the instance settings (forgotten password)'
     assert.equal(r.body.me.admin, true);
     assert.equal((await api('users')).body.emergency, true);
 });
+
+test('adapter: push rules also via the telegram adapter, doorbell photo, test button', async t => {
+    const { adapter, api, pushed } = await startAdapter(t);
+    adapter.objects['system.adapter.telegram.0'] = { type: 'instance', common: { name: 'telegram' } };
+    assert.deepEqual((await api('telegram')).body.instances, ['telegram.0']);
+    assert.equal((await api('telegram/test', { method: 'POST', body: '{}' })).status, 400);
+    const layout = {
+        ...LAYOUT,
+        push: [
+            { id: 'r1', state: 'knx.0.EG.Fenster.Kueche', cond: 'false', title: 'Fenster', text: 'Küche <zu>', page: 'eg' },
+            { id: 'r2', state: 'knx.0.EG.Licht.Kueche', cond: 'false', title: 'Licht aus', via: 'app' },
+            { id: 'r3', state: 'knx.0.EG.Licht.Wohnzimmer', cond: 'true', title: 'Licht an', via: 'telegram' },
+        ],
+        telegram: { instance: 'telegram.0', users: 'Andi', ring: true },
+    };
+    // push subscription so app pushes are sent
+    adapter.push.subscribe({ endpoint: 'https://push.example/1', keys: { p256dh: 'x', auth: 'y' } }, 'iPhone');
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    assert.equal(saved.body.telegram.instance, 'telegram.0');
+    assert.equal(saved.body.push[2].via, 'telegram');
+    adapter.sent = [];
+
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    adapter.change('knx.0.EG.Licht.Kueche', false);
+    adapter.change('knx.0.EG.Licht.Wohnzimmer', true);
+    await until(() => adapter.sent.length >= 2 && pushed.length >= 2);
+    const texts = adapter.sent.map(s => s.message.text);
+    assert.equal(adapter.sent[0].instance, 'telegram.0');
+    assert.equal(adapter.sent[0].message.user, 'Andi');
+    assert.match(texts[0], /<b>Fenster<\/b>\nKüche &lt;zu&gt;/);
+    assert.match(texts[0], /href="http:\/\/127\.0\.0\.1:\d+\/#eg"/);
+    assert.ok(!texts.some(x => /Licht aus/.test(x)), 'app only');
+    assert.ok(texts.some(x => /Licht an/.test(x)));
+    assert.ok(!pushed.some(p => p.title === 'Licht an'), 'telegram only');
+    assert.ok(pushed.some(p => p.title === 'Licht aus'));
+
+    // doorbell: picture of the ring camera
+    adapter.sent = [];
+    adapter.change('livecam.0.intercom.ringing', true);
+    await until(() => adapter.sent.length === 1);
+    assert.equal(adapter.sent[0].message.type, 'photo');
+    assert.ok(Buffer.isBuffer(adapter.sent[0].message.text));
+    assert.match(adapter.sent[0].message.text.toString(), /JPEG \/cam\/haustuer\.jpg/);
+    assert.match(adapter.sent[0].message.caption, /Es läutet/);
+    adapter.change('livecam.0.intercom.ringing', true);
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(adapter.sent.length, 1, 'only when it starts ringing');
+
+    const test = await api('telegram/test', { method: 'POST', body: '{}' });
+    assert.equal(test.body.sent, 1);
+    // push.message goes to telegram too
+    adapter.sent = [];
+    adapter.change('smartview.0.push.message', 'Hallo', false);
+    await until(() => adapter.sent.length === 1);
+});

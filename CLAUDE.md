@@ -80,6 +80,10 @@ switches/buttons on them.
   window, min/max). Only state and mode are writable.
 - 0.6.0: owner asked for users so not everybody can edit (✎) or see everything. Push still goes to
   all devices (not per user yet).
+- 0.7.0: owner's iPhone belongs to the company, no own certificates allowed -> push rules also via the
+  telegram adapter (layout `telegram` {instance, users, ring}, rule `via` all/app/telegram; sendTo
+  'send' with HTML text + link to SmartView; ring = camera jpg as Buffer type photo; `tgSend` resolves
+  null after 15 s if the adapter does not answer). Owner wanted both (app push + telegram).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

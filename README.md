@@ -179,6 +179,22 @@ einmal, wenn die Bedingung eintritt.
 Aus Skripten/Blockly/Logik: Datenpunkt `smartview.0.push.message` mit Text beschreiben oder mit
 JSON `{"title": "Alarm", "text": "Garage offen", "page": "garage"}`.
 
+### Telegram (ohne Zertifikat)
+
+Für Handys, auf denen kein Zertifikat installiert werden darf (z. B. Firmen-iPhone), können die
+Mitteilungen zusätzlich oder stattdessen über **Telegram** kommen:
+
+1. In ioBroker den Adapter **telegram** installieren. In Telegram bei **@BotFather** mit `/newbot`
+   einen Bot anlegen und den Token in der telegram-Instanz eintragen (dort auch ein Passwort setzen).
+2. In Telegram den neuen Bot öffnen, `/start` senden bzw. das Passwort (z. B. `/meinpasswort`).
+3. In SmartView: ✎ → ⚙ **Allgemein & Mitteilungen** → „Auch über Telegram senden“: `telegram.0`,
+   optional Empfänger (Vorname oder Telegram-Benutzername) → **Telegram testen**.
+4. Pro Mitteilung „Senden an“: **App + Telegram**, **nur App** oder **nur Telegram**.
+
+Die Telegram-Nachricht enthält einen Link „In SmartView öffnen“ (zur gewählten Seite; funktioniert
+im WLAN bzw. mit VPN). Optional schickt SmartView beim Läuten ein **Foto der Klingel-Kamera**.
+`smartview.0.push.message` geht ebenfalls an Telegram.
+
 ## Touch-PC
 
 `http://<ioBroker-IP>:8098/` im Browser (Vollbild über ⚙ → Vollbild bzw. Kiosk-Modus) oder in VIS-2

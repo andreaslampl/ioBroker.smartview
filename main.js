@@ -1,6 +1,8 @@
 'use strict';
 
 const os = require('node:os');
+const http = require('node:http');
+const https = require('node:https');
 const utils = require('@iobroker/adapter-core');
 const { LayoutStore, stateIds } = require('./lib/layout');
 const { Push, triggers, fill } = require('./lib/push');
@@ -11,6 +13,33 @@ const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
+
+/** GET an image (livecam snapshot), max 5 MB. */
+function getBuffer(url) {
+    return new Promise((resolve, reject) => {
+        const u = new URL(url);
+        u.searchParams.set('fresh', '1');
+        const req = (u.protocol === 'https:' ? https : http).get(u, { rejectUnauthorized: false, timeout: 10000 }, res => {
+            if (res.statusCode !== 200) {
+                res.resume();
+                return reject(new Error(`HTTP ${res.statusCode}`));
+            }
+            const chunks = [];
+            let size = 0;
+            res.on('data', c => {
+                size += c.length;
+                if (size > 5e6) {
+                    req.destroy(new Error('too large'));
+                } else {
+                    chunks.push(c);
+                }
+            });
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        req.on('timeout', () => req.destroy(new Error('timeout')));
+        req.on('error', reject);
+    });
+}
 
 function localAddresses() {
     const list = [];
@@ -105,6 +134,8 @@ class SmartView extends utils.Adapter {
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
+                telegramInstances: () => this.telegramInstances(),
+                telegramTest: () => this.telegram({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – Telegram funktioniert.' }),
             },
         });
         await this.resubscribe();
@@ -140,6 +171,9 @@ class SmartView extends utils.Adapter {
         const layout = this.store.layout;
         const { read } = stateIds(layout);
         const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).map(r => r.state)]);
+        if (layout.telegram.instance && layout.telegram.ring && this.ringStateId()) {
+            ids.add(this.ringStateId());
+        }
         for (const id of this.subscribed) {
             if (!ids.has(id)) {
                 await this.unsubscribeForeignStatesAsync(id);
@@ -222,9 +256,75 @@ class SmartView extends utils.Adapter {
                 const title = fill(rule.title, val, role) || this.store.layout.title || 'SmartView';
                 const body = fill(rule.text, val, role) || `${id}: ${fill('{value}', val, role)}`;
                 this.log.info(`Push: ${title} - ${body}`);
-                this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
+                if (rule.via !== 'telegram') {
+                    this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
+                }
+                if (rule.via !== 'app') {
+                    this.telegram({ title, body, page: rule.page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+                }
             }
         }
+        if (id === this.ringStateId() && val && !prev && this.store.layout.telegram.ring) {
+            this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
+        }
+    }
+
+    /** Data point that says "it rings": from the layout, or the intercom's livecam instance. */
+    ringStateId() {
+        const r = this.store.layout.ring;
+        return r.state || (r.intercom ? `${r.intercom}.intercom.ringing` : '');
+    }
+
+    /** Message through the telegram adapter (if chosen in the settings); link opens SmartView. */
+    async telegram({ title, body, page = '' }) {
+        const tg = this.store.layout.telegram;
+        if (!tg.instance) {
+            return false;
+        }
+        const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const key = String(this.config.accessKey || '').trim();
+        const link = `${this.urlList.http}${key ? `?key=${encodeURIComponent(key)}` : ''}${page ? `#${encodeURIComponent(page)}` : ''}`;
+        const msg = { text: `<b>${esc(title)}</b>\n${esc(body)}\n<a href="${esc(link)}">In SmartView öffnen</a>`, parse_mode: 'HTML', disable_web_page_preview: true };
+        if (tg.users) {
+            msg.user = tg.users;
+        }
+        return this.tgSend(tg.instance, msg);
+    }
+
+    /** sendTo the telegram adapter; resolves with its answer (number of users) or null after 15 s. */
+    tgSend(instance, msg) {
+        return new Promise(resolve => {
+            const timer = setTimeout(() => resolve(null), 15000);
+            this.sendTo(instance, 'send', msg, res => {
+                clearTimeout(timer);
+                if (res === 0 || (res && res.error)) {
+                    this.log.warn(`Telegram: not sent (${res && res.error ? res.error : 'no authenticated user - send /start to the bot first'})`);
+                }
+                resolve(res);
+            });
+        });
+    }
+
+    /** Doorbell: photo of the camera (or text only) through telegram. */
+    async telegramRing() {
+        const tg = this.store.layout.telegram;
+        const ring = this.store.layout.ring;
+        if (!tg.instance) {
+            return;
+        }
+        const url = ring.camera ? await this.cameraUrl(ring.camera, 'jpg') : null;
+        const photo = url ? await getBuffer(url).catch(err => this.log.warn(`Telegram: no camera picture (${err.message})`)) : null;
+        const caption = `🔔 Es läutet – ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+        if (!photo) {
+            await this.telegram({ title: '🔔 Es läutet', body: caption.slice(3) });
+            return;
+        }
+        const msg = { text: photo, type: 'photo', caption };
+        if (tg.users) {
+            msg.user = tg.users;
+        }
+        this.log.info('Telegram: doorbell picture sent');
+        await this.tgSend(tg.instance, msg);
     }
 
     /** push.message: plain text or JSON {title, text, page}. */
@@ -240,6 +340,13 @@ class SmartView extends utils.Adapter {
         }
         const r = await this.push.send(msg);
         this.log.info(`Push sent to ${r.sent} device(s)${r.failed ? `, ${r.failed} failed` : ''}`);
+        let page = '';
+        try {
+            page = String(JSON.parse(String(val)).page || '');
+        } catch {
+            // plain text
+        }
+        await this.telegram({ title: msg.title, body: msg.body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
     }
 
     // ---------------- editor helpers ----------------
@@ -360,6 +467,14 @@ class SmartView extends utils.Adapter {
         }
         this.icTarget = { inst, t, at: Date.now() };
         return t;
+    }
+
+    async telegramInstances() {
+        const objs = await this.getForeignObjectsAsync('system.adapter.telegram.*', 'instance').catch(() => ({}));
+        return Object.keys(objs || {})
+            .map(id => id.replace('system.adapter.', ''))
+            .filter(id => /^telegram\.\d+$/.test(id))
+            .sort();
     }
 
     /** Cameras of the livecam adapter. */

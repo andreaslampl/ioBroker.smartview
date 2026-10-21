@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "news": {
+      "0.7.0": {
+        "en": "Notifications also via the telegram adapter (per rule: app, telegram or both), doorbell photo via telegram - for phones without the certificate",
+        "de": "Mitteilungen auch über den Telegram-Adapter (pro Regel: App, Telegram oder beides), Foto beim Läuten per Telegram – für Handys ohne Zertifikat"
+      },
       "0.6.0": {
         "en": "Users: login per device, rights per user (admin, visible pages, switching, doorbell/intercom), checked by the server; emergency switch in the instance settings",
         "de": "Benutzer: Anmeldung pro Gerät, Rechte pro Benutzer (Administrator, sichtbare Seiten, Schalten, Klingel/Sprechanlage), vom Server geprüft; Notfall-Schalter in den Instanz-Einstellungen"
