@@ -765,7 +765,7 @@ const Editor = (() => {
     // Telegram (telegram adapter): for phones where no certificate may be installed
     const tg = l.telegram || { instance: '', users: '', ring: false };
     const tgSel = field(body, 'Auch über Telegram senden', select([['', 'nein']], tg.instance || ''),
-      'Braucht den Telegram-Adapter in ioBroker (Bot von @BotFather, im Telegram-Chat mit dem Bot einmal /start bzw. das Passwort senden). Gut für Handys, auf denen kein Zertifikat installiert werden darf.');
+      'Braucht den Telegram-Adapter in ioBroker (Bot von @BotFather, im Telegram-Chat mit dem Bot einmal /start und dann „/password <Passwort>“ senden). Gut für Handys, auf denen kein Zertifikat installiert werden darf.');
     api('telegram').then(r => {
       for (const inst of r.instances) {
         const o = document.createElement('option');

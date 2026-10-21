@@ -186,7 +186,8 @@ Mitteilungen zusätzlich oder stattdessen über **Telegram** kommen:
 
 1. In ioBroker den Adapter **telegram** installieren. In Telegram bei **@BotFather** mit `/newbot`
    einen Bot anlegen und den Token in der telegram-Instanz eintragen (dort auch ein Passwort setzen).
-2. In Telegram den neuen Bot öffnen, `/start` senden bzw. das Passwort (z. B. `/meinpasswort`).
+2. In Telegram den neuen Bot öffnen, `/start` senden und dann `/password <Passwort>` – das Wort
+   `password` bleibt gleich, danach das Passwort aus der telegram-Instanz (z. B. `/password Sonne123`).
 3. In SmartView: ✎ → ⚙ **Allgemein & Mitteilungen** → „Auch über Telegram senden“: `telegram.0`,
    optional Empfänger (Vorname oder Telegram-Benutzername) → **Telegram testen**.
 4. Pro Mitteilung „Senden an“: **App + Telegram**, **nur App** oder **nur Telegram**.
