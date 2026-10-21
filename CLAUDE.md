@@ -35,6 +35,12 @@ switches/buttons on them.
   `lib/tones.js` is a copy of livecam's (keep in sync), served as `/tones-engine.js`;
   `www/intercom.js` = call screen (answer/reject/hang up/door), ring tone from livecam's `view`
   message, missed badge, call list, per-device ring tone switch.
+- `lib/users.js` – optional users (0.6.0): users.json (scrypt hash, sessions = cookie `sv_session`,
+  kept until logout/password change/delete), rights admin / pages / control / intercom, login rate limit.
+  `layoutFor()` filters the layout per user; server.js checks everything (layout, ws read+write per
+  connection re-checked via `_version`, cameras, timers, intercom, admin-only editor APIs). No users =
+  open as before; instance option `usersOff` = emergency (forgotten password). `www/users.js` = login
+  form, menu entries, management dialog.
 - `lib/timers.js` – `Timers`: time switches per tile in timers.json (`page/tile` keys, not in the
   layout so they work without edit mode), weekdays, fixed time or sunrise/sunset ± min (`lib/sun.js`
   copied from ioBroker.logik, location from system.config); tick every 15 s, fires once per day up to
@@ -72,6 +78,8 @@ switches/buttons on them.
 - 0.5.0: owner asked for a real heating control: thermostat tile = room controller (setStatus, humidity,
   mode + modeStatus with KNX HVAC defaults or `modes` texts or common.states, heating bool or valve %,
   window, min/max). Only state and mode are writable.
+- 0.6.0: owner asked for users so not everybody can edit (✎) or see everything. Push still goes to
+  all devices (not per user yet).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

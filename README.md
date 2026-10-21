@@ -133,6 +133,30 @@ Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht 
 funktionieren sie auch auf der HTTPS-Seite und über VPN. Kachel = Einzelbilder (1 pro Sekunde,
 schont die Verbindungen), Vollbild = Video (MJPEG).
 
+## Benutzer
+
+Ohne Benutzer ist SmartView offen für jeden im Heimnetz (wie bisher). Mit Benutzern muss sich jedes
+Gerät einmal anmelden und bleibt angemeldet, bis man im Menü auf **Abmelden** tippt.
+
+Einrichten: Menü (⚙) → **Benutzer verwalten** → **+ Benutzer**. Der erste Benutzer ist immer
+Administrator; wer ihn anlegt, ist danach gleich als dieser angemeldet. Pro Benutzer:
+
+| Recht | Bedeutung |
+| --- | --- |
+| Administrator | sieht alles, darf bearbeiten (✎) und Benutzer verwalten |
+| Darf schalten | ohne Haken nur ansehen (auch keine Zeitschaltuhren) |
+| Klingel, Sprechanlage und Anrufliste | ohne Haken kein Klingel-Bild, keine Sprechstelle |
+| Sichtbare Seiten | „Alle Seiten“ oder nur die angehakten |
+
+Die Rechte prüft der ioBroker-Server, nicht nur die App: andere Seiten, deren Kameras und
+Datenpunkte bekommt der Benutzer gar nicht zu sehen. Nach 5 falschen Passwörtern muss man warten.
+
+Für den Touch-PC am besten einen eigenen Benutzer (z. B. „Touchpanel“) anlegen und dort einmal
+anmelden. Passwort vergessen: in den Instanz-Einstellungen **Benutzer ausschalten (Notfall)**
+anhaken, SmartView öffnen, neues Passwort setzen, Haken wieder entfernen.
+
+Push-Mitteilungen gehen weiterhin an alle Geräte, auf denen sie aktiviert sind.
+
 ## iPhone: App und Mitteilungen
 
 1. Am iPhone in **Safari** `http://<ioBroker-IP>:8098/zertifikat` öffnen → **Profil laden** →
@@ -170,12 +194,14 @@ Mit `?device=touch` bzw. `?device=phone` lässt sich die Darstellung erzwingen.
 | Adresse des ioBroker-Servers | leer = automatisch; kommt auch ins Zertifikat |
 | Zugriffsschlüssel | optional; dann auf jedem Gerät einmal mit `?key=…` öffnen |
 | Bearbeiten erlauben | aus = Ansicht kann in der App nicht mehr geändert werden |
+| Benutzer ausschalten (Notfall) | lässt alle ohne Anmeldung hinein, z. B. bei vergessenem Passwort |
 
 Geschaltet werden können nur Datenpunkte, die in einer Kachel als Schalt-Datenpunkt eingetragen
-sind. Wer SmartView öffnen kann, kann diese schalten – ohne Zugriffsschlüssel jeder im Heimnetz.
+sind. Ohne Benutzer kann sie jeder schalten, der SmartView öffnen kann – ohne Zugriffsschlüssel
+jeder im Heimnetz.
 
 Ansicht, hochgeladene Bilder, Zertifikat und angemeldete Geräte liegen im Datenverzeichnis der
-Instanz (`layout.json`, `files/`, `certs.json`, `push.json`) und sind in der ioBroker-Sicherung
+Instanz (`layout.json`, `files/`, `certs.json`, `push.json`, `users.json` – Passwörter nur als Hash) und sind in der ioBroker-Sicherung
 enthalten.
 
 ## Entwicklung

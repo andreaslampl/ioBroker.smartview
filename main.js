@@ -7,6 +7,7 @@ const { Push, triggers, fill } = require('./lib/push');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
+const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
@@ -41,6 +42,10 @@ class SmartView extends utils.Adapter {
         const dir = this.dataDir || utils.getAbsoluteInstanceDataDir(this);
         this.store = new LayoutStore(dir);
         this.push = new Push(dir, { log: this.log, sender: this.pushSender });
+        this.users = new UserStore(dir);
+        if (this.config.usersOff && this.users.enabled) {
+            this.log.warn('SmartView: users are switched off in the instance settings - everybody can open and edit SmartView');
+        }
         await this.setState('push.devices', this.push.count, true);
 
         // time switches of the tiles (location for sunrise/sunset from the ioBroker system settings)
@@ -85,6 +90,8 @@ class SmartView extends utils.Adapter {
             certs,
             accessKey: String(this.config.accessKey || '').trim(),
             allowEdit: this.config.allowEdit !== false,
+            users: this.users,
+            usersOff: Boolean(this.config.usersOff),
             log: this.log,
             adapter: {
                 urls: () => this.urlList,

@@ -8,6 +8,7 @@ const SV = {
   draft: null, // copy being edited
   editing: false,
   allowEdit: false,
+  me: null, // {usersEnabled, name, admin, control, manageUsers}
   icons: [],
   states: {}, // id -> {val, ack, ts, unit, type, states, missing}
   writable: new Set(),
@@ -297,6 +298,7 @@ function missing(t) {
 
 function send(id, value) {
   if (!id) return;
+  if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
   SV.ws.send(JSON.stringify({ type: 'set', id, val: value }));
   // show the new value right away; the confirmed value replaces it
@@ -404,7 +406,9 @@ function renderPage() {
   main.textContent = '';
   const page = SV.page;
   if (!page) {
-    main.innerHTML = '<p class="muted">Noch keine Seite. Oben auf ✎ tippen und mit „+ Seite“ beginnen.</p>';
+    main.innerHTML = SV.me && SV.me.usersEnabled && !SV.me.admin
+      ? '<p class="muted">Für dich sind keine Seiten freigegeben. Bitte den Administrator fragen.</p>'
+      : '<p class="muted">Noch keine Seite. Oben auf ✎ tippen und mit „+ Seite“ beginnen.</p>';
     return;
   }
   renderPageInto(main, page);
@@ -1070,7 +1074,7 @@ async function openMenu() {
   closeSheet();
   const ov = document.createElement('div');
   ov.className = 'overlay bottom';
-  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div>' +
+  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
     (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + 'Vollbild</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
@@ -1095,6 +1099,7 @@ async function openMenu() {
   if (full) full.onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
   renderPushMenu(ov.querySelector('[data-push]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
+  Users.menuItems(ov.querySelector('[data-users]'));
 }
 
 async function renderPushMenu(box) {
@@ -1172,7 +1177,7 @@ function connect() {
     } else if (msg.type === 'layout') {
       if (SV.saving) return; // our own save, handled in Editor.save
       if (SV.editing) toast('Die Ansicht wurde auf einem anderen Gerät geändert.');
-      else loadLayout().then(() => ws.close());
+      else loadLayout().then(() => ws.close(), () => location.reload());
     } else if (msg.type === 'error') {
       toast(msg.text, true);
     }
@@ -1186,7 +1191,16 @@ function connect() {
 }
 
 async function loadLayout() {
-  const r = await api('layout');
+  const res = await fetch('api/layout', { credentials: 'same-origin', cache: 'no-store' });
+  const r = await res.json().catch(() => ({}));
+  if (res.status === 401 && r.login) {
+    const err = new Error(r.error || 'Bitte anmelden');
+    err.login = true;
+    err.title = r.title;
+    throw err;
+  }
+  if (!res.ok) throw new Error(r.error || 'HTTP ' + res.status);
+  SV.me = r.me || null;
   SV.layout = r.layout;
   SV.allowEdit = r.allowEdit;
   SV.icons = r.icons;
@@ -1231,6 +1245,7 @@ function tickClock() {
     render();
     connect();
   } catch (e) {
+    if (e.login) return Users.showLogin(e.title);
     $('main').innerHTML = '<p>Verbindung zum ioBroker fehlgeschlagen: ' + esc(e.message) + '</p>';
   }
 })();

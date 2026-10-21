@@ -53,6 +53,15 @@
       "default": true,
       "xs": 12,
       "sm": 5
+    },
+    "usersOff": {
+      "type": "checkbox",
+      "label": "Switch users off (emergency, e.g. forgotten password)",
+      "help": "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.",
+      "default": false,
+      "newLine": true,
+      "xs": 12,
+      "sm": 8
     }
   }
 }

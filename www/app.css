@@ -235,7 +235,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 
 /* editor forms */
 .form label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 14px; }
-.form input[type=text], .form input[type=number], .form input[type=time], .form select, .form textarea { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; }
+.form input[type=text], .form input[type=password], .form input[type=number], .form input[type=time], .form select, .form textarea { width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; }
 .form .help { font-size: 12px; color: var(--muted); margin-top: 3px; }
 .form .staterow { display: flex; gap: 6px; }
 .form .staterow input { flex: 1; min-width: 0; }
@@ -315,3 +315,14 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .sheet .row.modes { flex-wrap: wrap; }
 .sheet .row.modes button { flex: 1 1 40%; padding: 11px 0; font-size: 15px; }
 .bad, .mrow b .bad { color: var(--bad); }
+/* users */
+.sheet.login { margin: 8vh auto 0; width: min(380px, 100%); }
+.sheet.login .row button { padding: 14px 0; }
+.users .ubox { border: 1px solid var(--line); border-radius: 14px; margin: 8px 0; overflow: hidden; }
+.users .uhead { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; }
+.users .uhead small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.users .uhead .chev { color: var(--muted); font-size: 12px; }
+.users .ubody { padding: 0 12px 8px; border-top: 1px solid var(--line); }
+.users .pagelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 10px; }
+.users .buttons { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+.users .buttons .grow { flex: 1; }

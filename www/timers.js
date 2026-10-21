@@ -30,7 +30,7 @@ const Timers = (() => {
   }
 
   function supports(t) {
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState));
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {

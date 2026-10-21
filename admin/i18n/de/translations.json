@@ -8,5 +8,7 @@
   "Access key (optional)": "Zugriffsschlüssel (optional)",
   "If set, SmartView must be opened once with ?key=... per device": "Wenn gesetzt, muss SmartView auf jedem Gerät einmal mit ?key=... geöffnet werden",
   "Allow editing in the app": "Bearbeiten in der App erlauben",
-  "Switch off when the layout is finished, so nobody changes it by accident": "Ausschalten, wenn alles eingerichtet ist, damit niemand versehentlich etwas ändert"
+  "Switch off when the layout is finished, so nobody changes it by accident": "Ausschalten, wenn alles eingerichtet ist, damit niemand versehentlich etwas ändert",
+  "Switch users off (emergency, e.g. forgotten password)": "Benutzer ausschalten (Notfall, z. B. Passwort vergessen)",
+  "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Benutzer werden in der App eingerichtet (Menü → Benutzer). Nur anhaken, um ohne Passwort wieder hineinzukommen, dann ein neues Passwort setzen und den Haken wieder entfernen."
 }

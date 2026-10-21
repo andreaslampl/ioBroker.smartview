@@ -299,3 +299,115 @@ test('adapter: time switches per tile via the API, writes like the buttons', asy
         ['knx.0.EG.Rollladen.Wohnzimmer', 75, false], // 25 % open
     ]);
 });
+
+test('adapter: users - login, own pages only, watch-only users cannot switch, only admins edit', async t => {
+    const { adapter, port, base, api } = await startAdapter(t);
+    assert.equal((await api('layout', { method: 'PUT', body: JSON.stringify(LAYOUT) })).status, 200);
+    // without users: open as before
+    const open = (await api('layout')).body;
+    assert.equal(open.me.usersEnabled, false);
+    assert.equal(open.me.manageUsers, true);
+
+    // the first user must be an admin; whoever creates it is logged in
+    assert.equal((await api('users', { method: 'PUT', body: JSON.stringify([{ name: 'Kind', password: '1234', pages: ['start'] }]) })).status, 400);
+    assert.equal((await api('users', { method: 'PUT', body: JSON.stringify([{ name: 'Andi', password: '12' , admin: true }]) })).status, 400);
+    const first = await fetch(base + 'api/users', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([{ name: 'Andi', password: 'geheim1', admin: true }]) });
+    assert.equal(first.status, 200);
+    const adminCookie = first.headers.get('set-cookie').split(';')[0];
+    assert.match(adminCookie, /^sv_session=/);
+    assert.ok(!fs.readFileSync(path.join(adapter.dataDir, 'users.json'), 'utf8').includes('geheim1'));
+
+    // now everything needs a login
+    const anon = await api('layout');
+    assert.equal(anon.status, 401);
+    assert.equal(anon.body.login, true);
+    assert.equal((await fetch(base + 'cam/livecam.0.cameras.haustuer.jpg')).status, 401);
+    await assert.rejects(wsClient(`ws://127.0.0.1:${port}/ws`).open);
+
+    const as = cookie => (p, opts = {}) => api(p, { ...opts, headers: { 'Content-Type': 'application/json', Cookie: cookie } });
+    const admin = as(adminCookie);
+    const me = (await admin('layout')).body;
+    assert.equal(me.me.name, 'Andi');
+    assert.equal(me.allowEdit, true);
+    assert.equal(me.layout.pages.length, 2);
+
+    // admin adds a watch-only user for the start page without doorbell
+    const list = (await admin('users')).body.users;
+    const saved = await admin('users', { method: 'PUT', body: JSON.stringify([...list, { name: 'Gast', password: '4711', pages: ['start'], control: false, intercom: false }]) });
+    assert.equal(saved.status, 200);
+    assert.equal((await admin('layout')).status, 200, 'admin stays logged in');
+
+    const login = async (name, password) => fetch(base + 'api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, password }) });
+    assert.equal((await login('Gast', 'falsch')).status, 403);
+    const ok = await login('gast', '4711');
+    assert.equal(ok.status, 200);
+    const guestCookie = ok.headers.get('set-cookie').split(';')[0];
+    const guest = as(guestCookie);
+    const gl = (await guest('layout')).body;
+    assert.deepEqual(gl.layout.pages.map(p => p.id), ['start']);
+    assert.equal(gl.layout.ring.door, '');
+    assert.deepEqual(gl.layout.push, []);
+    assert.equal(gl.allowEdit, false);
+    assert.equal(gl.me.control, false);
+    assert.equal((await guest('layout', { method: 'PUT', body: JSON.stringify(LAYOUT) })).status, 403);
+    assert.equal((await guest('users')).status, 403);
+    assert.equal((await guest('objects')).status, 403);
+    assert.equal((await guest('timers/start/l1', { method: 'PUT', body: '{"entries":[]}' })).status, 403);
+    // camera of its page yes, others no
+    assert.equal((await fetch(base + 'cam/livecam.0.cameras.haustuer.jpg', { headers: { Cookie: guestCookie } })).status, 200);
+    assert.equal((await fetch(base + 'cam/livecam.0.cameras.einfahrt.jpg', { headers: { Cookie: guestCookie } })).status, 403);
+
+    // live values: only its page, no writing
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`, { Cookie: guestCookie });
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    const init = c.msgs.find(m => m.type === 'init');
+    assert.ok(init.states['knx.0.EG.Licht.Wohnzimmer']);
+    assert.equal(init.states['knx.0.EG.Licht.Essen_Dimmer'], undefined);
+    assert.equal(init.states['livecam.0.intercom.ringing'], undefined);
+    assert.deepEqual(init.writable, []);
+    const writes = adapter.writes.length;
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: true }));
+    await until(() => c.msgs.some(m => m.type === 'error'));
+    assert.equal(adapter.writes.length, writes);
+    adapter.change('knx.0.EG.Licht.Essen_Dimmer', 10);
+    adapter.change('knx.0.EG.Licht.Wohnzimmer', true);
+    await until(() => c.msgs.some(m => m.type === 'state' && m.id === 'knx.0.EG.Licht.Wohnzimmer'));
+    assert.ok(!c.msgs.some(m => m.type === 'state' && m.id === 'knx.0.EG.Licht.Essen_Dimmer'));
+
+    // admin allows switching -> same connection may write now
+    const users = (await admin('users')).body.users.map(u => (u.name === 'Gast' ? { ...u, control: true } : u));
+    assert.equal((await admin('users', { method: 'PUT', body: JSON.stringify(users) })).status, 200);
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: false }));
+    await until(() => adapter.writes.length > writes);
+    // the dimmer of the other page stays locked
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Essen_Dimmer', val: 50 }));
+    await new Promise(r => setTimeout(r, 200));
+    assert.ok(!adapter.writes.some(w => w[0] === 'knx.0.EG.Licht.Essen_Dimmer' && w[1] === 50));
+
+    // log out ends the session; deleting the user ends it too
+    assert.equal((await guest('logout', { method: 'POST', body: '{}' })).status, 200);
+    assert.equal((await guest('layout')).status, 401);
+    c.ws.close();
+
+    // brute force: wait after 5 wrong attempts
+    for (let i = 0; i < 5; i++) {
+        await login('Andi', 'nein');
+    }
+    const blocked = await login('Andi', 'geheim1');
+    assert.equal(blocked.status, 403);
+    assert.match((await blocked.json()).error, /warten/);
+});
+
+test('adapter: users switched off in the instance settings (forgotten password)', async t => {
+    const { adapter, api } = await startAdapter(t, { usersOff: true });
+    const { UserStore } = require('../lib/users');
+    const store = new UserStore(adapter.dataDir);
+    assert.equal(store.enabled, false);
+    // users exist, but the emergency switch lets everybody in to set a new password
+    adapter.server.users.save([{ name: 'Andi', password: 'vergessen', admin: true }], []);
+    const r = await api('layout');
+    assert.equal(r.status, 200);
+    assert.equal(r.body.me.admin, true);
+    assert.equal((await api('users')).body.emergency, true);
+});

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "news": {
+      "0.6.0": {
+        "en": "Users: login per device, rights per user (admin, visible pages, switching, doorbell/intercom), checked by the server; emergency switch in the instance settings",
+        "de": "Benutzer: Anmeldung pro Gerät, Rechte pro Benutzer (Administrator, sichtbare Seiten, Schalten, Klingel/Sprechanlage), vom Server geprüft; Notfall-Schalter in den Instanz-Einstellungen"
+      },
       "0.5.0": {
         "en": "Heating tile becomes a room controller: operating mode switch with feedback, actual and set temperature with feedback, humidity, heating/valve, window, setpoint limits",
         "de": "Heizungs-Kachel wird zum Raumregler: Betriebsart umschalten mit Rückmeldung, Ist- und Sollwert mit Rückmeldung, Luftfeuchte, Heizen/Stellgröße, Fenster, Grenzen für den Sollwert"
@@ -85,7 +89,8 @@
     "httpsPort": 8099,
     "publicHost": "",
     "accessKey": "",
-    "allowEdit": true
+    "allowEdit": true,
+    "usersOff": false
   },
   "protectedNative": [
     "accessKey"
