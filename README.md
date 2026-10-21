@@ -197,6 +197,11 @@ normalen Mitteilungen funktionieren. Es muss **kein Port** im Router geöffnet w
 4. **iPhone** (im WLAN): in Safari `https://meinhaus.duckdns.org:8099/` öffnen → Teilen →
    **Zum Home-Bildschirm** → von dort starten → ⚙ **Mitteilungen aktivieren**.
 
+Firmen-Handys lassen verschlüsselte Verbindungen oft nur über den Standard-Port durch: dann in der
+Instanz **Port (HTTPS) = 443** einstellen und `https://meinhaus.duckdns.org/` (ohne Port) öffnen.
+Kommt im acme-Log „KeyID header contained an invalid account URL“, stammt das gespeicherte Konto vom
+Testserver (Staging): acme-Instanz löschen, neu anlegen, Staging aus.
+
 Lädt die Adresse im WLAN nicht, blockiert der Router Namen, die auf eine Heimnetz-Adresse zeigen
 (DNS-Rebind-Schutz, z. B. FRITZ!Box: Heimnetz → Netzwerk → Netzwerkeinstellungen →
 „DNS-Rebind-Schutz“) – dort `meinhaus.duckdns.org` als Ausnahme eintragen. Geräte, die das eigene

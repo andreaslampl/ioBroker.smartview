@@ -92,6 +92,11 @@ switches/buttons on them.
 - 0.8.1 field: "Timers is not defined" on the PC via the duckdns name - app.js started before the later
   scripts had loaded (fetch answered while timers.js was still downloading); now starts on
   DOMContentLoaded (reproduced with a delayed timers.js in Playwright).
+- 0.8.1 field, confirmed: Web Push works on the owner's company iPhone with the Let's Encrypt route
+  (DuckDNS name -> LAN IP, acme DNS-01 DuckDNS, collection "Donauschwabe" - case matters).
+  Pitfalls seen: acme still had its example collection and staging on; a stored staging account gave
+  "KeyID header contained an invalid account URL" -> deleting/re-creating the acme instance fixed it.
+  The company iPhone could not reach https on 8099 (http 8098 worked) -> HTTPS port 443 solved it.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions
