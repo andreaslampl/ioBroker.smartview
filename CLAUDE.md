@@ -69,6 +69,9 @@ switches/buttons on them.
   server only knows the saved layout); gone after saving. Fixed + `intercomTarget()` now also tries
   the objects and the instance settings (port, same host), logs what is missing, caches 60 s.
 - 0.4.0: owner asked for a time switch with weekdays and astro on every switch/dimmer/blind.
+- 0.5.0: owner asked for a real heating control: thermostat tile = room controller (setStatus, humidity,
+  mode + modeStatus with KNX HVAC defaults or `modes` texts or common.states, heating bool or valve %,
+  window, min/max). Only state and mode are writable.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

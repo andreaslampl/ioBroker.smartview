@@ -42,7 +42,7 @@ ausschalten.
 | Rollladen | Position, optional Stopp, Rückmeldung; „100 % = geschlossen“ für KNX | ▲ ■ ▼, antippen = Schieberegler |
 | Anzeige | beliebiger Wert mit Einheit, Texte (`true=Offen;false=Zu`), rot hervorheben | antippen = Details |
 | Taste | schreibt einen festen Wert (Szene, Tor-Impuls), optional mit Rückfrage | antippen |
-| Heizung | Sollwert, optional Istwert | antippen = − / + |
+| Heizung / Raumregler | Sollwert, optional: Rückmeldung Sollwert, Raumtemperatur, Luftfeuchte, Betriebsart + Rückmeldung, Heizt/Stellgröße, Fenster | antippen = − / +, Betriebsart umschalten |
 | Kamera | Kamera aus dem livecam-Adapter | antippen = Vollbild |
 | Link | andere Webseite (z. B. Sonos-Radio, Kamerawand) | antippen = öffnet sie |
 | Seite öffnen | – (Menü-Knopf für eine SmartView-Seite) | antippen = wechselt zur Seite |
@@ -52,6 +52,19 @@ ausschalten.
 Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.
 „Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
 erscheinen als Text.
+
+### Heizung / Raumregler
+
+Nur der Sollwert ist Pflicht, alles andere kommt dazu, wenn es eingetragen ist:
+
+- **Betriebsart**: Knöpfe zum Umschalten, der aktive ist blau (aus der Rückmeldung). Standard sind die
+  KNX-HVAC-Modi `1=Komfort;2=Standby;3=Nacht;4=Frostschutz`; hat der Datenpunkt eigene Texte, werden
+  diese verwendet. Eigene Liste im Feld „Betriebsarten“, z. B. `0=Aus;1=Heizen;2=Kühlen`.
+- **Rückmeldung Sollwert**: angezeigt wird der Wert, den der Regler meldet (nach einem Tastendruck
+  kurz der gesendete Wert).
+- **Heizt gerade / Stellgröße**: Ein/Aus oder Ventilstellung in % – die Kachel leuchtet, solange geheizt wird.
+- Raumtemperatur, Luftfeuchte und „Fenster offen“ stehen klein auf der Kachel und groß im Bedienfeld.
+- **Sollwert min./max.**: Grenzen für − / + (leer = vom Datenpunkt).
 
 ### Zeitschaltuhr
 

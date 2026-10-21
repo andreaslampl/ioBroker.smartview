@@ -124,7 +124,7 @@ function tileIcon(t) {
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop'].map(k => t[k]).concat((t.rows || []).map(r => r.state)).filter(Boolean);
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window'].map(k => t[k]).concat((t.rows || []).map(r => r.state)).filter(Boolean);
 }
 
 // ---------------- tile logic ----------------
@@ -206,12 +206,72 @@ function press(t) {
 
 function thermoStep(t, dir) {
   const step = t.step || 0.5;
-  const cur = toNum(val(t.state));
+  const cur = toNum(val(thermoSetId(t)));
   const s = st(t.state) || {};
+  const min = t.min !== undefined ? t.min : s.min;
+  const max = t.max !== undefined ? t.max : s.max;
   let next = Math.round((cur + dir * step) * 100) / 100;
-  if (s.min !== undefined && s.min !== null) next = Math.max(s.min, next);
-  if (s.max !== undefined && s.max !== null) next = Math.min(s.max, next);
+  if (min !== undefined && min !== null) next = Math.max(min, next);
+  if (max !== undefined && max !== null) next = Math.min(max, next);
   send(t.state, next);
+}
+
+/** Setpoint shown: the controller's feedback when there is one (until a command is pending). */
+function thermoSetId(t) {
+  const cmd = st(t.state);
+  if (!t.setStatus || (cmd && cmd.ack === false && Date.now() - (cmd.ts || 0) < 10000)) return t.state;
+  return t.setStatus;
+}
+
+/** Operating modes as [[value, text]]: own texts, texts of the data point, or KNX HVAC modes. */
+function thermoModes(t) {
+  let map = parseTexts(t.modes);
+  if (!Object.keys(map).length) {
+    const s = st(t.modeStatus) || st(t.mode) || {};
+    map = s.states && typeof s.states === 'object' && Object.keys(s.states).length ? s.states : { 1: 'Komfort', 2: 'Standby', 3: 'Nacht', 4: 'Frostschutz' };
+  }
+  return Object.entries(map).map(([k, v]) => [k, String(v)]);
+}
+
+function thermoMode(t) {
+  const id = t.modeStatus || t.mode;
+  if (!id) return null;
+  const v = val(id);
+  if (v === null || v === undefined) return { key: '', text: '–' };
+  const hit = thermoModes(t).find(([k]) => k === String(v));
+  return { key: String(v), text: hit ? hit[1] : String(v) };
+}
+
+/** Heating: on/off data point or valve position in %. */
+function thermoHeat(t) {
+  if (!t.heating) return null;
+  const v = val(t.heating);
+  if (typeof v === 'number' || (typeof v === 'string' && v !== '' && Number.isFinite(Number(v)))) {
+    const n = Math.round(Number(v));
+    return { on: n > 0, text: n > 0 ? 'Heizt ' + n + ' %' : 'Ventil zu' };
+  }
+  return { on: truthy(v), text: truthy(v) ? 'Heizt' : 'Heizt nicht' };
+}
+
+function thermoWindowOpen(t) {
+  return Boolean(t.window) && truthy(val(t.window));
+}
+
+/** Short info for tiles and rows: mode, humidity, heating, window. */
+function thermoChips(t) {
+  const out = [];
+  const m = thermoMode(t);
+  if (m) out.push(m.text);
+  if (t.humidity) out.push(fmt({ decimals: 0, unit: '%' }, t.humidity).text + ' % rF');
+  const h = thermoHeat(t);
+  if (h && h.on) out.push('🔥');
+  if (thermoWindowOpen(t)) out.push('Fenster offen');
+  return out;
+}
+
+function sendMode(t, key) {
+  const s = st(t.mode) || {};
+  send(t.mode, s.type !== 'string' && key !== '' && Number.isFinite(Number(key)) ? Number(key) : key);
 }
 
 /** Highlight state of a tile: 'on', 'alert' or ''. */
@@ -219,6 +279,7 @@ function tileState(t) {
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'blind') return '';
+  if (t.type === 'thermostat') return thermoHeat(t) && thermoHeat(t).on ? 'on' : '';
   if (t.type === 'value' && t.highlight && t.highlight !== 'none') {
     const s = st(t.state);
     if (!s || s.val === null || s.val === undefined) return '';
@@ -476,9 +537,10 @@ function fillRow(el, t) {
         (t.stop ? '<button type="button" data-a="stop">STOPP</button>' : '') + '<span class="lval">' + blindText(t) + '</span>';
       break;
     case 'thermostat': {
-      const f = fmt({ decimals: 1, unit: t.unit }, t.state);
+      const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
       const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
-      ctl = (a ? '<span class="lsub">Ist ' + esc(a.text) + ' ' + esc(a.unit || '°C') + '</span>' : '') +
+      const sub = (a ? ['Ist ' + a.text + ' ' + (a.unit || '°C')] : []).concat(thermoChips(t)).join(' · ');
+      ctl = (sub ? '<span class="lsub">' + esc(sub) + '</span>' : '') +
         '<button type="button" data-a="minus" aria-label="weniger">' + icon('minus') + '</button><span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span><button type="button" data-a="plus" aria-label="mehr">' + icon('plus') + '</button>';
       break;
     }
@@ -575,10 +637,12 @@ function fillTile(el, t) {
       break;
     case 'thermostat': {
       // tap opens the sheet with − / +
-      const f = fmt({ decimals: 1, unit: t.unit }, t.state);
+      const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
       const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
+      const chips = thermoChips(t);
       html = '<div class="row1">' + ic + '<span class="tval">' + (a ? 'Ist ' + esc(a.text) + ' ' + esc(a.unit || '°C') : '') + '</span></div>' +
-        '<div class="big">' + esc(f.text) + '<small>' + esc(f.unit || '°C') + '</small></div>' + label;
+        '<div class="big">' + esc(f.text) + '<small>' + esc(f.unit || '°C') + '</small></div>' +
+        (chips.length ? '<div class="tsub">' + esc(chips.join(' · ')) + '</div>' : '') + label;
       break;
     }
     case 'camera':
@@ -639,6 +703,7 @@ function bindControls(el, t) {
       else if (a === 'stop') send(t.stop, true);
       else if (a === 'plus') thermoStep(t, 1);
       else if (a === 'minus') thermoStep(t, -1);
+      else if (a === 'mode') sendMode(t, b.dataset.v);
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
@@ -834,10 +899,23 @@ function fillSheet(sh, t) {
       (t.stop ? '<button type="button" data-a="stop">' + icon('stop') + 'Stopp</button>' : '') +
       '<button type="button" data-a="down">' + icon('down') + 'Ab</button></div>';
   } else if (t.type === 'thermostat') {
-    const f = fmt({ decimals: 1, unit: t.unit }, t.state);
-    const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
-    body = '<div class="bigval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</div>' + (a ? '<p class="muted" style="text-align:center">Ist: ' + esc(a.text) + ' ' + esc(a.unit || '°C') + '</p>' : '') +
-      '<div class="row"><button type="button" data-a="minus">' + icon('minus') + '</button><button type="button" data-a="plus">' + icon('plus') + '</button></div>';
+    const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
+    const u = x => esc(x.unit || '°C');
+    const info = [];
+    if (t.status) {
+      const a = fmt({ decimals: 1, unit: t.unit }, t.status);
+      info.push(['Raumtemperatur', esc(a.text) + ' ' + u(a)]);
+    }
+    if (t.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0, unit: '%' }, t.humidity).text) + ' %']);
+    const m = thermoMode(t);
+    if (m) info.push(['Betriebsart', esc(m.text)]);
+    const h = thermoHeat(t);
+    if (h) info.push(['Heizung', esc(h.text)]);
+    if (t.window) info.push(['Fenster', thermoWindowOpen(t) ? '<span class="bad">offen</span>' : 'zu']);
+    body = '<p class="muted" style="text-align:center;margin:0">Soll</p><div class="bigval">' + esc(f.text) + ' ' + u(f) + '</div>' +
+      '<div class="row"><button type="button" data-a="minus" aria-label="kälter">' + icon('minus') + '</button><button type="button" data-a="plus" aria-label="wärmer">' + icon('plus') + '</button></div>' +
+      (t.mode ? '<div class="row modes">' + thermoModes(t).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (m && m.key === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'value') {
     const f = fmt(t, t.state);
     const s = st(t.state);

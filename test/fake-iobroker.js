@@ -108,6 +108,11 @@ function demoHouse(a, camBase) {
     a.add('knx.0.EG.Fenster.Kueche', { name: 'Fenster Küche', type: 'boolean', role: 'sensor.window', write: false }, true);
     a.add('knx.0.EG.Temperatur.Wohnzimmer', { name: 'Temperatur Wohnzimmer', type: 'number', role: 'value.temperature', unit: '°C', write: false }, 21.4);
     a.add('knx.0.EG.Heizung.Wohnzimmer_Soll', { name: 'Sollwert Wohnzimmer', type: 'number', role: 'level.temperature', unit: '°C', min: 15, max: 28, write: true }, 21.5);
+    a.add('knx.0.EG.Heizung.Wohnzimmer_Soll_Status', { name: 'Sollwert Wohnzimmer Status', type: 'number', role: 'value.temperature', unit: '°C', write: false }, 21.5);
+    a.add('knx.0.EG.Heizung.Wohnzimmer_Betriebsart', { name: 'Betriebsart Wohnzimmer', type: 'number', role: 'level.mode', states: { 1: 'Komfort', 2: 'Standby', 3: 'Nacht', 4: 'Frostschutz' }, write: true }, 1);
+    a.add('knx.0.EG.Heizung.Wohnzimmer_Betriebsart_Status', { name: 'Betriebsart Wohnzimmer Status', type: 'number', role: 'value', write: false }, 1);
+    a.add('knx.0.EG.Heizung.Wohnzimmer_Stellgroesse', { name: 'Stellgröße Wohnzimmer', type: 'number', role: 'value.valve', unit: '%', write: false }, 35);
+    a.add('knx.0.EG.Feuchte.Wohnzimmer', { name: 'Luftfeuchte Wohnzimmer', type: 'number', role: 'value.humidity', unit: '%', write: false }, 47.2);
     a.add('spc-edp.0.areas.1.state', { name: 'Bereich Garage', type: 'number', role: 'value', states: { 0: 'Unscharf', 1: 'Intern scharf', 3: 'Scharf' }, write: false }, 0);
     a.add('0_userdata.0.Szene.Fernsehen', { name: 'Szene Fernsehen', type: 'boolean', role: 'button', write: true }, false);
     a.add('dimplex-nwpm.0.values.Vorlauf', { name: 'Vorlauftemperatur', type: 'number', role: 'value.temperature', unit: '°C', write: false }, 34.25);

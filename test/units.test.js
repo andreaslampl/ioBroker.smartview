@@ -87,6 +87,22 @@ test('layout: optional parts - list pages, menu and multi-value tiles, date, hid
     assert.ok(!write.includes('w.0.ost'), 'values of a multi tile are read only');
 });
 
+test('layout: room controller - setpoint and operating mode writable, feedback read only, limits', () => {
+    const l = cleanLayout({
+        pages: [{ id: 'p', tiles: [{ id: 'h', type: 'thermostat', state: 'knx.0.soll', setStatus: 'knx.0.soll_st', status: 'knx.0.ist',
+            humidity: 'knx.0.rf', mode: 'knx.0.mode', modeStatus: 'knx.0.mode_st', heating: 'knx.0.valve', window: 'knx.0.win',
+            min: '16', max: 26, modes: '1=Komfort;3=Nacht', step: 0.5, bogus: 'x' }] }],
+    });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.min, 16);
+    assert.equal(t.max, 26);
+    assert.equal(t.modes, '1=Komfort;3=Nacht');
+    assert.equal(t.bogus, undefined);
+    const { read, write } = stateIds(l);
+    assert.deepEqual(write.sort(), ['knx.0.mode', 'knx.0.soll']);
+    assert.equal(read.length, 8);
+});
+
 test('push rules: fire when the condition becomes true, not again while it stays true', () => {
     assert.equal(triggers({ cond: 'true' }, true, false), true);
     assert.equal(triggers({ cond: 'true' }, true, true), false);

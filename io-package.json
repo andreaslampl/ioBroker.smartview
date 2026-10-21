@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "news": {
+      "0.5.0": {
+        "en": "Heating tile becomes a room controller: operating mode switch with feedback, actual and set temperature with feedback, humidity, heating/valve, window, setpoint limits",
+        "de": "Heizungs-Kachel wird zum Raumregler: Betriebsart umschalten mit Rückmeldung, Ist- und Sollwert mit Rückmeldung, Luftfeuchte, Heizen/Stellgröße, Fenster, Grenzen für den Sollwert"
+      },
       "0.4.0": {
         "en": "Time switch for switch, dimmer and blind tiles: weekdays, fixed time or sunrise/sunset with offset; runs in the adapter. Long press on a tile opens its controls",
         "de": "Zeitschaltuhr für Schalter, Dimmer und Rollläden: Wochentage, feste Uhrzeit oder Sonnenauf-/-untergang mit Verschiebung; schaltet im Adapter. Lange auf eine Kachel drücken öffnet ihre Bedienung"

@@ -310,3 +310,8 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .timers .trow input[type=number] { width: 90px; }
 .timers .trow .grow { flex: 1; }
 .timers .tentry { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; background: var(--bg); }
+/* room controller */
+.tile .tsub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet .row.modes { flex-wrap: wrap; }
+.sheet .row.modes button { flex: 1 1 40%; padding: 11px 0; font-size: 15px; }
+.bad, .mrow b .bad { color: var(--bad); }
