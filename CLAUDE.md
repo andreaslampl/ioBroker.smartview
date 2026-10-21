@@ -89,6 +89,9 @@ switches/buttons on them.
   native.collections[id] {key, cert, chain, domains, tsExpires, staging}; https links use the cert's
   domain; objectChange -> `server.updateCertificate()` = setSecureContext, no restart). Suggested
   route: DuckDNS name with the LAN IP + acme DNS-01 (no port forwarding); router DNS rebind exception.
+- 0.8.1 field: "Timers is not defined" on the PC via the duckdns name - app.js started before the later
+  scripts had loaded (fetch answered while timers.js was still downloading); now starts on
+  DOMContentLoaded (reproduced with a delayed timers.js in Playwright).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

@@ -1214,7 +1214,9 @@ function tickClock() {
   $('clock').textContent = l && l.showDate ? d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(',', '') + '  ' + time : time;
 }
 
-(async () => {
+// start when all scripts (timers.js, intercom.js, users.js, edit.js) are loaded: on a slow first load
+// the layout can arrive before them ("Timers is not defined")
+async function start() {
   $('menuBtn').innerHTML = icon('menu');
   $('editBtn').innerHTML = icon('edit');
   $('menuBtn').onclick = openMenu;
@@ -1248,4 +1250,6 @@ function tickClock() {
     if (e.login) return Users.showLogin(e.title);
     $('main').innerHTML = '<p>Verbindung zum ioBroker fehlgeschlagen: ' + esc(e.message) + '</p>';
   }
-})();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+else start();
