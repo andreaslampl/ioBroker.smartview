@@ -762,52 +762,79 @@ const Editor = (() => {
     help2.className = 'help';
     help2.textContent = 'Eine Mitteilung wird gesendet, wenn die Bedingung eintritt (nicht wiederholt, solange sie erfüllt bleibt). {value} im Text = aktueller Wert. Empfangen: am Gerät im Menü ⚙ „Mitteilungen aktivieren“.';
     body.appendChild(help2);
-    // Telegram (telegram adapter): for phones where no certificate may be installed
-    const tg = l.telegram || { instance: '', users: '', ring: false };
-    const tgSel = field(body, 'Auch über Telegram senden', select([['', 'nein']], tg.instance || ''),
-      'Braucht den Telegram-Adapter in ioBroker (Bot von @BotFather, im Telegram-Chat mit dem Bot einmal /start und dann „/password <Passwort>“ senden). Gut für Handys, auf denen kein Zertifikat installiert werden darf.');
-    api('telegram').then(r => {
-      for (const inst of r.instances) {
-        const o = document.createElement('option');
-        o.value = inst;
-        o.textContent = inst;
-        tgSel.appendChild(o);
-      }
-      if (tg.instance && !r.instances.includes(tg.instance)) {
-        const o = document.createElement('option');
-        o.value = tg.instance;
-        o.textContent = tg.instance + ' (nicht gefunden)';
-        tgSel.appendChild(o);
-      }
-      tgSel.value = tg.instance || '';
-      showTg();
-    }).catch(() => {});
-    const tgBox = document.createElement('div');
-    body.appendChild(tgBox);
-    const tgUsers = field(tgBox, 'Telegram-Empfänger (optional)', textInput(tg.users), 'Vorname oder Telegram-Benutzername, mehrere mit Komma. Leer = alle, die beim Bot angemeldet sind.');
-    const tgRing = check('Beim Läuten ein Foto der Klingel-Kamera per Telegram senden', tg.ring);
-    tgBox.appendChild(tgRing);
-    const tgTest = document.createElement('button');
-    tgTest.type = 'button';
-    tgTest.textContent = 'Telegram testen';
-    tgTest.style.marginTop = '8px';
-    tgTest.onclick = async () => {
-      try {
-        const r = await api('telegram/test', { method: 'POST', body: '{}' });
-        toast(r.sent === null ? 'Telegram-Adapter antwortet nicht – läuft er?' : r.sent ? 'An Telegram gesendet' : 'Nicht gesendet – beim Bot zuerst /start senden', !r.sent);
-      } catch (e) {
-        toast(e.message, true);
-      }
-    };
-    tgBox.appendChild(tgTest);
-    function showTg() {
-      tgBox.hidden = !tgSel.value && !tg.instance;
+    // messengers (telegram / whatsapp-cmb adapter): for phones where no certificate may be installed
+    function messenger(o) {
+      const cfg = o.cfg;
+      const sel = field(body, o.label, select([['', 'nein']], cfg.instance || ''), o.help);
+      const box = document.createElement('div');
+      body.appendChild(box);
+      const who = field(box, o.whoLabel, textInput(cfg[o.whoKey]), o.whoHelp);
+      const ring = check(o.ringLabel, cfg.ring);
+      box.appendChild(ring);
+      const test = document.createElement('button');
+      test.type = 'button';
+      test.textContent = o.name + ' testen';
+      test.style.marginTop = '8px';
+      test.onclick = async () => {
+        try {
+          const r = await api(o.api + '/test', { method: 'POST', body: '{}' });
+          toast(r.sent === null ? o.name + '-Adapter antwortet nicht – läuft er?' : r.sent ? 'An ' + o.name + ' gesendet' : o.failed, !r.sent);
+        } catch (e) {
+          toast(e.message, true);
+        }
+      };
+      box.appendChild(test);
+      let saved = cfg.instance || '';
+      const show = () => {
+        box.hidden = !sel.value && !saved;
+      };
+      sel.addEventListener('change', () => {
+        saved = '';
+        show();
+      });
+      api(o.api).then(r => {
+        for (const inst of r.instances) {
+          const opt = document.createElement('option');
+          opt.value = inst;
+          opt.textContent = inst;
+          sel.appendChild(opt);
+        }
+        if (cfg.instance && !r.instances.includes(cfg.instance)) {
+          const opt = document.createElement('option');
+          opt.value = cfg.instance;
+          opt.textContent = cfg.instance + ' (nicht gefunden)';
+          sel.appendChild(opt);
+        }
+        sel.value = cfg.instance || '';
+        show();
+      }).catch(() => {});
+      show();
+      return () => ({ instance: sel.value, [o.whoKey]: who.value.trim(), ring: ring.input.checked });
     }
-    tgSel.addEventListener('change', () => {
-      tg.instance = '';
-      showTg();
+    const tgGet = messenger({
+      name: 'Telegram',
+      api: 'telegram',
+      cfg: l.telegram || { instance: '', users: '', ring: false },
+      label: 'Auch über Telegram senden',
+      help: 'Braucht den Telegram-Adapter in ioBroker (Bot von @BotFather, im Telegram-Chat mit dem Bot einmal /start und dann „/password <Passwort>“ senden). Gut für Handys, auf denen kein Zertifikat installiert werden darf.',
+      whoKey: 'users',
+      whoLabel: 'Telegram-Empfänger (optional)',
+      whoHelp: 'Vorname oder Telegram-Benutzername, mehrere mit Komma. Leer = alle, die beim Bot angemeldet sind.',
+      ringLabel: 'Beim Läuten ein Foto der Klingel-Kamera per Telegram senden',
+      failed: 'Nicht gesendet – beim Bot zuerst /start senden',
     });
-    showTg();
+    const waGet = messenger({
+      name: 'WhatsApp',
+      api: 'whatsapp',
+      cfg: l.whatsapp || { instance: '', phone: '', ring: false },
+      label: 'Auch über WhatsApp senden',
+      help: 'Braucht den Adapter whatsapp-cmb (CallMeBot) mit API-Key. Nur Text, keine Bilder.',
+      whoKey: 'phone',
+      whoLabel: 'WhatsApp-Nummer (optional)',
+      whoHelp: 'z. B. +43664…; leer = die Nummer aus der whatsapp-cmb-Instanz.',
+      ringLabel: 'Beim Läuten „Es läutet“ per WhatsApp senden',
+      failed: 'Nicht gesendet – API-Key und Nummer in whatsapp-cmb prüfen (Log)',
+    });
 
     const rulesBox = document.createElement('div');
     rulesBox.className = 'rules';
@@ -848,7 +875,19 @@ const Editor = (() => {
         inp.text = field(box, 'Text', textInput(r.text));
         inp.text.placeholder = 'z. B. Tor ist seit 10 Minuten offen ({value})';
         inp.page = field(box, 'Beim Antippen öffnen', select([['', 'Startseite']].concat(SV.draft.pages.map(p => [p.id, p.name])), r.page || ''));
-        inp.via = field(box, 'Senden an', select([['all', 'App + Telegram'], ['app', 'nur App'], ['telegram', 'nur Telegram']], r.via || 'all'), 'Telegram nur, wenn oben eine Telegram-Instanz gewählt ist.');
+        const ch = r.channels || { app: true, telegram: true, whatsapp: true };
+        const lab = document.createElement('label');
+        lab.textContent = 'Senden an';
+        box.appendChild(lab);
+        const row = document.createElement('div');
+        row.className = 'chanrow';
+        inp.channels = {};
+        for (const [k, t] of [['app', 'App'], ['telegram', 'Telegram'], ['whatsapp', 'WhatsApp']]) {
+          const c = check(t, ch[k]);
+          row.appendChild(c);
+          inp.channels[k] = c.input;
+        }
+        box.appendChild(row);
         ruleInputs.push(inp);
         rulesBox.appendChild(box);
       });
@@ -857,7 +896,7 @@ const Editor = (() => {
       add.textContent = '+ Mitteilung';
       add.onclick = () => {
         collectRules();
-        rules.push({ id: newId(rules, 'r'), enabled: true, state: '', cond: 'true', value: '', title: '', text: '', page: '', via: 'all' });
+        rules.push({ id: newId(rules, 'r'), enabled: true, state: '', cond: 'true', value: '', title: '', text: '', page: '', channels: { app: true, telegram: true, whatsapp: true } });
         drawRules();
       };
       rulesBox.appendChild(add);
@@ -865,7 +904,7 @@ const Editor = (() => {
 
     function collectRules() {
       ruleInputs.forEach((inp, i) => {
-        rules[i] = { ...rules[i], enabled: inp.enabled.checked, state: inp.state.value.trim(), cond: inp.cond.value, value: inp.value.value, title: inp.title.value, text: inp.text.value, page: inp.page.value, via: inp.via.value };
+        rules[i] = { ...rules[i], enabled: inp.enabled.checked, state: inp.state.value.trim(), cond: inp.cond.value, value: inp.value.value, title: inp.title.value, text: inp.text.value, page: inp.page.value, channels: { app: inp.channels.app.checked, telegram: inp.channels.telegram.checked, whatsapp: inp.channels.whatsapp.checked } };
       });
     }
     drawRules();
@@ -896,7 +935,8 @@ const Editor = (() => {
       };
       l.ring = { state: ringState.value.trim(), camera: ringCam ? ringCam.value : l.ring.camera, door: door.value.trim(), intercom: icSel.value };
       l.push = rules;
-      l.telegram = { instance: tgSel.value, users: tgUsers.value.trim(), ring: tgRing.input.checked };
+      l.telegram = tgGet();
+      l.whatsapp = waGet();
       d.close();
       render();
     };

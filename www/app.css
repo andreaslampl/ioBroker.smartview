@@ -326,3 +326,4 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .users .pagelist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 10px; }
 .users .buttons { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
 .users .buttons .grow { flex: 1; }
+.form .chanrow { display: flex; gap: 16px; flex-wrap: wrap; }

@@ -431,7 +431,8 @@ test('adapter: push rules also via the telegram adapter, doorbell photo, test bu
     adapter.push.subscribe({ endpoint: 'https://push.example/1', keys: { p256dh: 'x', auth: 'y' } }, 'iPhone');
     const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
     assert.equal(saved.body.telegram.instance, 'telegram.0');
-    assert.equal(saved.body.push[2].via, 'telegram');
+    // older layouts: via 'telegram' -> channels
+    assert.deepEqual(saved.body.push[2].channels, { app: false, telegram: true, whatsapp: false });
     adapter.sent = [];
 
     adapter.change('knx.0.EG.Fenster.Kueche', false);
@@ -497,4 +498,34 @@ test('adapter: Let\'s Encrypt certificate from the acme adapter (nothing to inst
     adapter.objects['system.certificates'].native.collections.default = collection(second);
     adapter.emit('objectChange', 'system.certificates', adapter.objects['system.certificates']);
     await until(async () => (await peer()) !== fp1);
+});
+
+test('adapter: push rules via WhatsApp (whatsapp-cmb, text only), per rule channels, doorbell text', async t => {
+    const { adapter, api } = await startAdapter(t);
+    adapter.objects['system.adapter.whatsapp-cmb.0'] = { type: 'instance', common: { name: 'whatsapp-cmb' } };
+    assert.deepEqual((await api('whatsapp')).body.instances, ['whatsapp-cmb.0']);
+    const layout = {
+        ...LAYOUT,
+        push: [
+            { id: 'r1', state: 'knx.0.EG.Fenster.Kueche', cond: 'false', title: 'Fenster', text: 'Küche zu', page: 'eg', channels: { app: false, telegram: false, whatsapp: true } },
+            { id: 'r2', state: 'knx.0.EG.Licht.Kueche', cond: 'false', title: 'Licht aus', channels: { app: true, telegram: true, whatsapp: false } },
+        ],
+        whatsapp: { instance: 'whatsapp-cmb.0', phone: '+43 664 123', ring: true },
+    };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    assert.equal(saved.whatsapp.phone, '+43664123');
+    adapter.sent = [];
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    adapter.change('knx.0.EG.Licht.Kueche', false);
+    await until(() => adapter.sent.length >= 1);
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(adapter.sent.length, 1);
+    assert.equal(adapter.sent[0].instance, 'whatsapp-cmb.0');
+    assert.equal(adapter.sent[0].message.phone, '+43664123');
+    assert.match(adapter.sent[0].message.text, /^\*Fenster\*\nKüche zu\nhttp:\/\/127\.0\.0\.1:\d+\/#eg$/);
+    adapter.sent = [];
+    adapter.change('livecam.0.intercom.ringing', true);
+    await until(() => adapter.sent.length === 1);
+    assert.match(adapter.sent[0].message.text, /Es läutet/);
+    assert.equal((await api('whatsapp/test', { method: 'POST', body: '{}' })).body.sent, true);
 });

@@ -97,6 +97,9 @@ switches/buttons on them.
   Pitfalls seen: acme still had its example collection and staging on; a stored staging account gave
   "KeyID header contained an invalid account URL" -> deleting/re-creating the acme instance fixed it.
   The company iPhone could not reach https on 8099 (http 8098 worked) -> HTTPS port 443 solved it.
+- 0.9.0: owner asked for WhatsApp too -> whatsapp-cmb adapter (CallMeBot, text only): layout `whatsapp`
+  {instance, phone, ring}; push rules have `channels` {app, telegram, whatsapp} (old `via` migrated in
+  `channels()`); links in messages via `appLink()` (https when the acme certificate is in use).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

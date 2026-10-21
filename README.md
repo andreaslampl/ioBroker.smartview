@@ -218,11 +218,26 @@ Mitteilungen zusätzlich oder stattdessen über **Telegram** kommen:
    `password` bleibt gleich, danach das Passwort aus der telegram-Instanz (z. B. `/password Sonne123`).
 3. In SmartView: ✎ → ⚙ **Allgemein & Mitteilungen** → „Auch über Telegram senden“: `telegram.0`,
    optional Empfänger (Vorname oder Telegram-Benutzername) → **Telegram testen**.
-4. Pro Mitteilung „Senden an“: **App + Telegram**, **nur App** oder **nur Telegram**.
+4. Pro Mitteilung bei „Senden an“ die Haken **App**, **Telegram**, **WhatsApp** setzen.
 
 Die Telegram-Nachricht enthält einen Link „In SmartView öffnen“ (zur gewählten Seite; funktioniert
 im WLAN bzw. mit VPN). Optional schickt SmartView beim Läuten ein **Foto der Klingel-Kamera**.
 `smartview.0.push.message` geht ebenfalls an Telegram.
+
+### WhatsApp
+
+Über den ioBroker-Adapter **whatsapp-cmb** (Dienst CallMeBot, für den privaten Gebrauch kostenlos):
+
+1. Adapter **whatsapp-cmb** installieren. Wie man den API-Key von CallMeBot bekommt, steht in dessen
+   Anleitung (Nummer von CallMeBot als Kontakt speichern, „I allow callmebot to send me messages“
+   schicken). API-Key und eigene Nummer in der whatsapp-cmb-Instanz eintragen.
+2. In SmartView: ✎ → ⚙ **Allgemein & Mitteilungen** → „Auch über WhatsApp senden“: `whatsapp-cmb.0`,
+   optional eine andere Nummer → **WhatsApp testen**.
+3. Pro Mitteilung den Haken **WhatsApp** setzen.
+
+WhatsApp über CallMeBot kann **nur Text** – beim Läuten kommt „🔔 Es läutet“ ohne Foto (das Foto gibt
+es per Telegram). Der Link in den Nachrichten öffnet SmartView (https, wenn das Let's-Encrypt-Zertifikat
+verwendet wird).
 
 ## Touch-PC
 

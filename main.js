@@ -145,6 +145,8 @@ class SmartView extends utils.Adapter {
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
                 telegramInstances: () => this.telegramInstances(),
+                whatsappInstances: () => this.instancesOf('whatsapp-cmb'),
+                whatsappTest: () => this.whatsapp({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – WhatsApp funktioniert.' }),
                 telegramTest: () => this.telegram({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – Telegram funktioniert.' }),
             },
         });
@@ -312,16 +314,25 @@ class SmartView extends utils.Adapter {
                 const title = fill(rule.title, val, role) || this.store.layout.title || 'SmartView';
                 const body = fill(rule.text, val, role) || `${id}: ${fill('{value}', val, role)}`;
                 this.log.info(`Push: ${title} - ${body}`);
-                if (rule.via !== 'telegram') {
+                if (rule.channels.app) {
                     this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
                 }
-                if (rule.via !== 'app') {
+                if (rule.channels.telegram) {
                     this.telegram({ title, body, page: rule.page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+                }
+                if (rule.channels.whatsapp) {
+                    this.whatsapp({ title, body, page: rule.page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
                 }
             }
         }
-        if (id === this.ringStateId() && val && !prev && this.store.layout.telegram.ring) {
-            this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
+        if (id === this.ringStateId() && val && !prev) {
+            if (this.store.layout.telegram.ring) {
+                this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
+            }
+            if (this.store.layout.whatsapp.ring) {
+                const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                this.whatsapp({ title: '🔔 Es läutet', body: time }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+            }
         }
     }
 
@@ -338,13 +349,43 @@ class SmartView extends utils.Adapter {
             return false;
         }
         const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const key = String(this.config.accessKey || '').trim();
-        const link = `${this.urlList.http}${key ? `?key=${encodeURIComponent(key)}` : ''}${page ? `#${encodeURIComponent(page)}` : ''}`;
+        const link = this.appLink(page);
         const msg = { text: `<b>${esc(title)}</b>\n${esc(body)}\n<a href="${esc(link)}">In SmartView öffnen</a>`, parse_mode: 'HTML', disable_web_page_preview: true };
         if (tg.users) {
             msg.user = tg.users;
         }
         return this.tgSend(tg.instance, msg);
+    }
+
+    /** Link to SmartView for messages: https when it has a public certificate, else http. */
+    appLink(page = '') {
+        const trusted = this.server && this.server.certs && this.server.certs.trusted && this.urlList.https;
+        const base = (trusted ? this.urlList.https : this.urlList.http).replace(/:443\/$/, '/');
+        const key = String(this.config.accessKey || '').trim();
+        return `${base}${key ? `?key=${encodeURIComponent(key)}` : ''}${page ? `#${encodeURIComponent(page)}` : ''}`;
+    }
+
+    /** Text through the whatsapp-cmb adapter (CallMeBot: text only, no pictures). */
+    async whatsapp({ title, body, page = '' }) {
+        const wa = this.store.layout.whatsapp;
+        if (!wa.instance) {
+            return false;
+        }
+        const msg = { text: `*${title}*\n${body}\n${this.appLink(page)}` };
+        if (wa.phone) {
+            msg.phone = wa.phone;
+        }
+        return new Promise(resolve => {
+            const timer = setTimeout(() => resolve(null), 20000);
+            this.sendTo(wa.instance, 'send', msg, res => {
+                clearTimeout(timer);
+                if (res && res.error) {
+                    this.log.warn(`WhatsApp: not sent (${typeof res.error === 'string' ? res.error.slice(0, 200) : JSON.stringify(res.error)})`);
+                    return resolve(false);
+                }
+                resolve(true);
+            });
+        });
     }
 
     /** sendTo the telegram adapter; resolves with its answer (number of users) or null after 15 s. */
@@ -403,6 +444,7 @@ class SmartView extends utils.Adapter {
             // plain text
         }
         await this.telegram({ title: msg.title, body: msg.body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+        await this.whatsapp({ title: msg.title, body: msg.body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
     }
 
     // ---------------- editor helpers ----------------
@@ -525,11 +567,15 @@ class SmartView extends utils.Adapter {
         return t;
     }
 
-    async telegramInstances() {
-        const objs = await this.getForeignObjectsAsync('system.adapter.telegram.*', 'instance').catch(() => ({}));
+    telegramInstances() {
+        return this.instancesOf('telegram');
+    }
+
+    async instancesOf(adapter) {
+        const objs = await this.getForeignObjectsAsync(`system.adapter.${adapter}.*`, 'instance').catch(() => ({}));
         return Object.keys(objs || {})
             .map(id => id.replace('system.adapter.', ''))
-            .filter(id => /^telegram\.\d+$/.test(id))
+            .filter(id => new RegExp(`^${adapter}\\.\\d+$`).test(id))
             .sort();
     }
 
