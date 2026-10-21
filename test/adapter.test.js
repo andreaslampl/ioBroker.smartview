@@ -56,12 +56,13 @@ function freePort() {
     });
 }
 
-async function startAdapter(t, config = {}) {
+async function startAdapter(t, config = {}, before = () => {}) {
     const port = await freePort();
     const httpsPort = await freePort();
     const cam = await fakeLivecam();
     const adapter = require('../main.js')({ config: { port, httpsPort, publicHost: '127.0.0.1', ...config } });
     demoHouse(adapter, cam.base);
+    before(adapter);
     const pushed = [];
     adapter.pushSender = async (sub, payload) => pushed.push(JSON.parse(payload));
     adapter.emit('ready');
@@ -465,4 +466,35 @@ test('adapter: push rules also via the telegram adapter, doorbell photo, test bu
     adapter.sent = [];
     adapter.change('smartview.0.push.message', 'Hallo', false);
     await until(() => adapter.sent.length === 1);
+});
+
+test('adapter: Let\'s Encrypt certificate from the acme adapter (nothing to install), renewed without restart', async t => {
+    const { createCa, createServerCert } = require('../lib/certs');
+    const le = createCa('Fake LE');
+    const first = createServerCert(le, ['home.example.org']);
+    const collection = c => ({ from: 'system.adapter.acme.0', key: c.key, cert: c.cert, chain: [c.cert, le.cert], domains: ['home.example.org'], staging: false, tsExpires: Date.now() + 80 * 86400000 });
+    const { adapter, httpsPort, base } = await startAdapter(t, { certCollection: 'default', publicHost: '127.0.0.1' }, a => {
+        a.objects['system.certificates'] = { type: 'config', common: {}, native: { collections: { default: collection(first) } } };
+    });
+    // links use the domain of the certificate
+    assert.match(adapter.foreign['smartview.0.info.httpsUrl'].val, /^https:\/\/home\.example\.org:\d+\/$/);
+    const peer = () =>
+        new Promise((resolve, reject) => {
+            // the device trusts the public CA - not the own SmartView CA
+            const req = https.get({ host: '127.0.0.1', servername: 'home.example.org', port: httpsPort, path: '/manifest.json', ca: le.cert, agent: false }, res => {
+                const fp = res.socket.getPeerCertificate().fingerprint256;
+                res.resume();
+                resolve(fp);
+            });
+            req.on('error', reject);
+        });
+    const fp1 = await peer();
+    assert.ok(fp1);
+    assert.match(await (await fetch(base + 'zertifikat')).text(), /nichts installiert werden/);
+
+    // acme renews -> new certificate without restart
+    const second = createServerCert(le, ['home.example.org']);
+    adapter.objects['system.certificates'].native.collections.default = collection(second);
+    adapter.emit('objectChange', 'system.certificates', adapter.objects['system.certificates']);
+    await until(async () => (await peer()) !== fp1);
 });

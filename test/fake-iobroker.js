@@ -32,6 +32,10 @@ class FakeAdapter extends EventEmitter {
     subscribeStates(pattern) {
         this.subs.add(`${this.namespace}.${pattern}`);
     }
+    subscribeForeignObjects(pattern) {
+        this.objSubs = this.objSubs || new Set();
+        this.objSubs.add(pattern);
+    }
     sendTo(instance, command, message, callback) {
         this.sent = this.sent || [];
         this.sent.push({ instance, command, message });

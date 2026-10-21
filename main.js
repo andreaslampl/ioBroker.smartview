@@ -64,6 +64,7 @@ class SmartView extends utils.Adapter {
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
+        this.on('objectChange', this.onObjectChange.bind(this));
     }
 
     async onReady() {
@@ -109,6 +110,15 @@ class SmartView extends utils.Adapter {
                 }
             } catch (err) {
                 this.log.error(`Cannot create the certificate, HTTPS is off: ${err.message}`);
+            }
+            // optional: certificate trusted by every device (Let's Encrypt via the acme adapter)
+            this.certCollection = String(this.config.certCollection || '').trim();
+            if (certs && this.certCollection) {
+                certs.trusted = await this.loadCollection();
+                if (certs.trusted) {
+                    this.urlList.https = `https://${this.trustedHost(certs.trusted, publicHost)}:${httpsPort}/`;
+                }
+                this.subscribeForeignObjects('system.certificates');
             }
         }
 
@@ -164,6 +174,52 @@ class SmartView extends utils.Adapter {
         this.log.info(`SmartView at ${this.urlList.http}${this.urlList.https ? ` and ${this.urlList.https}` : ''}`);
         this.subscribeStates('push.message');
         this.pingTimer = setInterval(() => this.server.ping(), 30000);
+    }
+
+    /** Certificate collection (acme adapter) from system.certificates; null if missing/expired. */
+    async loadCollection() {
+        const obj = await this.getForeignObjectAsync('system.certificates').catch(() => null);
+        const c = obj && obj.native && obj.native.collections && obj.native.collections[this.certCollection];
+        if (!c || !c.key || !c.cert) {
+            this.log.warn(`Certificate collection "${this.certCollection}" not found (acme adapter set up?) - using the own SmartView certificate`);
+            return null;
+        }
+        if (c.tsExpires && c.tsExpires < Date.now()) {
+            this.log.warn(`Certificate collection "${this.certCollection}" expired - using the own SmartView certificate`);
+            return null;
+        }
+        const chain = Array.isArray(c.chain) && c.chain.length ? c.chain.join('\n') : c.cert;
+        const domains = Array.isArray(c.domains) ? c.domains.map(String) : [];
+        if (c.staging) {
+            this.log.warn(`Certificate collection "${this.certCollection}" is a Let's Encrypt staging (test) certificate - devices will not trust it`);
+        }
+        this.log.info(`HTTPS uses the certificate "${this.certCollection}" (${domains.join(', ')}), valid until ${c.tsExpires ? new Date(c.tsExpires).toLocaleDateString('de-DE') : '?'}`);
+        return { cert: chain, key: c.key, domains, tsExpires: c.tsExpires || 0 };
+    }
+
+    /** Host name for the https address: the configured address if the certificate covers it. */
+    trustedHost(trusted, publicHost) {
+        const covers = name => trusted.domains.some(d => d === name || (d.startsWith('*.') && name.endsWith(d.slice(1)) && name.split('.').length === d.split('.').length));
+        if (publicHost && covers(publicHost)) {
+            return publicHost;
+        }
+        const name = trusted.domains.find(d => !d.startsWith('*.')) || publicHost || '127.0.0.1';
+        if (publicHost) {
+            this.log.warn(`The address ${publicHost} is not in the certificate (${trusted.domains.join(', ')}) - links use ${name}`);
+        }
+        return name;
+    }
+
+    async onObjectChange(id) {
+        if (id === 'system.certificates' && this.certCollection && this.server && this.server.certs) {
+            const trusted = await this.loadCollection();
+            const old = this.server.certs.trusted;
+            if (trusted && (!old || old.cert !== trusted.cert || old.key !== trusted.key)) {
+                this.server.certs.trusted = trusted;
+                this.server.updateCertificate();
+                this.log.info('HTTPS certificate renewed by the acme adapter - in use without restart');
+            }
+        }
     }
 
     /** Subscribe the data points of the layout and of the push rules. */

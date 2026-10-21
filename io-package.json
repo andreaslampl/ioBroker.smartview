@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "news": {
+      "0.8.0": {
+        "en": "HTTPS can use a Let's Encrypt certificate from the acme adapter: push notifications without installing a certificate on the devices; renewed without restart",
+        "de": "HTTPS kann ein Let's-Encrypt-Zertifikat des acme-Adapters verwenden: Mitteilungen ohne Zertifikat-Installation auf den Geräten; Erneuerung ohne Neustart"
+      },
       "0.7.0": {
         "en": "Notifications also via the telegram adapter (per rule: app, telegram or both), doorbell photo via telegram - for phones without the certificate",
         "de": "Mitteilungen auch über den Telegram-Adapter (pro Regel: App, Telegram oder beides), Foto beim Läuten per Telegram – für Handys ohne Zertifikat"
@@ -94,7 +98,8 @@
     "publicHost": "",
     "accessKey": "",
     "allowEdit": true,
-    "usersOff": false
+    "usersOff": false,
+    "certCollection": ""
   },
   "protectedNative": [
     "accessKey"

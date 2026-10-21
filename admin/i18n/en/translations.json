@@ -10,5 +10,7 @@
   "Allow editing in the app": "Allow editing in the app",
   "Switch off when the layout is finished, so nobody changes it by accident": "Switch off when the layout is finished, so nobody changes it by accident",
   "Switch users off (emergency, e.g. forgotten password)": "Switch users off (emergency, e.g. forgotten password)",
-  "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it."
+  "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.",
+  "Certificate collection of the acme adapter (optional)": "Certificate collection of the acme adapter (optional)",
+  "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.": "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below."
 }

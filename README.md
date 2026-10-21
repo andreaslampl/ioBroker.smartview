@@ -179,6 +179,29 @@ einmal, wenn die Bedingung eintritt.
 Aus Skripten/Blockly/Logik: Datenpunkt `smartview.0.push.message` mit Text beschreiben oder mit
 JSON `{"title": "Alarm", "text": "Garage offen", "page": "garage"}`.
 
+### Echtes Zertifikat (Let's Encrypt) – nichts am iPhone installieren
+
+Darf auf einem Handy kein Zertifikat installiert werden (z. B. Firmen-iPhone), kann SmartView ein
+öffentliches Let's-Encrypt-Zertifikat verwenden. Dem vertraut jedes Gerät von selbst, und die
+normalen Mitteilungen funktionieren. Es muss **kein Port** im Router geöffnet werden.
+
+1. **Kostenloser Name bei DuckDNS:** auf duckdns.org anmelden, eine Subdomain anlegen
+   (z. B. `meinhaus.duckdns.org`) und bei „current ip“ die **Heimnetz-Adresse des ioBroker**
+   eintragen (z. B. `192.168.1.x`). Den **Token** von dort braucht der nächste Schritt.
+   (Eine eigene Domain bei einem anderen Anbieter geht auch, wenn der acme-Adapter ihn unterstützt.)
+2. **ioBroker-Adapter acme** installieren: E-Mail, Domain `meinhaus.duckdns.org`, Challenge
+   **DNS-01** mit **DuckDNS** und dem Token, Sammlung (Collection) z. B. `default`.
+   Der Adapter holt das Zertifikat und erneuert es selbst.
+3. **SmartView-Instanz:** „Zertifikats-Sammlung des acme-Adapters“ = `default`, „Adresse des
+   ioBroker-Servers“ = `meinhaus.duckdns.org`. Instanz neu starten.
+4. **iPhone** (im WLAN): in Safari `https://meinhaus.duckdns.org:8099/` öffnen → Teilen →
+   **Zum Home-Bildschirm** → von dort starten → ⚙ **Mitteilungen aktivieren**.
+
+Lädt die Adresse im WLAN nicht, blockiert der Router Namen, die auf eine Heimnetz-Adresse zeigen
+(DNS-Rebind-Schutz, z. B. FRITZ!Box: Heimnetz → Netzwerk → Netzwerkeinstellungen →
+„DNS-Rebind-Schutz“) – dort `meinhaus.duckdns.org` als Ausnahme eintragen. Geräte, die das eigene
+SmartView-Zertifikat installiert haben, öffnen SmartView dann ebenfalls über den neuen Namen.
+
 ### Telegram (ohne Zertifikat)
 
 Für Handys, auf denen kein Zertifikat installiert werden darf (z. B. Firmen-iPhone), können die
@@ -208,6 +231,7 @@ Mit `?device=touch` bzw. `?device=phone` lässt sich die Darstellung erzwingen.
 | --- | --- |
 | Port (HTTP) | Standard 8098 |
 | HTTPS / Port (HTTPS) | eigenes Zertifikat, Standard 8099 – nötig für Mitteilungen |
+| Zertifikats-Sammlung des acme-Adapters | optional: Let's-Encrypt-Zertifikat statt des eigenen (siehe oben) |
 | Adresse des ioBroker-Servers | leer = automatisch; kommt auch ins Zertifikat |
 | Zugriffsschlüssel | optional; dann auf jedem Gerät einmal mit `?key=…` öffnen |
 | Bearbeiten erlauben | aus = Ansicht kann in der App nicht mehr geändert werden |

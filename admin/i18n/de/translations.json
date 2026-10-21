@@ -10,5 +10,7 @@
   "Allow editing in the app": "Bearbeiten in der App erlauben",
   "Switch off when the layout is finished, so nobody changes it by accident": "Ausschalten, wenn alles eingerichtet ist, damit niemand versehentlich etwas ändert",
   "Switch users off (emergency, e.g. forgotten password)": "Benutzer ausschalten (Notfall, z. B. Passwort vergessen)",
-  "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Benutzer werden in der App eingerichtet (Menü → Benutzer). Nur anhaken, um ohne Passwort wieder hineinzukommen, dann ein neues Passwort setzen und den Haken wieder entfernen."
+  "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Benutzer werden in der App eingerichtet (Menü → Benutzer). Nur anhaken, um ohne Passwort wieder hineinzukommen, dann ein neues Passwort setzen und den Haken wieder entfernen.",
+  "Certificate collection of the acme adapter (optional)": "Zertifikats-Sammlung des acme-Adapters (optional)",
+  "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.": "Leer = eigenes SmartView-Zertifikat (einmal pro Gerät installieren). Mit einem Let's-Encrypt-Zertifikat des acme-Adapters (z. B. Sammlung „default“) muss auf den Geräten nichts installiert werden; dann unten die Domain als Adresse eintragen."
 }

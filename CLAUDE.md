@@ -84,6 +84,11 @@ switches/buttons on them.
   telegram adapter (layout `telegram` {instance, users, ring}, rule `via` all/app/telegram; sendTo
   'send' with HTML text + link to SmartView; ring = camera jpg as Buffer type photo; `tgSend` resolves
   null after 15 s if the adapter does not answer). Owner wanted both (app push + telegram).
+- 0.8.0: owner still wanted real Web Push on the company iPhone -> optional Let's Encrypt certificate from
+  the acme adapter (instance option `certCollection`; read from `system.certificates`
+  native.collections[id] {key, cert, chain, domains, tsExpires, staging}; https links use the cert's
+  domain; objectChange -> `server.updateCertificate()` = setSecureContext, no restart). Suggested
+  route: DuckDNS name with the LAN IP + acme DNS-01 (no port forwarding); router DNS rebind exception.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

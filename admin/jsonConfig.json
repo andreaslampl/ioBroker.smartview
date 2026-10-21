@@ -30,6 +30,15 @@
       "xs": 12,
       "sm": 3
     },
+    "certCollection": {
+      "type": "text",
+      "label": "Certificate collection of the acme adapter (optional)",
+      "help": "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.",
+      "hidden": "!data.https",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
     "publicHost": {
       "type": "text",
       "label": "Address of the ioBroker server (optional)",
