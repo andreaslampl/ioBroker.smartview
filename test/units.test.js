@@ -257,3 +257,23 @@ test('timers: fire once at the time on the chosen weekdays, sun times with offse
     // without a location sun entries never fire but the rest works
     assert.equal(again.list()['start/l1'].entries[1].next, null);
 });
+
+test('homekit: tiles <-> homekit-easy devices', () => {
+    const { toDevice, toTile, devicesFor } = require('../lib/homekit');
+    const page = { id: 'eg', name: 'EG' };
+    assert.deepEqual(toDevice({ id: 'h', type: 'thermostat', label: 'Bad', state: 'a', status: 'b', heating: 'c', min: 16, homekit: 'thermostat' }, page), {
+        id: 'sv-eg-h', type: 'thermostat', name: 'Bad', state: 'a', heating: 'c', min: 16, actual: 'b',
+    });
+    // without a data point / camera nothing is created
+    assert.equal(toDevice({ id: 's', type: 'switch', homekit: 'light' }, page), null);
+    assert.equal(toDevice({ id: 'c', type: 'camera', camera: 'http://x', homekit: 'camera' }, page), null);
+    assert.equal(toDevice({ id: 'c', type: 'camera', camera: 'livecam.0.cameras.tuer', homekit: 'camera' }, page).camera, 'livecam.0.cameras.tuer');
+    // long ids stay valid for homekit-easy
+    assert.match(toDevice({ id: 'x'.repeat(40), type: 'switch', state: 's', homekit: 'switch' }, page).id, /^sv-[0-9a-f]{16}$/);
+    // inverted contact: texts swapped; doorbell becomes a plain camera tile
+    assert.equal(toTile({ id: 'k', type: 'contact', name: 'Tür', state: 's', invert: true }).texts, 'true=zu;false=offen');
+    const bell = toTile({ id: 'd', type: 'doorbell', name: 'Klingel', camera: 'livecam.0.cameras.tuer', ring: 'r' });
+    assert.deepEqual([bell.type, bell.homekit, bell.hkId], ['camera', undefined, undefined]);
+    // two tiles linked to the same device: only one device
+    assert.equal(devicesFor({ pages: [{ id: 'a', tiles: [{ id: '1', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }, { id: '2', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }] }] }).length, 1);
+});

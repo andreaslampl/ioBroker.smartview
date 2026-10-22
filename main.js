@@ -11,6 +11,7 @@ const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
+const { CHOICES, LABELS, devicesFor, toTile } = require('./lib/homekit');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
 
@@ -141,7 +142,12 @@ class SmartView extends utils.Adapter {
                 cameras: () => this.cameras(),
                 cameraUrl: (id, kind) => this.cameraUrl(id, kind),
                 webBase: () => this.webBase(),
-                layoutChanged: () => this.resubscribe(),
+                layoutChanged: async () => {
+                    await this.resubscribe();
+                    await this.syncHomekit();
+                },
+                homekit: () => this.homekitInfo(),
+                homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
@@ -152,6 +158,9 @@ class SmartView extends utils.Adapter {
             },
         });
         await this.resubscribe();
+        // homekit-easy: devices of tiles with "auch in HomeKit", again whenever homekit-easy (re)starts
+        await this.subscribeForeignStatesAsync('system.adapter.homekit-easy.*.alive');
+        this.hkTimer = setTimeout(() => this.syncHomekit(), 3000);
 
         let ok = false;
         try {
@@ -295,6 +304,14 @@ class SmartView extends utils.Adapter {
             if (state && !state.ack && state.val !== null && state.val !== '') {
                 await this.sendMessage(state.val);
                 await this.setState('push.message', state.val, true);
+            }
+            return;
+        }
+        if (/^system\.adapter\.homekit-easy\.\d+\.alive$/.test(id)) {
+            this.hkCache = null;
+            if (state && state.val === true) {
+                clearTimeout(this.hkTimer);
+                this.hkTimer = setTimeout(() => this.syncHomekit(), 5000);
             }
             return;
         }
@@ -617,9 +634,81 @@ class SmartView extends utils.Adapter {
         return st && typeof st.val === 'string' && /^https?:\/\//.test(st.val) ? st.val : null;
     }
 
+    // ---------------- homekit-easy (lib/homekit.js) ----------------
+
+    /** First homekit-easy instance and whether it runs; cached 60 s. */
+    async homekitInstance() {
+        if (!this.hkCache || Date.now() - this.hkCache.at > 60000) {
+            const [instance] = await this.instancesOf('homekit-easy');
+            const alive = instance ? await this.getForeignStateAsync(`system.adapter.${instance}.alive`).catch(() => null) : null;
+            this.hkCache = { at: Date.now(), instance: instance || '', running: Boolean(alive && alive.val) };
+        }
+        return this.hkCache;
+    }
+
+    /** sendTo homekit-easy; resolves with its answer or {error}. */
+    async hkAsk(command, message) {
+        const { instance, running } = await this.homekitInstance();
+        if (!instance) {
+            return { error: 'homekit-easy ist nicht installiert' };
+        }
+        if (!running) {
+            return { error: `${instance} läuft nicht` };
+        }
+        return new Promise(resolve => {
+            const timer = setTimeout(() => resolve({ error: `${instance} antwortet nicht` }), 10000);
+            this.sendTo(instance, command, message, res => {
+                clearTimeout(timer);
+                resolve(res && typeof res === 'object' ? res : { error: 'keine Antwort' });
+            });
+        });
+    }
+
+    /**
+     * Tiles with "auch in HomeKit" -> devices in homekit-easy. Also sent with an empty list once the
+     * last tick is gone, so homekit-easy removes what SmartView created.
+     */
+    async syncHomekit() {
+        const devices = devicesFor(this.store.layout);
+        if (!devices.length && !this.hkHad) {
+            return null;
+        }
+        const res = await this.hkAsk('sync', { devices });
+        this.hkLast = { at: Date.now(), devices: devices.length, ...res };
+        if (res.error) {
+            this.log.warn(`HomeKit: ${devices.length} device(s) not handed over - ${res.error}`);
+        } else {
+            this.hkHad = devices.length > 0;
+            if (res.created || res.updated || res.removed) {
+                this.log.info(`HomeKit: ${res.created} device(s) created, ${res.updated} updated, ${res.removed} removed in homekit-easy`);
+            }
+        }
+        return this.hkLast;
+    }
+
+    async homekitInfo() {
+        const { instance, running } = await this.homekitInstance();
+        return { instance, running, choices: CHOICES, labels: LABELS, last: this.hkLast || null };
+    }
+
+    /** Devices of homekit-easy that can become tiles (not the ones SmartView created itself). */
+    async homekitDevices() {
+        const res = await this.hkAsk('devices', {});
+        if (res.error) {
+            return res;
+        }
+        const types = res.types || {};
+        return {
+            devices: (res.devices || [])
+                .filter(d => d && d.source !== this.namespace)
+                .map(d => ({ id: d.id, name: d.name, type: d.type, typeLabel: types[d.type] || d.type, tile: toTile(d) })),
+        };
+    }
+
     async onUnload(callback) {
         try {
             clearInterval(this.pingTimer);
+            clearTimeout(this.hkTimer);
             if (this.timers) {
                 this.timers.stop();
             }

@@ -137,6 +137,18 @@ Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht 
 funktionieren sie auch auf der HTTPS-Seite und über VPN. Kachel = Einzelbilder (1 pro Sekunde,
 schont die Verbindungen), Vollbild = Video (MJPEG).
 
+### Apple Home (homekit-easy) – nichts doppelt anlegen
+
+Ist der Adapter **homekit-easy** installiert, hat jede Kachel für Licht/Schalter, Dimmer, Rollladen, Heizung,
+Anzeige (Sensoren) und Kamera den Haken **„auch in Apple Home“** (bei Schaltern und Anzeigen mit Auswahl,
+als was sie in Apple Home erscheinen, z. B. Licht, Steckdose, Temperatursensor, Kontakt). Beim Speichern
+legt homekit-easy das Gerät an und hält es aktuell; Haken weg oder Kachel gelöscht = es verschwindet dort
+wieder. Gibt es dieselbe Beschriftung auf mehreren Seiten (z. B. „Licht“), heißt das Gerät in Apple Home
+„Seite Beschriftung“, z. B. „EG Licht“.
+
+Wer zuerst mit homekit-easy angefangen hat: **✎ → „+ Kachel“ → „Aus homekit-easy übernehmen …“**, Geräte
+anhaken, „Übernehmen“, „Speichern“. Die Kacheln bleiben mit dem Gerät verknüpft.
+
 ## Benutzer
 
 Ohne Benutzer ist SmartView offen für jeden im Heimnetz (wie bisher). Mit Benutzern muss sich jedes

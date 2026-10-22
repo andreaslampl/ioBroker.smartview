@@ -88,6 +88,8 @@ const Editor = (() => {
 
   function start() {
     SV.draft = clone(SV.layout);
+    // homekit-easy installed? then tiles get "auch in Apple Home"
+    api('homekit').then(h => (SV.hk = h)).catch(() => (SV.hk = null));
     SV.editing = true;
     closeCam();
     closeSheet();
@@ -105,15 +107,19 @@ const Editor = (() => {
     render();
   }
 
+  const hasHomekit = l => Boolean(l && l.pages.some(p => p.tiles.some(t => t.homekit)));
+
   async function save() {
     SV.saving = true;
     try {
+      const hk = SV.hk && SV.hk.instance && (hasHomekit(SV.layout) || hasHomekit(SV.draft));
       const saved = await api('layout', { method: 'PUT', body: JSON.stringify(SV.draft) });
       SV.layout = saved;
       SV.editing = false;
       SV.draft = null;
       render();
       toast('Gespeichert');
+      if (hk) homekitResult();
       // reconnect: the server sends the values of newly used data points with the new init
       if (SV.ws) SV.ws.close();
     } catch (e) {
@@ -121,6 +127,119 @@ const Editor = (() => {
     } finally {
       SV.saving = false;
     }
+  }
+
+  /** What homekit-easy did with the tiles after saving. */
+  async function homekitResult() {
+    try {
+      const { last } = await api('homekit');
+      if (!last) return;
+      if (last.error) toast('Gespeichert – Apple Home (homekit-easy): ' + last.error, true);
+      else if (last.created || last.updated || last.removed) {
+        toast('Gespeichert – Apple Home: ' + [[last.created, 'neu'], [last.updated, 'geändert'], [last.removed, 'entfernt']].filter(x => x[0]).map(x => x[0] + ' ' + x[1]).join(', '));
+      }
+    } catch (e) {
+      // only information
+    }
+  }
+
+  // ---------------- homekit-easy ----------------
+
+  /** Sensible HomeKit type for a tile (same rules as lib/homekit.js defaultType). */
+  function hkDefault(t) {
+    const list = SV.hk.choices[t.type];
+    if (t.type === 'switch') return { bulb: 'light', lamp: 'light', socket: 'outlet', fan: 'fan' }[t.icon] || 'switch';
+    if (t.type === 'value') {
+      const unit = String(t.unit || '').toLowerCase();
+      if (unit === '%' || t.icon === 'drop') return 'humidity';
+      if (unit === 'lx' || unit === 'lux') return 'lux';
+      if (unit === 'ppm') return 'co2';
+      return { window: 'contact', door: 'contact', motion: 'motion', fire: 'smoke', water: 'leak' }[t.icon] || 'temperature';
+    }
+    return list[0];
+  }
+
+  /** "auch in Apple Home" in the tile dialog; value = homekit-easy device type or ''. */
+  function homekitField(body, t) {
+    const box = document.createElement('div');
+    box.className = 'hkbox';
+    body.appendChild(box);
+    const c = check('auch in Apple Home (' + SV.hk.instance + ')', Boolean(t.homekit));
+    box.appendChild(c);
+    const list = SV.hk.choices[t.type];
+    const row = document.createElement('div');
+    box.appendChild(row);
+    const sel = list.length > 1 ? field(row, 'in Apple Home als', select(list.map(k => [k, SV.hk.labels[k]]), t.homekit || hkDefault(t))) : null;
+    const h = document.createElement('div');
+    h.className = 'help';
+    h.textContent = t.hkId
+      ? 'Verknüpft mit dem Gerät „' + t.hkId + '“ aus homekit-easy: Änderungen hier gehen beim Speichern auch dorthin. Haken weg = nicht mehr verknüpft, das Gerät bleibt in homekit-easy.'
+      : 'Wird beim Speichern in homekit-easy angelegt und aktuell gehalten (Name = Beschriftung). Haken weg oder Kachel löschen = das Gerät verschwindet dort wieder.' + (SV.hk.running ? '' : ' ' + SV.hk.instance + ' läuft gerade nicht – abgeglichen wird, sobald es läuft.');
+    box.appendChild(h);
+    const show = () => (row.hidden = !c.input.checked);
+    c.input.onchange = show;
+    show();
+    return { type: 'custom', get: () => (c.input.checked ? (sel ? sel.value : list[0]) : '') };
+  }
+
+  /** Take over devices from homekit-easy as tiles of this page. */
+  async function importHomekit(page, done) {
+    const d = dialog('Aus homekit-easy übernehmen');
+    const body = document.createElement('div');
+    body.innerHTML = '<p class="muted">Geräte werden geladen …</p>';
+    d.sh.appendChild(body);
+    let res;
+    try {
+      res = await api('homekit/devices');
+    } catch (e) {
+      res = { error: e.message };
+    }
+    if (res.error) {
+      body.innerHTML = '<p class="hint">' + esc(res.error) + '</p>';
+      return;
+    }
+    const linked = new Set(SV.draft.pages.flatMap(p => p.tiles.map(t => t.hkId).filter(Boolean)));
+    body.textContent = '';
+    const intro = document.createElement('p');
+    intro.className = 'help';
+    intro.textContent = 'Die gewählten Geräte werden Kacheln auf „' + (page.name || 'dieser Seite') + '“ und bleiben mit homekit-easy verknüpft – nichts doppelt anlegen.';
+    body.appendChild(intro);
+    const picks = [];
+    for (const dev of res.devices) {
+      const why = !dev.tile ? 'geht nicht als Kachel' : linked.has(dev.id) ? 'schon in SmartView' : '';
+      const c = check(dev.name + ' – ' + dev.typeLabel + (why ? ' (' + why + ')' : ''), false);
+      c.input.disabled = Boolean(why);
+      if (why) c.classList.add('muted');
+      body.appendChild(c);
+      if (!why) picks.push([c.input, dev]);
+    }
+    if (!res.devices.length) body.insertAdjacentHTML('beforeend', '<p class="muted">In homekit-easy sind noch keine Geräte.</p>');
+    const buttons = document.createElement('div');
+    buttons.className = 'buttons';
+    const all = document.createElement('button');
+    all.type = 'button';
+    all.textContent = 'Alle';
+    all.onclick = () => picks.forEach(([i]) => (i.checked = true));
+    const grow = document.createElement('span');
+    grow.className = 'grow';
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'primary';
+    ok.textContent = 'Übernehmen';
+    ok.onclick = () => {
+      const chosen = picks.filter(([i]) => i.checked).map(([, dev]) => dev);
+      chosen.forEach((dev, n) => {
+        const t = Object.assign({ id: newId(page.tiles, 't'), size: '1', device: 'all' }, dev.tile);
+        if (page.type === 'plan') Object.assign(t, { x: 10 + ((n * 10) % 80), y: 10 + Math.floor(n / 8) * 10 });
+        page.tiles.push(t);
+      });
+      d.close();
+      if (done) done();
+      render();
+      if (chosen.length) toast(chosen.length + ' Kachel(n) übernommen – „Speichern“ nicht vergessen.');
+    };
+    buttons.append(all, grow, ok);
+    body.appendChild(buttons);
   }
 
   // ---------------- dialog helpers ----------------
@@ -409,6 +528,14 @@ const Editor = (() => {
     function build() {
       body.textContent = '';
       for (const k of Object.keys(inputs)) delete inputs[k];
+      if (isNew && SV.hk && SV.hk.instance) {
+        const imp = document.createElement('button');
+        imp.type = 'button';
+        imp.className = 'hkimport';
+        imp.textContent = 'Aus homekit-easy übernehmen …';
+        imp.onclick = () => importHomekit(page, d.close);
+        body.appendChild(imp);
+      }
       const typeSel = field(body, 'Art', select(Object.entries(TYPE_LABELS).filter(([k]) => !(isPlan && k === 'heading')), t.type));
       typeSel.onchange = () => {
         collect();
@@ -437,6 +564,7 @@ const Editor = (() => {
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') iconField(body, t.icon || DEFAULT_ICON[t.type], name => (t.icon = name));
+      if (SV.hk && SV.hk.instance && SV.hk.choices[t.type]) inputs.homekit = homekitField(body, t);
       if (page.type === 'tiles' && t.type !== 'heading') inputs.size = field(body, 'Größe', select([['1', 'normal'], ['w', 'breit (2 Spalten)'], ['l', 'groß (2 × 2)']], t.size || '1'));
       inputs.device = field(body, 'Anzeigen auf', select([['all', 'allen Geräten'], ['phone', 'nur Handy'], ['touch', 'nur Touch-PC / großem Bildschirm']], t.device || 'all'));
 
@@ -476,6 +604,7 @@ const Editor = (() => {
             collect();
             const c = clone(t);
             c.id = newId(page.tiles, 't');
+            delete c.hkId; // the copy gets its own HomeKit device
             const i = page.tiles.findIndex(x => x.id === original.id);
             page.tiles.splice(i + 1, 0, c);
             d.close();
@@ -515,6 +644,10 @@ const Editor = (() => {
         else if (input.type === 'checkbox') t[key] = input.checked;
         else if (input.type === 'number') t[key] = input.value === '' ? undefined : Number(input.value);
         else t[key] = input.value.trim();
+      }
+      if (!t.homekit) {
+        delete t.homekit;
+        delete t.hkId;
       }
     }
     build();

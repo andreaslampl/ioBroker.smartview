@@ -47,6 +47,11 @@ switches/buttons on them.
   5 min late, passed times are not caught up at start. `main.fireTimer` writes like the buttons
   (invert, switchState, closed100). API `GET /api/timers`, `PUT /api/timers/<page>/<tile>`, ws
   `{type:'timers'}`. UI `www/timers.js` (editor, ⏰ badge, long press -> sheet with ⏰ button).
+- `lib/homekit.js` (0.13.0) – link to homekit-easy (0.4.0+): tile `homekit` = device type there (`CHOICES` per
+  tile type), `hkId` = linked existing device (imported), else id `sv-<page>-<tile>`. `devicesFor()` (duplicate
+  labels get the page name), `toTile()` for the import. main.js `syncHomekit()` after each layout save, at start
+  and when `system.adapter.homekit-easy.N.alive` turns true (sendTo 'sync', also once with [] after the last tick
+  is gone); `/api/homekit`, `/api/homekit/devices`. Editor: `homekitField()`, `importHomekit()` (+ Kachel).
 - `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
   pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
   host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims
@@ -115,6 +120,8 @@ switches/buttons on them.
   live, page.tiles sorted on drop; `justDragged()` swallows the click after a drop. Checked in Playwright.
   Field: owner re-added the home screen icon via the DuckDNS name; test push and rule push from a data
   point both arrive on the company iPhone (push is enabled in the app menu, not in iOS settings).
+- 0.13.0: owner asked for "auch homekit easy" so devices are not entered twice (and the other way round for
+  people who started with homekit-easy). Checked in Playwright with the real homekit-easy DeviceStore.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

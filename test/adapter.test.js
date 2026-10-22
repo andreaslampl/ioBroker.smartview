@@ -551,3 +551,78 @@ test('adapter: pictures of the web adapter (VIS) are passed through for the HTML
     assert.equal((await fetch(base + 'web/vis.0/main/project.json')).status, 404, 'only pictures');
     assert.equal((await fetch(base + 'web/vis.0/../../etc/passwd.png')).status, 404);
 });
+
+test('adapter: tiles with "auch in HomeKit" become homekit-easy devices, its devices can become tiles', async t => {
+    const { adapter, api } = await startAdapter(t);
+    // no homekit-easy yet: nothing is sent
+    assert.equal((await api('homekit')).body.instance, '');
+    adapter.objects['system.adapter.homekit-easy.0'] = { type: 'instance', common: { name: 'homekit-easy' } };
+    adapter.foreign['system.adapter.homekit-easy.0.alive'] = { val: true, ack: true };
+    adapter.hkCache = null;
+    const syncs = [];
+    adapter.handlers = {
+        'homekit-easy.0': (command, message) => {
+            if (command === 'sync') {
+                syncs.push(message.devices);
+                return { ok: true, created: message.devices.length, updated: 0, removed: 0 };
+            }
+            return {
+                devices: [
+                    { id: 'own', type: 'light', name: 'Licht Bad', state: 'knx.0.OG.Licht.Bad', status: 'knx.0.OG.Licht.Bad_Status' },
+                    { id: 'temp', type: 'temperature', name: 'Temperatur Bad', state: 'knx.0.OG.Temp.Bad' },
+                    { id: 'gar', type: 'garage', name: 'Garage', command: 'x' },
+                    { id: 'sv-eg-l1', type: 'light', name: 'Licht', state: 'knx.0.EG.Licht.Wohnzimmer', source: 'smartview.0' },
+                ],
+                types: { light: 'Licht (Ein/Aus)', temperature: 'Temperatur', garage: 'Garagentor' },
+            };
+        },
+    };
+    const info = (await api('homekit')).body;
+    assert.deepEqual([info.instance, info.running, info.choices.switch[0]], ['homekit-easy.0', true, 'light']);
+
+    // take over from homekit-easy: own devices only, garage cannot be a tile
+    const hk = (await api('homekit/devices')).body.devices;
+    assert.deepEqual(hk.map(d => d.id), ['own', 'temp', 'gar']);
+    assert.deepEqual(hk[0].tile, { type: 'switch', label: 'Licht Bad', homekit: 'light', hkId: 'own', icon: 'bulb', state: 'knx.0.OG.Licht.Bad', status: 'knx.0.OG.Licht.Bad_Status' });
+    assert.equal(hk[1].tile.unit, '°C');
+    assert.equal(hk[2].tile, null);
+
+    const layout = {
+        title: 'Haus',
+        pages: [
+            {
+                id: 'eg',
+                name: 'EG',
+                tiles: [
+                    { id: 'l1', type: 'switch', label: 'Licht', state: 'knx.0.EG.Licht.Wohnzimmer', homekit: 'light' },
+                    { id: 'b1', type: 'blind', label: 'Rollladen', state: 'knx.0.EG.Rollladen', closed100: true, homekit: 'blind' },
+                    { id: 'x1', type: 'switch', label: 'Steckdose', state: 'knx.0.EG.Steckdose' },
+                ],
+            },
+            { id: 'og', name: 'OG', tiles: [{ id: 'l1', type: 'switch', label: 'Licht', state: 'knx.0.OG.Licht', homekit: 'nonsense' }, { ...hk[0].tile, id: 'l2' }] },
+        ],
+    };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    assert.equal(saved.pages[1].tiles[0].homekit, 'light', 'unknown type -> first choice');
+    assert.equal(saved.pages[1].tiles[1].hkId, 'own');
+    assert.equal(syncs.length, 1);
+    assert.deepEqual(
+        syncs[0].map(d => [d.id, d.type, d.name]),
+        [['sv-eg-l1', 'light', 'EG Licht'], ['sv-eg-b1', 'blind', 'Rollladen'], ['sv-og-l1', 'light', 'OG Licht'], ['own', 'light', 'Licht Bad']],
+    );
+    assert.equal(syncs[0][1].closed100, true);
+    assert.equal((await api('homekit')).body.last.created, 4);
+
+    // all ticks removed: an empty list, so homekit-easy removes SmartView's devices; after that nothing more
+    await api('layout', { method: 'PUT', body: JSON.stringify({ ...layout, pages: [{ id: 'eg', name: 'EG', tiles: [] }] }) });
+    assert.deepEqual(syncs[1], []);
+    await api('layout', { method: 'PUT', body: JSON.stringify({ ...layout, pages: [{ id: 'eg', name: 'EG', tiles: [] }] }) });
+    assert.equal(syncs.length, 2);
+
+    // homekit-easy stopped: clear message, nothing lost
+    adapter.foreign['system.adapter.homekit-easy.0.alive'] = { val: false, ack: true };
+    adapter.hkCache = null;
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    assert.match((await api('homekit')).body.last.error, /läuft nicht/);
+    assert.equal(syncs.length, 2);
+});

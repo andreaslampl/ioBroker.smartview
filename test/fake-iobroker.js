@@ -39,8 +39,10 @@ class FakeAdapter extends EventEmitter {
     sendTo(instance, command, message, callback) {
         this.sent = this.sent || [];
         this.sent.push({ instance, command, message });
+        // another adapter answering (this.handlers[instance](command, message)), else 1 like telegram
+        const h = this.handlers && this.handlers[instance];
         if (callback) {
-            setImmediate(() => callback(1));
+            setImmediate(() => callback(h ? h(command, message) : 1));
         }
     }
     async getForeignObjectAsync(id) {

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.12.0",
+    "version": "0.13.0",
     "news": {
+      "0.13.0": {
+        "en": "Apple Home via homekit-easy: tick \"auch in Apple Home\" on a tile and the device is created there automatically; devices of homekit-easy can be taken over as tiles",
+        "de": "Apple Home über homekit-easy: Haken „auch in Apple Home“ an der Kachel, das Gerät wird dort automatisch angelegt; Geräte aus homekit-easy lassen sich als Kacheln übernehmen"
+      },
       "0.12.0": {
         "en": "Edit mode: move tiles and list entries by dragging (mouse: drag, touch: hold briefly, then drag)",
         "de": "Bearbeiten: Kacheln und Listeneinträge per Ziehen verschieben (Maus: ziehen, Finger: kurz halten, dann ziehen)"
