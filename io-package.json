@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.9.0",
+    "version": "0.10.0",
     "news": {
+      "0.10.0": {
+        "en": "New tile: HTML display - shows HTML text from a data point (e.g. a table made by a script, like a VIS basic HTML widget); scripts are not run",
+        "de": "Neue Kachel: HTML-Anzeige – zeigt HTML-Text aus einem Datenpunkt (z. B. eine Tabelle aus einem Skript, wie das VIS-Widget Basic HTML); Skripte werden nicht ausgeführt"
+      },
       "0.9.0": {
         "en": "Notifications also via WhatsApp (whatsapp-cmb adapter, text only); per rule: app, Telegram, WhatsApp; links use https with the Let's Encrypt certificate",
         "de": "Mitteilungen auch per WhatsApp (Adapter whatsapp-cmb, nur Text); pro Regel: App, Telegram, WhatsApp; Links mit https beim Let's-Encrypt-Zertifikat"

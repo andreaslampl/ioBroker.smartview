@@ -327,3 +327,11 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .users .buttons { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
 .users .buttons .grow { flex: 1; }
 .form .chanrow { display: flex; gap: 16px; flex-wrap: wrap; }
+/* HTML display (e.g. a table from a script) */
+.tile.html { grid-column: 1 / -1; height: auto; min-height: 60px; overflow: visible; }
+.tile.html.size-w { grid-column: span 2; }
+.tile.html.size-l { grid-column: 1 / -1; grid-row: auto; height: auto; }
+.tile.html .hlabel, .lrow .hlabel { font-weight: 600; margin-bottom: 8px; }
+.tile.html .htmlhost { overflow-x: auto; }
+.lrow.htmlrow { display: block; }
+.sheet .sheethtml { overflow-x: auto; }

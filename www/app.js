@@ -118,7 +118,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -513,6 +513,33 @@ function renderList(box, page) {
   box.appendChild(list);
 }
 
+/**
+ * HTML from a data point (e.g. a table made by a script), shown in a shadow root so its styles stay
+ * inside. Scripts, event handlers, frames, forms and javascript: links are removed - a data point
+ * must not be able to run code in SmartView (which can switch things).
+ */
+function safeHtml(text) {
+  const doc = new DOMParser().parseFromString('<!doctype html><body>' + String(text === null || text === undefined ? '' : text), 'text/html');
+  doc.body.querySelectorAll('script,iframe,frame,object,embed,link,meta,base,form,input,button,textarea,select,noscript,template').forEach(n => n.remove());
+  for (const n of doc.body.querySelectorAll('*')) {
+    for (const a of [...n.attributes]) {
+      const name = a.name.toLowerCase();
+      const v = a.value.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
+      if (name.startsWith('on') || (/^(href|src|xlink:href|action|formaction|srcset|poster|background)$/.test(name) && /^(javascript|vbscript|data:text\/html)/.test(v))) {
+        n.removeAttribute(a.name);
+      }
+    }
+  }
+  return doc.body.innerHTML;
+}
+
+function renderHtml(host, value) {
+  if (!host) return;
+  const root = host.shadowRoot || host.attachShadow({ mode: 'open' });
+  root.innerHTML = '<style>:host{display:block;overflow:auto;color:inherit;font:inherit}table{border-collapse:collapse;max-width:100%}img,svg{max-width:100%}</style>' +
+    (value === null || value === undefined || value === '' ? '<span style="opacity:.6">–</span>' : safeHtml(value));
+}
+
 function fillRow(el, t) {
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
@@ -523,6 +550,11 @@ function fillRow(el, t) {
   switch (t.type) {
     case 'heading':
       el.innerHTML = '<span class="lname">' + esc(t.label) + '</span>';
+      return;
+    case 'html':
+      el.classList.add('htmlrow');
+      el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
+      renderHtml(el.querySelector('.htmlhost'), val(t.state));
       return;
     case 'switch': {
       const known = val(t.status || t.state) !== undefined && val(t.status || t.state) !== null;
@@ -608,7 +640,7 @@ function fillTile(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('missing', missing(t));
-  el.classList.toggle('tap', t.type !== 'heading');
+  el.classList.toggle('tap', t.type !== 'heading' && t.type !== 'html');
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
   const ic = '<span class="tic">' + icon(tileIcon(t)) + '</span>';
   let html = '';
@@ -659,6 +691,9 @@ function fillTile(el, t) {
       // menu button: name top left, large symbol bottom right
       html = '<div class="pname">' + esc(t.label || pageName(t.target)) + '</div><span class="pic">' + icon(t.icon || pageIcon(t.target)) + '</span>';
       break;
+    case 'html':
+      html = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>';
+      break;
     case 'multi': {
       const rows = t.rows || [];
       if (rows.length === 1) {
@@ -675,6 +710,7 @@ function fillTile(el, t) {
   }
   if (missing(t)) html += '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>';
   el.innerHTML = html;
+  if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));
   bindControls(el, t);
   Timers.mark(el, t);
   el.classList.toggle('multirow', t.type === 'multi' && (t.rows || []).length > 1);
@@ -927,6 +963,8 @@ function fillSheet(sh, t) {
       (s && s.ts ? '<p class="muted" style="text-align:center">aktualisiert ' + new Date(s.ts).toLocaleString('de-DE') + '</p>' : '');
   } else if (t.type === 'button') {
     body = '<div class="row"><button type="button" data-a="press" class="primary">Auslösen</button></div>';
+  } else if (t.type === 'html') {
+    body = '<div class="htmlhost sheethtml"></div>';
   } else if (t.type === 'multi') {
     body = '<div class="mrows sheetrows">' + (t.rows || []).map(r => {
       const f = fmt({ decimals: r.decimals, unit: r.unit }, r.state);
@@ -940,6 +978,7 @@ function fillSheet(sh, t) {
     sh.querySelector('[data-timer]').onclick = () => Timers.open(t);
   }
   sh.querySelector('[data-close]').onclick = closeSheet;
+  if (t.type === 'html') renderHtml(sh.querySelector('.htmlhost'), val(t.state));
   bindControls(sh, t);
 }
 

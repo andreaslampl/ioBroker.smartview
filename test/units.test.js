@@ -103,6 +103,14 @@ test('layout: room controller - setpoint and operating mode writable, feedback r
     assert.equal(read.length, 8);
 });
 
+test('layout: HTML display tile is read only', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'h', type: 'html', label: 'Fensterstatus', state: 'javascript.0.FensterUeberwachung.OverviewTable' }] }] });
+    assert.equal(l.pages[0].tiles[0].type, 'html');
+    const { read, write } = stateIds(l);
+    assert.deepEqual(read, ['javascript.0.FensterUeberwachung.OverviewTable']);
+    assert.deepEqual(write, []);
+});
+
 test('push rules: fire when the condition becomes true, not again while it stays true', () => {
     assert.equal(triggers({ cond: 'true' }, true, false), true);
     assert.equal(triggers({ cond: 'true' }, true, true), false);

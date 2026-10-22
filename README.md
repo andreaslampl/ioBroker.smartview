@@ -47,6 +47,7 @@ ausschalten.
 | Link | andere Webseite (z. B. Sonos-Radio, Kamerawand) | antippen = öffnet sie |
 | Seite öffnen | – (Menü-Knopf für eine SmartView-Seite) | antippen = wechselt zur Seite |
 | Mehrere Werte | bis zu 8 Datenpunkte mit Bezeichnung (z. B. Helligkeit Ost/West, 3 Temperaturfühler) | antippen = groß anzeigen |
+| HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“) | aktualisiert sich live; volle Breite |
 | Überschrift | – | – |
 
 Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.

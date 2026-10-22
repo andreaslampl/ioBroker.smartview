@@ -100,6 +100,10 @@ switches/buttons on them.
 - 0.9.0: owner asked for WhatsApp too -> whatsapp-cmb adapter (CallMeBot, text only): layout `whatsapp`
   {instance, phone, ring}; push rules have `channels` {app, telegram, whatsapp} (old `via` migrated in
   `channels()`); links in messages via `appLink()` (https when the acme certificate is in use).
+- 0.10.0: owner shows a window status table in VIS-2 (basic HTML widget fed by a script state
+  javascript.0.FensterUeberwachung.OverviewTable) -> tile type `html`: read-only, rendered in a shadow
+  root (styles stay inside), `safeHtml()` strips scripts/handlers/frames/forms/javascript: URLs since
+  SmartView can switch things. Full width, auto height. Relative image URLs of VIS would not resolve.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

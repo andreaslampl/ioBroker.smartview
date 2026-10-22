@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   link: 'Link / andere Webseite',
   page: 'Seite öffnen (Menü-Knopf)',
   multi: 'Mehrere Werte (z. B. 3 Temperaturen)',
+  html: 'HTML-Anzeige (Text mit HTML aus einem Datenpunkt)',
   heading: 'Überschrift',
 };
 
@@ -65,6 +66,7 @@ const TYPE_FIELDS = {
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
   page: [['target', 'Seite, die geöffnet wird', 'page']],
   multi: [['rows', 'Werte', 'rows']],
+  html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
 };
 
