@@ -124,6 +124,12 @@ function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
+/** Symbol of a tile, rotated when set in the tile dialog. */
+function tileIc(t) {
+  const svg = icon(tileIcon(t));
+  return t.rotate ? svg.replace('<svg ', '<svg style="transform:rotate(' + Number(t.rotate) + 'deg)" ') : svg;
+}
+
 function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
@@ -324,7 +330,7 @@ function windowsHtml(t) {
   const open = list.filter(w => w.status === 'open').length;
   const tilt = list.filter(w => w.status === 'tilt').length;
   const sum = open || tilt ? [open ? open + ' offen' : '', tilt ? tilt + ' gekippt' : ''].filter(Boolean).join(' · ') : 'alle geschlossen';
-  return '<div class="whead">' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span><span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
+  return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span><span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
     '<div class="wlist">' + list.map(w =>
       '<div class="win ' + w.status + '"><span class="wic">' + icon(w.status === 'open' ? 'win-open' : w.status === 'tilt' ? 'win-tilt' : 'win-closed') + '</span><span class="wname">' + esc(w.label) + '</span>' +
       '<span class="wst">' + WIN_TEXT[w.status] + (w.ts && w.status !== 'unknown' ? ' <small>seit ' + since(w.ts) + '</small>' : '') + '</span></div>').join('') + '</div>';
@@ -609,7 +615,7 @@ function fillRow(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('missing', missing(t));
-  const head = '<span class="lic">' + icon(tileIcon(t)) + '</span><span class="lname">' + esc(t.label || '') + '</span>';
+  const head = '<span class="lic">' + tileIc(t) + '</span><span class="lname">' + esc(t.label || '') + '</span>';
   let ctl = '';
   switch (t.type) {
     case 'heading':
@@ -711,7 +717,7 @@ function fillTile(el, t) {
   el.classList.toggle('missing', missing(t));
   el.classList.toggle('tap', !['heading', 'html', 'windows'].includes(t.type));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
-  const ic = '<span class="tic">' + icon(tileIcon(t)) + '</span>';
+  const ic = '<span class="tic">' + tileIc(t) + '</span>';
   let html = '';
   switch (t.type) {
     case 'heading':
@@ -973,7 +979,7 @@ function fillMarker(el, t) {
     v = f.text + (f.unit ? ' ' + f.unit : ' °C');
   }
   el.title = t.label || '';
-  el.innerHTML = '<div class="dot">' + icon(tileIcon(t)) + '</div>' + (v ? '<div class="mval">' + esc(v) + '</div>' : '');
+  el.innerHTML = '<div class="dot">' + tileIc(t) + '</div>' + (v ? '<div class="mval">' + esc(v) + '</div>' : '');
   Timers.mark(el, t);
 }
 
@@ -1135,7 +1141,7 @@ function fillSheet(sh, t) {
       return '<div class="mrow"><span>' + esc(r.label) + '</span><b>' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</b></div>';
     }).join('') + '</div>';
   }
-  sh.innerHTML = '<h3>' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || '') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' + body;
+  sh.innerHTML = '<h3>' + tileIc(t) + '<span class="grow">' + esc(t.label || '') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' + body;
   if (Timers.supports(t) && !SV.editing) {
     body = '<div class="row"><button type="button" data-timer>⏰ Zeitschaltuhr' + (Timers.active(t) ? ' (aktiv)' : '') + '</button></div>';
     sh.insertAdjacentHTML('beforeend', body);

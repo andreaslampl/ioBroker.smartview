@@ -136,6 +136,8 @@ switches/buttons on them.
   down (client `blindWrite` by the state's type, main.fireTimer by meta type); `closed100` is labelled
   "Auf/Ab umdrehen" and also swaps the boolean. Plan pages: `markerSize` xs|s|m|l (CSS .plan.ms-*). Icons
   walllamp, ceiling, lantern.
+- 0.15.1: owner asked to rotate all symbols -> tile `rotate` (degrees, 45° steps in the dialog), `tileIc(t)`
+  renders every tile/row/marker/sheet symbol rotated; preview on the selected symbol in the picker.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

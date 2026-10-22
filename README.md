@@ -109,7 +109,8 @@ Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig
 ### Grundriss
 
 Symbolgröße pro Grundriss-Seite (✎ → Seite bearbeiten → „Symbolgröße auf dem Grundriss“: sehr klein, klein,
-normal, groß) – für Lagepläne mit vielen Symbolen.
+normal, groß) – für Lagepläne mit vielen Symbolen. Jedes Symbol lässt sich im Kachel-Dialog unter
+„Symbol drehen“ in 45°-Schritten drehen (z. B. Wandlampe zur Wand).
 
 Seite der Art **Grundriss** anlegen → **Bild wählen** (PNG, JPG, SVG, WebP, GIF oder **PDF**, bis
 20 MB). Eine PDF (z. B. der Plan vom Architekten) wird im Browser in ein Bild umgewandelt: bei

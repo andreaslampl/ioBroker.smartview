@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.15.0",
+    "version": "0.15.1",
     "news": {
+      "0.15.1": {
+        "en": "Every symbol can be rotated (45° steps), e.g. a wall lamp towards its wall on the floor plan",
+        "de": "Jedes Symbol lässt sich drehen (45°-Schritte), z. B. eine Wandlampe zur Wand auf dem Grundriss"
+      },
       "0.15.0": {
         "en": "Blinds: tick \"Auf/Ab umdrehen\" (also for up/down objects true/false); floor plan: symbol size per page (very small to large); new symbols wall lamp, ceiling lamp, outdoor light",
         "de": "Jalousien: Haken „Auf/Ab umdrehen“ (auch für Auf/Ab-Objekte true/false); Grundriss: Symbolgröße pro Seite (sehr klein bis groß); neue Symbole Wandlampe, Deckenlampe, Außenleuchte"

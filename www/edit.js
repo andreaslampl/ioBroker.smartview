@@ -367,6 +367,7 @@ const Editor = (() => {
       grid.appendChild(b);
     }
     field(box, 'Symbol', grid);
+    return grid;
   }
 
   async function cameraField(box, value) {
@@ -592,7 +593,15 @@ const Editor = (() => {
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
-      if (t.type !== 'heading') iconField(body, t.icon || DEFAULT_ICON[t.type], name => (t.icon = name));
+      if (t.type !== 'heading') {
+        const pick = iconField(body, t.icon || DEFAULT_ICON[t.type], name => (t.icon = name));
+        // rotate the symbol (preview in the symbol list)
+        const rot = field(body, 'Symbol drehen', select([0, 45, 90, 135, 180, 225, 270, 315].map(d => [String(d), d + '°']), String(t.rotate || 0)));
+        const show = () => pick.style.setProperty('--rot', rot.value + 'deg');
+        rot.addEventListener('change', show);
+        show();
+        inputs.rotate = { type: 'custom', get: () => Number(rot.value) };
+      }
       if (SV.hk && SV.hk.instance && SV.hk.choices[t.type]) inputs.homekit = homekitField(body, t);
       if (page.type === 'tiles' && t.type !== 'heading') inputs.size = field(body, 'Größe', select([['1', 'normal'], ['w', 'breit (2 Spalten)'], ['l', 'groß (2 × 2)']], t.size || '1'));
       inputs.device = field(body, 'Anzeigen auf', select([['all', 'allen Geräten'], ['phone', 'nur Handy'], ['touch', 'nur Touch-PC / großem Bildschirm']], t.device || 'all'));

@@ -390,3 +390,5 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .plan.ms-l .marker .dot { width: 58px; height: 58px; }
 .plan.ms-l .marker .dot .ic { width: 32px; height: 32px; }
 .plan.ms-l .marker .mval { font-size: 14px; }
+.iconpick .sel .ic { transform: rotate(var(--rot, 0deg)); }
+.ic { transition: transform .15s; }
