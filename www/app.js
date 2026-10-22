@@ -575,6 +575,12 @@ function safeHtml(text) {
         n.removeAttribute(a.name);
       }
     }
+    // pictures of the ioBroker web adapter (VIS): "/vis.0/…/img.png" or "img/x.png" -> through SmartView
+    if (n.tagName === 'IMG' && n.getAttribute('src')) {
+      const src = n.getAttribute('src').trim();
+      if (src.startsWith('/') && !src.startsWith('//')) n.setAttribute('src', 'web' + src);
+      else if (!/^[a-z][a-z0-9+.-]*:|^\/\//i.test(src)) n.setAttribute('src', 'web/vis-2/' + src);
+    }
   }
   return doc.body.innerHTML;
 }

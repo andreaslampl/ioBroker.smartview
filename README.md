@@ -48,7 +48,7 @@ ausschalten.
 | Seite öffnen | – (Menü-Knopf für eine SmartView-Seite) | antippen = wechselt zur Seite |
 | Mehrere Werte | bis zu 8 Datenpunkte mit Bezeichnung (z. B. Helligkeit Ost/West, 3 Temperaturfühler) | antippen = groß anzeigen |
 | Fensterübersicht | pro Fenster Name, Magnetkontakt (true = offen), optional Kipp-Kontakt und „umgekehrt“ | geschlossen (grün) / gekippt (orange) / offen (rot) mit „seit …“; oben die Anzahl offener Fenster |
-| HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“) | aktualisiert sich live; volle Breite |
+| HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“; dort steht er als `{datenpunkt}`) | aktualisiert sich live; Bilder des web-Adapters (VIS-Symbole) werden über SmartView geladen; Größe „groß“ = volle Breite |
 | Überschrift | – | – |
 
 Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.

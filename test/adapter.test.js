@@ -529,3 +529,25 @@ test('adapter: push rules via WhatsApp (whatsapp-cmb, text only), per rule chann
     assert.match(adapter.sent[0].message.text, /Es läutet/);
     assert.equal((await api('whatsapp/test', { method: 'POST', body: '{}' })).body.sent, true);
 });
+
+test('adapter: pictures of the web adapter (VIS) are passed through for the HTML tile, only images', async t => {
+    const web = http.createServer((req, res) => {
+        if (req.url === '/vis.0/main/img/fenster_zu.png') {
+            res.writeHead(200, { 'Content-Type': 'image/png' });
+            res.end(Buffer.from('PNGDATA'));
+            return;
+        }
+        res.writeHead(404);
+        res.end();
+    });
+    await new Promise(r => web.listen(0, '127.0.0.1', r));
+    t.after(() => web.close());
+    const { adapter, base } = await startAdapter(t);
+    adapter.objects['system.adapter.web.0'] = { type: 'instance', common: { enabled: true }, native: { port: web.address().port, bind: '0.0.0.0', secure: false } };
+    const r = await fetch(base + 'web/vis.0/main/img/fenster_zu.png');
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get('content-type'), 'image/png');
+    assert.equal(Buffer.from(await r.arrayBuffer()).toString(), 'PNGDATA');
+    assert.equal((await fetch(base + 'web/vis.0/main/project.json')).status, 404, 'only pictures');
+    assert.equal((await fetch(base + 'web/vis.0/../../etc/passwd.png')).status, 404);
+});

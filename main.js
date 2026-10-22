@@ -140,6 +140,7 @@ class SmartView extends utils.Adapter {
                 stateValues: ids => this.stateValues(ids),
                 cameras: () => this.cameras(),
                 cameraUrl: (id, kind) => this.cameraUrl(id, kind),
+                webBase: () => this.webBase(),
                 layoutChanged: () => this.resubscribe(),
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
@@ -587,6 +588,25 @@ class SmartView extends utils.Adapter {
             .filter(o => o && CAMERA_ID.test(o._id))
             .map(o => ({ id: o._id, name: name(o.common && o.common.name) || o._id.split('.').pop() }))
             .sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    /** Address of the local ioBroker web adapter (VIS pictures), first running instance; cached 60 s. */
+    async webBase() {
+        if (this.webCache && Date.now() - this.webCache.at < 60000) {
+            return this.webCache.base;
+        }
+        const objs = await this.getForeignObjectsAsync('system.adapter.web.*', 'instance').catch(() => ({}));
+        const inst = Object.values(objs || {})
+            .filter(o => o && o.common && o.native && /^system\.adapter\.web\.\d+$/.test(o._id))
+            .sort((a, b) => Number(Boolean(b.common.enabled)) - Number(Boolean(a.common.enabled)) || a._id.localeCompare(b._id))[0];
+        let base = '';
+        if (inst) {
+            const bind = String(inst.native.bind || '0.0.0.0');
+            const host = bind === '0.0.0.0' || bind === '::' || !bind ? '127.0.0.1' : bind;
+            base = `${inst.native.secure ? 'https' : 'http'}://${host}:${Number(inst.native.port) || 8082}`;
+        }
+        this.webCache = { at: Date.now(), base };
+        return base;
     }
 
     async cameraUrl(id, kind) {

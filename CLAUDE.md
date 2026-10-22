@@ -103,7 +103,9 @@ switches/buttons on them.
 - 0.10.0: owner shows a window status table in VIS-2 (basic HTML widget fed by a script state
   javascript.0.FensterUeberwachung.OverviewTable) -> tile type `html`: read-only, rendered in a shadow
   root (styles stay inside), `safeHtml()` strips scripts/handlers/frames/forms/javascript: URLs since
-  SmartView can switch things. Full width, auto height. Relative image URLs of VIS would not resolve.
+  SmartView can switch things. Auto height, max 720 px (size l = full width). 0.11.2 field: VIS symbols
+  missing -> img src "/…" or relative are rewritten to `web/…`, server proxies image files only from the
+  first ioBroker web instance (`webBase()`, 127.0.0.1:port), SVG with a no-script CSP.
 - 0.11.0: owner asked to build the window table without a script -> tile type `windows` (rows {label,
   state, tilt, invert}; tilt contact wins, then contact; "seit …" from the newest lc of both, refreshed
   every 30 s; tile alert when one is open). The HTML tile stays for other scripts. 0.11.1: own icons
