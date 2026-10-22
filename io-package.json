@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.14.1",
+    "version": "0.15.0",
     "news": {
+      "0.15.0": {
+        "en": "Blinds: tick \"Auf/Ab umdrehen\" (also for up/down objects true/false); floor plan: symbol size per page (very small to large); new symbols wall lamp, ceiling lamp, outdoor light",
+        "de": "Jalousien: Haken „Auf/Ab umdrehen“ (auch für Auf/Ab-Objekte true/false); Grundriss: Symbolgröße pro Seite (sehr klein bis groß); neue Symbole Wandlampe, Deckenlampe, Außenleuchte"
+      },
       "0.14.1": {
         "en": "Energy flow tile follows the appearance set in the energie adapter (symbols round/square, lines, animation, symbols)",
         "de": "Energiefluss-Kachel übernimmt die Darstellung aus dem Adapter energie (Symbole rund/eckig, Linien, Animation, Symbole)"

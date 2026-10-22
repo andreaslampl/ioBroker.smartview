@@ -530,7 +530,12 @@ class SmartView extends utils.Adapter {
             }
         } else if (tile.type === 'blind') {
             const open = action === 'up' ? 100 : action === 'down' ? 0 : value;
-            await this.setValue(tile.state, tile.closed100 ? 100 - open : open);
+            if ((await this.metaOf(tile.state)).type === 'boolean') {
+                // up/down object (KNX: false = up, true = down); "Auf/Ab umdrehen" swaps it
+                await this.setValue(tile.state, tile.closed100 ? open > 0 : open === 0);
+            } else {
+                await this.setValue(tile.state, tile.closed100 ? 100 - open : open);
+            }
         }
     }
 

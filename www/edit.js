@@ -32,10 +32,10 @@ const TYPE_FIELDS = {
     ['status', 'Rückmeldung Helligkeit (optional)', 'state-r'],
   ],
   blind: [
-    ['state', 'Position (Datenpunkt)', 'state-w'],
+    ['state', 'Position % oder Auf/Ab (Datenpunkt)', 'state-w', 'Positions-Datenpunkt (0–100 %) oder Auf/Ab-Objekt (true/false)'],
     ['stop', 'Stopp (optional)', 'state-w'],
     ['status', 'Rückmeldung Position (optional)', 'state-r'],
-    ['closed100', '100 % = geschlossen (KNX, Shelly je nach Einstellung)', 'check', 'Ohne Haken: 100 % = offen'],
+    ['closed100', 'Auf/Ab umdrehen', 'check', 'Haken setzen, wenn Auf und Ab vertauscht sind (bei Position: 100 % = zu; bei Auf/Ab-Objekt: true = auf)'],
   ],
   value: [
     ['state', 'Datenpunkt', 'state-r'],
@@ -702,6 +702,13 @@ const Editor = (() => {
     if (!isNew && p.tiles.length) kinds = p.type === 'plan' ? kinds.slice(2) : kinds.slice(0, 2);
     const type = field(body, 'Art', select(kinds, p.type), 'Kacheln und Liste lassen sich jederzeit tauschen. Beim Grundriss lädst du ein Bild hoch und setzt Taster, Lichter, Kontakte usw. auf den Plan.');
     iconField(body, p.icon, n => (p.icon = n));
+    // floor plan: how big the symbols are on the plan
+    const msBox = document.createElement('div');
+    body.appendChild(msBox);
+    const ms = field(msBox, 'Symbolgröße auf dem Grundriss', select([['xs', 'sehr klein'], ['s', 'klein'], ['m', 'normal'], ['l', 'groß']], p.markerSize || 'm'), 'Für Lagepläne mit vielen Symbolen „klein“ oder „sehr klein“ wählen.');
+    const showMs = () => (msBox.hidden = type.value !== 'plan');
+    type.addEventListener('change', showMs);
+    showMs();
     const buttons = document.createElement('div');
     buttons.className = 'buttons';
     if (!isNew) {
@@ -744,6 +751,7 @@ const Editor = (() => {
     ok.onclick = () => {
       p.name = name.value.trim() || 'Seite';
       p.type = type.value;
+      p.markerSize = ms.value;
       const i = l.pages.findIndex(x => x.id === p.id);
       const cur = i >= 0 ? l.pages[i] : null;
       const next = { ...p, tiles: cur ? cur.tiles : [], image: cur ? cur.image : '' };

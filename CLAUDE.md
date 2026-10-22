@@ -131,6 +131,11 @@ switches/buttons on them.
   people who started with homekit-easy). Checked in Playwright with the real homekit-easy DeviceStore.
 - 0.14.0: owner asked for a PV display "like energiefluss but better and simpler" -> new adapter
   ioBroker.energie + this tile. Checked in Playwright with the real energie adapter in a second process.
+- 0.15.0: owner: blinds up/down reversed, plan symbols too big for a site plan, wall lamp symbol. Blind on a
+  boolean data point (KNX 1-bit up/down) used to get 100/0 -> setValue made both false; now false = up / true =
+  down (client `blindWrite` by the state's type, main.fireTimer by meta type); `closed100` is labelled
+  "Auf/Ab umdrehen" and also swaps the boolean. Plan pages: `markerSize` xs|s|m|l (CSS .plan.ms-*). Icons
+  walllamp, ceiling, lantern.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

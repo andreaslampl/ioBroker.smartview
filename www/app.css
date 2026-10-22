@@ -379,3 +379,14 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .sheet.energy .echead { display: flex; align-items: center; gap: 6px; margin: 14px 0 4px; }
 .sheet.energy .iconbtn:disabled { opacity: .3; }
 :root { --ef-fg: var(--fg); --ef-muted: var(--muted); --ef-node: var(--bg); --ef-line: var(--line); --ef-accent: var(--accent); }
+
+/* floor plan: symbol size per page */
+.plan.ms-xs .marker .dot { width: 24px; height: 24px; border-width: 1.5px; }
+.plan.ms-xs .marker .dot .ic { width: 14px; height: 14px; }
+.plan.ms-xs .marker .mval { font-size: 9px; padding: 0 3px; border-radius: 5px; }
+.plan.ms-s .marker .dot { width: 32px; height: 32px; }
+.plan.ms-s .marker .dot .ic { width: 18px; height: 18px; }
+.plan.ms-s .marker .mval { font-size: 10px; padding: 0 4px; }
+.plan.ms-l .marker .dot { width: 58px; height: 58px; }
+.plan.ms-l .marker .dot .ic { width: 32px; height: 32px; }
+.plan.ms-l .marker .mval { font-size: 14px; }

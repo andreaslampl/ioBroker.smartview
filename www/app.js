@@ -158,11 +158,20 @@ function blindOpen(t) {
 function blindText(t) {
   const s = st(t.status || t.state);
   if (!s || s.missing || s.val === null || s.val === undefined) return '–';
+  // an up/down object (true/false) says nothing about the position
+  if (s.type === 'boolean' || typeof s.val === 'boolean') return '';
   const o = Math.round(blindOpen(t));
   return o >= 99 ? 'Offen' : o <= 1 ? 'Zu' : o + ' % offen';
 }
 
 function blindWrite(t, openPercent) {
+  const s = st(t.state);
+  if (s && s.type === 'boolean') {
+    // up/down object (KNX DPT 1.008: false = up, true = down); "Auf/Ab umdrehen" swaps it
+    if (openPercent > 0 && openPercent < 100) return toast('Zwischenwerte gehen nur mit einem Positions-Datenpunkt (%)', true);
+    const down = openPercent === 0;
+    return send(t.state, t.closed100 ? !down : down);
+  }
   send(t.state, t.closed100 ? 100 - openPercent : openPercent);
 }
 
@@ -891,7 +900,7 @@ function renderPlan(main, page) {
     return;
   }
   const plan = document.createElement('div');
-  plan.className = 'plan';
+  plan.className = 'plan ms-' + (page.markerSize || 'm');
   const zoom = planZoom(page);
   plan.style.width = zoom * 100 + '%';
   const img = document.createElement('img');

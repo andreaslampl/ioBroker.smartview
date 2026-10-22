@@ -57,6 +57,11 @@ Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Beweg
 „Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
 erscheinen als Text.
 
+### Jalousien / Rollläden
+
+Datenpunkt: Position in % oder ein Auf/Ab-Objekt (true/false, z. B. KNX 1-Bit: false = auf, true = ab).
+Sind Auf und Ab vertauscht, den Haken **„Auf/Ab umdrehen“** setzen.
+
 ### Heizung / Raumregler
 
 Nur der Sollwert ist Pflicht, alles andere kommt dazu, wenn es eingetragen ist:
@@ -102,6 +107,9 @@ Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig
   z. B. oben Kameras | Photovoltaik, unten Wetterstation. Am Handy bleiben das normale Seiten.
 
 ### Grundriss
+
+Symbolgröße pro Grundriss-Seite (✎ → Seite bearbeiten → „Symbolgröße auf dem Grundriss“: sehr klein, klein,
+normal, groß) – für Lagepläne mit vielen Symbolen.
 
 Seite der Art **Grundriss** anlegen → **Bild wählen** (PNG, JPG, SVG, WebP, GIF oder **PDF**, bis
 20 MB). Eine PDF (z. B. der Plan vom Architekten) wird im Browser in ein Bild umgewandelt: bei
