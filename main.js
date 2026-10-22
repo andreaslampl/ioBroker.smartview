@@ -148,6 +148,8 @@ class SmartView extends utils.Adapter {
                     await this.syncHomekit();
                 },
                 homekit: () => this.homekitInfo(),
+                energyInstances: () => this.instancesOf('energie'),
+                energyDay: (instance, date) => this.energyDay(instance, date),
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
@@ -633,6 +635,17 @@ class SmartView extends utils.Adapter {
         }
         const st = await this.getForeignStateAsync(`${id}.${kind === 'mjpeg' ? 'mjpegUrl' : 'snapshotUrl'}`).catch(() => null);
         return st && typeof st.val === 'string' && /^https?:\/\//.test(st.val) ? st.val : null;
+    }
+
+    /** day chart of the energie adapter (sendTo 'day'); {error} when it does not answer */
+    energyDay(instance, date) {
+        return new Promise(resolve => {
+            const timer = setTimeout(() => resolve({ error: `${instance} antwortet nicht` }), 10000);
+            this.sendTo(instance, 'day', { date }, res => {
+                clearTimeout(timer);
+                resolve(res && typeof res === 'object' ? res : { error: 'keine Antwort' });
+            });
+        });
     }
 
     // ---------------- homekit-easy (lib/homekit.js) ----------------

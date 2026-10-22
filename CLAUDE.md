@@ -54,6 +54,11 @@ switches/buttons on them.
   is gone); `/api/homekit`, `/api/homekit/devices`. Editor: `homekitField()`, `importHomekit()` (+ Kachel).
   0.13.1 (`common.messagebox`): messages only from homekit-easy.N: `tiles` (`homekitTiles()`), `link` {tiles} ->
   `linkTiles()` ticks them, saves the layout, broadcasts, syncs (owner asked for "Aus SmartView" in homekit-easy).
+- Energy tile (0.14.0): type `energy` {instance 'energie.N', show flow|stats}; `state` is always forced to
+  `<instance>.live` (JSON of ioBroker.energie, subscribed like any read state). `www/energy-view.js` = copy of
+  energie's `www/render.js` (keep in sync). `energyTile()` builds the SVG once and only updates it (refresh()
+  would restart the animation otherwise); sheet `energySheet()` with day chart via `/api/energy/day` ->
+  sendTo energie 'day' (only for instances of tiles the user can see).
 - `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
   pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
   host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims
@@ -124,6 +129,8 @@ switches/buttons on them.
   point both arrive on the company iPhone (push is enabled in the app menu, not in iOS settings).
 - 0.13.0: owner asked for "auch homekit easy" so devices are not entered twice (and the other way round for
   people who started with homekit-easy). Checked in Playwright with the real homekit-easy DeviceStore.
+- 0.14.0: owner asked for a PV display "like energiefluss but better and simpler" -> new adapter
+  ioBroker.energie + this tile. Checked in Playwright with the real energie adapter in a second process.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

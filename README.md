@@ -131,6 +131,14 @@ Port 8098). In VIS-2 als iframe: `allow="microphone; autoplay"`. Der Ton muss ei
 der Seite freigegeben werden (Browser-Regel); im Kiosk-Betrieb hilft
 `--autoplay-policy=no-user-gesture-required` in der Edge-Verknüpfung.
 
+### Energiefluss (PV)
+
+Mit dem Adapter **energie** (`iobroker url https://github.com/andreaslampl/ioBroker.energie`) gibt es die
+Kachel-Art **„Energiefluss“**: animierter Fluss PV → Haus, Netz, Batterie und Verbraucher. Anzeige wählbar:
+nur Fluss oder Fluss mit Tageswerten (Erzeugt, Verbraucht, Bezug, Einspeisung, Autarkie, Eigenverbrauch).
+Antippen öffnet die große Ansicht mit Tageskurve (‹ › blättert durch die letzten Tage). Datenpunkte,
+Modbus-Faktoren usw. stellt man im Adapter energie ein, nicht in SmartView. Größe „groß“ = volle Breite.
+
 ### Kameras
 
 Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht sie weiter – so

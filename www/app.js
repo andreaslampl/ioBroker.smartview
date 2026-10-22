@@ -118,7 +118,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -595,6 +595,7 @@ function renderHtml(host, value) {
 }
 
 function fillRow(el, t) {
+  if (t.type === 'energy') return energyTile(el, t);
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
@@ -685,7 +686,7 @@ function tileTap(t) {
     if (t.target) location.hash = encodeURIComponent(t.target);
     return;
   }
-  if (t.type === 'multi') return openSheet(t);
+  if (t.type === 'multi' || t.type === 'energy') return openSheet(t);
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
@@ -694,6 +695,7 @@ function tileTap(t) {
 }
 
 function fillTile(el, t) {
+  if (t.type === 'energy') return energyTile(el, t);
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
@@ -950,6 +952,10 @@ function fillMarker(el, t) {
     v = f.text + (f.unit ? ' ' + f.unit : '');
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
+  else if (t.type === 'energy') {
+    const d = energyData(t);
+    v = d && d.s ? EnergyView.fmtW(d.s.pv) : '';
+  }
   else if (t.type === 'windows') {
     const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
     v = n ? n + ' offen' : '';
@@ -960,6 +966,88 @@ function fillMarker(el, t) {
   el.title = t.label || '';
   el.innerHTML = '<div class="dot">' + icon(tileIcon(t)) + '</div>' + (v ? '<div class="mval">' + esc(v) + '</div>' : '');
   Timers.mark(el, t);
+}
+
+// ---------------- energy flow (ioBroker.energie, www/energy-view.js) ----------------
+
+function energyData(t) {
+  try {
+    const v = val(t.state);
+    return typeof v === 'string' && v ? JSON.parse(v) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function energyCss() {
+  if (document.getElementById('energyCss')) return;
+  const st = document.createElement('style');
+  st.id = 'energyCss';
+  st.textContent = EnergyView.css;
+  document.head.appendChild(st);
+}
+
+/** Tile / list row: the flow is built once and then only updated (the animation keeps running). */
+function energyTile(el, t) {
+  energyCss();
+  el.classList.add('energy', 'tap');
+  if (el.classList.contains('lrow')) el.classList.add('htmlrow');
+  if (!el._ef || !el.contains(el._ef.box)) {
+    el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') +
+      (t.instance ? '<div class="eflow"></div>' + (t.show === 'stats' ? '<div class="estats"></div>' : '') : '<div class="planempty">Keine Energie-Instanz gewählt</div>');
+    const box = el.querySelector('.eflow');
+    el._ef = { box, flow: box ? EnergyView.flow(box) : null };
+  }
+  const d = energyData(t);
+  el.classList.toggle('missing', Boolean(t.instance) && !d);
+  if (d && d.s && el._ef.flow) {
+    el._ef.flow.update(d.s);
+    const st = el.querySelector('.estats');
+    if (st) EnergyView.stats(st, d.today, d.s.battery !== null);
+  }
+}
+
+/** Large view: flow, today's values, day chart with day navigation. */
+function energySheet(sh, t) {
+  energyCss();
+  sh.classList.add('energy');
+  if (!sh._ef) {
+    sh.innerHTML = '<h3><span class="grow">' + esc(t.label || 'Energiefluss') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' +
+      '<div class="egrid"><div class="eflow"></div><div><div class="estats"></div><div class="echead"><b data-title>Tagesverlauf heute</b><span class="grow"></span>' +
+      '<button type="button" class="iconbtn" data-prev aria-label="Tag davor">‹</button><button type="button" class="iconbtn" data-next aria-label="Tag danach">›</button></div><div class="echart"></div></div></div>';
+    sh.querySelector('[data-close]').onclick = closeSheet;
+    sh._ef = { flow: EnergyView.flow(sh.querySelector('.eflow')), date: null, dates: [], today: null };
+    const load = async date => {
+      try {
+        const day = await api('energy/day?instance=' + encodeURIComponent(t.instance) + (date ? '&date=' + date : ''));
+        if (day.error) throw new Error(day.error);
+        sh._ef.date = date;
+        sh._ef.dates = day.dates || [];
+        sh._ef.today = sh._ef.today || (!date ? day.date : null);
+        sh.querySelector('[data-title]').textContent = date ? new Date(day.date + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Tagesverlauf heute';
+        EnergyView.chart(sh.querySelector('.echart'), day);
+        sh.querySelector('[data-prev]').disabled = sh._ef.dates.indexOf(day.date) <= 0;
+        sh.querySelector('[data-next]').disabled = !date;
+      } catch (e) {
+        sh.querySelector('.echart').innerHTML = '<p class="muted">' + esc(e.message) + '</p>';
+      }
+    };
+    sh.querySelector('[data-prev]').onclick = () => {
+      const i = sh._ef.dates.indexOf(sh._ef.date || sh._ef.today);
+      if (i > 0) load(sh._ef.dates[i - 1]);
+    };
+    sh.querySelector('[data-next]').onclick = () => {
+      const i = sh._ef.dates.indexOf(sh._ef.date);
+      const next = sh._ef.dates[i + 1];
+      load(next && next !== sh._ef.today ? next : null);
+    };
+    load(null);
+  }
+  const d = energyData(t);
+  if (d && d.s) {
+    sh._ef.flow.update(d.s);
+    EnergyView.stats(sh.querySelector('.estats'), d.today, d.s.battery !== null);
+  }
 }
 
 // ---------------- control sheet ----------------
@@ -989,6 +1077,7 @@ function closeSheet() {
 }
 
 function fillSheet(sh, t) {
+  if (t.type === 'energy') return energySheet(sh, t);
   let body = '';
   if (t.type === 'switch') {
     body = '<div class="bigval">' + (switchOn(t) ? 'Ein' : 'Aus') + '</div><div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';

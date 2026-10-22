@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.13.1",
+    "version": "0.14.0",
     "news": {
+      "0.14.0": {
+        "en": "New tile energy flow (PV, grid, battery, consumers) from the energie adapter, with today's values and day chart",
+        "de": "Neue Kachel Energiefluss (PV, Netz, Batterie, Verbraucher) aus dem Adapter energie, mit Tageswerten und Tageskurve"
+      },
       "0.13.1": {
         "en": "homekit-easy can take over tiles from its setup page (\"Aus SmartView\")",
         "de": "homekit-easy kann Kacheln von seiner Einrichtungsseite aus übernehmen („Aus SmartView …“)"

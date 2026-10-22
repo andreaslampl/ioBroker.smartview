@@ -672,3 +672,18 @@ test('adapter: homekit-easy takes over tiles ("Aus SmartView übernehmen"): tick
     // only homekit-easy may do this
     assert.match((await ask('javascript.0', 'link', { tiles: [] })).error, /not allowed/);
 });
+
+test('adapter: energy flow tile reads energie.N.live, day chart only for visible tiles', async t => {
+    const { adapter, api } = await startAdapter(t);
+    adapter.objects['system.adapter.energie.0'] = { type: 'instance', common: { name: 'energie' } };
+    adapter.add('energie.0.live', { name: 'live', type: 'string', role: 'json' }, JSON.stringify({ s: { pv: 4200, house: 900 } }));
+    adapter.handlers = { 'energie.0': (command, message) => ({ date: message.date || '2026-10-22', points: [{ t: 1, pv: 100, house: 50 }], dates: ['2026-10-22'] }) };
+    assert.deepEqual((await api('energy')).body.instances, ['energie.0']);
+    const layout = { pages: [{ id: 'pv', name: 'PV', tiles: [{ id: 'e1', type: 'energy', instance: 'energie.0', state: 'javascript.0.evil', show: 'stats', size: 'l' }] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    assert.equal(saved.pages[0].tiles[0].state, 'energie.0.live', 'state always from the instance');
+    assert.ok(adapter.subs.has('energie.0.live'));
+    const day = (await api('energy/day?instance=energie.0&date=2026-10-21')).body;
+    assert.equal(day.date, '2026-10-21');
+    assert.equal((await api('energy/day?instance=energie.1')).status, 403);
+});

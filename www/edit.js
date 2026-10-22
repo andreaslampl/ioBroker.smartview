@@ -16,6 +16,7 @@ const TYPE_LABELS = {
   html: 'HTML-Anzeige (Text mit HTML aus einem Datenpunkt)',
   windows: 'Fensterübersicht (offen / gekippt / zu)',
   heading: 'Überschrift',
+  energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -70,6 +71,10 @@ const TYPE_FIELDS = {
   windows: [['windows', 'Fenster', 'windows']],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
+  energy: [
+    ['instance', 'Energie-Instanz', 'energy'],
+    ['show', 'Anzeige', 'select:flow=nur Energiefluss (antippen = Tageswerte und Kurve);stats=Energiefluss und Tageswerte'],
+  ],
 };
 
 const Editor = (() => {
@@ -388,6 +393,27 @@ const Editor = (() => {
     return s;
   }
 
+  /** Instance of the energie adapter for the energy flow tile. */
+  async function energyField(box, value) {
+    const s = select([['', '(wählen)']], value || '');
+    field(box, 'Energie-Instanz', s, 'Datenpunkte, Modbus-Faktoren usw. werden im Adapter „energie“ eingestellt.');
+    let list = [];
+    try {
+      list = (await api('energy')).instances;
+    } catch (e) {
+      // not installed
+    }
+    for (const id of list.concat(value && !list.includes(value) ? [value] : [])) {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = id + (list.includes(id) ? '' : ' (nicht gefunden)');
+      s.appendChild(o);
+    }
+    if (!list.length) field(box, '', document.createTextNode('Der Adapter „energie“ ist nicht installiert: iobroker url https://github.com/andreaslampl/ioBroker.energie'));
+    s.value = value || list[0] || '';
+    return s;
+  }
+
   /** Editor for the rows of a "several values" tile. */
   function rowsField(box, rows) {
     const wrap = document.createElement('div');
@@ -556,7 +582,10 @@ const Editor = (() => {
             body.appendChild(h);
           }
         } else if (kind === 'number') inputs[key] = field(body, label, textInput(t[key], 'number'), help);
-        else if (kind.startsWith('select:')) inputs[key] = field(body, label, select(kind.slice(7).split(';').map(x => x.split('=')), t[key] || 'none'), help);
+        else if (kind.startsWith('select:')) {
+          const opts = kind.slice(7).split(';').map(x => x.split('='));
+          inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);
+        } else if (kind === 'energy') energyField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
