@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.16.1",
+    "version": "0.16.2",
     "news": {
+      "0.16.2": {
+        "en": "Energy flow tile: long consumer names are no longer cut off",
+        "de": "Energiefluss-Kachel: lange Verbraucher-Namen werden nicht mehr abgeschnitten"
+      },
       "0.16.1": {
         "en": "Energy flow tile: dots to the consumers run from the house to the consumer",
         "de": "Energiefluss-Kachel: Punkte zu den Verbrauchern laufen vom Haus zum Verbraucher"
