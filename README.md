@@ -137,7 +137,7 @@ Mit dem Adapter **energie** (`iobroker url https://github.com/andreaslampl/ioBro
 Kachel-Art **„Energiefluss“**: animierter Fluss PV → Haus, Netz, Batterie und Verbraucher. Anzeige wählbar:
 nur Fluss oder Fluss mit Tageswerten (Erzeugt, Verbraucht, Bezug, Einspeisung, Autarkie, Eigenverbrauch).
 Antippen öffnet die große Ansicht mit Tageskurve (‹ › blättert durch die letzten Tage). Datenpunkte,
-Modbus-Faktoren usw. stellt man im Adapter energie ein, nicht in SmartView. Größe „groß“ = volle Breite.
+Modbus-Faktoren und die Darstellung (rund/eckig, Linien, Animation, Symbole) stellt man im Adapter energie ein, nicht in SmartView. Größe „groß“ = volle Breite.
 
 ### Kameras
 

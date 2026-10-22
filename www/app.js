@@ -1001,7 +1001,7 @@ function energyTile(el, t) {
   const d = energyData(t);
   el.classList.toggle('missing', Boolean(t.instance) && !d);
   if (d && d.s && el._ef.flow) {
-    el._ef.flow.update(d.s);
+    el._ef.flow.update(d.s, d.view);
     const st = el.querySelector('.estats');
     if (st) EnergyView.stats(st, d.today, d.s.battery !== null);
   }
@@ -1045,7 +1045,7 @@ function energySheet(sh, t) {
   }
   const d = energyData(t);
   if (d && d.s) {
-    sh._ef.flow.update(d.s);
+    sh._ef.flow.update(d.s, d.view);
     EnergyView.stats(sh.querySelector('.estats'), d.today, d.s.battery !== null);
   }
 }

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.14.0",
+    "version": "0.14.1",
     "news": {
+      "0.14.1": {
+        "en": "Energy flow tile follows the appearance set in the energie adapter (symbols round/square, lines, animation, symbols)",
+        "de": "Energiefluss-Kachel übernimmt die Darstellung aus dem Adapter energie (Symbole rund/eckig, Linien, Animation, Symbole)"
+      },
       "0.14.0": {
         "en": "New tile energy flow (PV, grid, battery, consumers) from the energie adapter, with today's values and day chart",
         "de": "Neue Kachel Energiefluss (PV, Netz, Batterie, Verbraucher) aus dem Adapter energie, mit Tageswerten und Tageskurve"
