@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.15.1",
+    "version": "0.16.0",
     "news": {
+      "0.16.0": {
+        "en": "Tile pages can use a free grid: drag tiles to any cell, gaps allowed (option in the page settings); on phones the tiles follow each other",
+        "de": "Kachel-Seiten mit freiem Raster: Kacheln auf jedes Feld ziehen, Lücken möglich (Option in den Seiten-Einstellungen); am Handy stehen sie untereinander"
+      },
       "0.15.1": {
         "en": "Every symbol can be rotated (45° steps), e.g. a wall lamp towards its wall on the floor plan",
         "de": "Jedes Symbol lässt sich drehen (45°-Schritte), z. B. eine Wandlampe zur Wand auf dem Grundriss"

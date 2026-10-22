@@ -138,6 +138,11 @@ switches/buttons on them.
   walllamp, ceiling, lantern.
 - 0.15.1: owner asked to rotate all symbols -> tile `rotate` (degrees, 45° steps in the dialog), `tileIc(t)`
   renders every tile/row/marker/sheet symbol rotated; preview on the selected symbol in the picker.
+- 0.16.0: owner: moving only goes left/right, wants free placement -> tile pages `free` + `cols` (3-12), tiles
+  `gx`/`gy`; app.js `freeSpan()` (heading full width, html/windows/energy 2 or all, w/l 2, l 2 rows),
+  `layoutFree()` (first free cell for tiles without/with clashing place; dropped tile keeps its place),
+  edit mode shows empty `.cell`s (+1 row); drop on a cell = move, on a tile = swap. Narrow screens
+  (`freeNarrow`: column < 105 px) fall back to the normal grid ordered by row/column.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

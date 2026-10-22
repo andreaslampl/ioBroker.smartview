@@ -475,13 +475,101 @@ function renderPage() {
   renderPageInto(main, page);
 }
 
+// ---------------- free grid (page.free): tiles at column gx / row gy ----------------
+
+/** Columns and rows a tile takes in the free grid. */
+function freeSpan(t, cols) {
+  if (t.type === 'heading') return { w: cols, h: 1 };
+  if (['html', 'windows', 'energy'].includes(t.type)) return { w: t.size === 'l' ? cols : Math.min(2, cols), h: 1 };
+  return { w: t.size === 'w' || t.size === 'l' ? Math.min(2, cols) : 1, h: t.size === 'l' ? 2 : 1 };
+}
+
+/** Gives tiles without a (valid) place the first free cell; later tiles that overlap earlier ones move too. */
+function layoutFree(tiles, cols, keep) {
+  const used = new Set();
+  const fits = (gx, gy, s) => {
+    if (gx < 1 || gx + s.w - 1 > cols || gy < 1) return false;
+    for (let x = gx; x < gx + s.w; x++) for (let y = gy; y < gy + s.h; y++) if (used.has(x + ',' + y)) return false;
+    return true;
+  };
+  const take = (t, s) => {
+    for (let x = t.gx; x < t.gx + s.w; x++) for (let y = t.gy; y < t.gy + s.h; y++) used.add(x + ',' + y);
+  };
+  // the tile just dropped keeps its place, the others make room
+  const order = keep ? [tiles.find(t => t.id === keep), ...tiles.filter(t => t.id !== keep)].filter(Boolean) : tiles;
+  const later = [];
+  for (const t of order) {
+    const s = freeSpan(t, cols);
+    if (t.type === 'heading') t.gx = 1;
+    if (t.gx && t.gy && fits(t.gx, t.gy, s)) take(t, s);
+    else later.push(t);
+  }
+  for (const t of later) {
+    const s = freeSpan(t, cols);
+    for (let gy = 1; ; gy++) {
+      let gx = 1;
+      while (gx <= cols && !fits(gx, gy, s)) gx++;
+      if (gx <= cols) {
+        t.gx = gx;
+        t.gy = gy;
+        take(t, s);
+        break;
+      }
+    }
+  }
+  return used;
+}
+
+/** Free grid only where the columns are wide enough; on the phone the tiles just follow each other. */
+function freeNarrow(box, page) {
+  return (box.clientWidth || innerWidth) / (page.cols || 6) < 105;
+}
+
 /** Content of a page (tiles, list or floor plan) into a container. */
 function renderPageInto(box, page) {
   if (page.type === 'plan') return renderPlan(box, page);
   if (page.type === 'list') return renderList(box, page);
   const grid = document.createElement('div');
   grid.className = 'grid';
-  for (const t of visibleTiles(page)) grid.appendChild(renderTile(t, page));
+  let tiles = visibleTiles(page);
+  const free = page.free && !freeNarrow(box, page);
+  if (page.free) {
+    const cols = page.cols || 6;
+    const used = layoutFree(page.tiles, cols);
+    tiles = tiles.slice().sort((a, b) => a.gy - b.gy || a.gx - b.gx);
+    if (free) {
+      grid.classList.add('free');
+      grid.style.setProperty('--cols', cols);
+    }
+    grid.dataset.cols = cols;
+    grid._used = used;
+  }
+  for (const t of tiles) {
+    const el = renderTile(t, page);
+    if (free) {
+      const s = freeSpan(t, page.cols || 6);
+      el.style.gridColumn = t.gx + ' / span ' + s.w;
+      el.style.gridRow = t.gy + ' / span ' + s.h;
+    }
+    grid.appendChild(el);
+  }
+  if (free && SV.editing) {
+    // empty cells (plus one more row) to drop tiles on
+    const cols = page.cols || 6;
+    const rows = Math.max(0, ...page.tiles.map(t => t.gy + freeSpan(t, cols).h - 1)) + 1;
+    for (let gy = 1; gy <= rows; gy++) {
+      for (let gx = 1; gx <= cols; gx++) {
+        if (grid._used.has(gx + ',' + gy)) continue;
+        const c = document.createElement('div');
+        c.className = 'cell';
+        c.dataset.gx = gx;
+        c.dataset.gy = gy;
+        c.style.gridColumn = String(gx);
+        c.style.gridRow = String(gy);
+        grid.appendChild(c);
+      }
+    }
+  }
   if (SV.editing) {
     const add = document.createElement('div');
     add.className = 'tile addtile';
@@ -1439,9 +1527,14 @@ async function start() {
     render();
   });
   let lastDev = device();
+  let lastNarrow = null;
   window.addEventListener('resize', () => {
-    if (device() !== lastDev) {
+    // free grid pages switch to the simple order on narrow screens
+    const page = currentPage();
+    const narrow = page && page.free ? freeNarrow($('main'), page) : null;
+    if (device() !== lastDev || narrow !== lastNarrow) {
       lastDev = device();
+      lastNarrow = narrow;
       render();
     }
   });

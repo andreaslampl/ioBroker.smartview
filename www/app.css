@@ -392,3 +392,10 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .plan.ms-l .marker .mval { font-size: 14px; }
 .iconpick .sel .ic { transform: rotate(var(--rot, 0deg)); }
 .ic { transition: transform .15s; }
+
+/* free grid: tiles at fixed cells, empty cells allowed */
+.grid.free { grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)); grid-auto-rows: minmax(var(--th), auto); }
+.grid.free > .tile { max-width: none; }
+.grid.free > .tile:not(.size-l):not(.html):not(.windows):not(.energy) { height: var(--th); }
+.grid.free > .cell { border: 2px dashed var(--line); border-radius: var(--radius); min-height: var(--th); opacity: .45; }
+.grid.free > .cell.over, .grid.free > .tile.over { opacity: 1; border-color: var(--accent); outline: 2px solid var(--accent); }

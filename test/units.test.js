@@ -277,3 +277,15 @@ test('homekit: tiles <-> homekit-easy devices', () => {
     // two tiles linked to the same device: only one device
     assert.equal(devicesFor({ pages: [{ id: 'a', tiles: [{ id: '1', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }, { id: '2', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }] }] }).length, 1);
 });
+
+test('layout: free grid pages keep tile cells', () => {
+    const { cleanLayout } = require('../lib/layout');
+    const l = cleanLayout({ pages: [
+        { id: 'a', name: 'A', free: true, cols: 40, tiles: [{ id: 't', type: 'switch', gx: 3, gy: 2 }, { id: 'u', type: 'switch', gx: 'x' }] },
+        { id: 'b', name: 'B', type: 'list', free: true, tiles: [] },
+    ] });
+    assert.deepEqual([l.pages[0].free, l.pages[0].cols], [true, 12]);
+    assert.deepEqual([l.pages[0].tiles[0].gx, l.pages[0].tiles[0].gy], [3, 2]);
+    assert.equal(l.pages[0].tiles[1].gx, undefined);
+    assert.equal(l.pages[1].free, undefined, 'only tile pages');
+});

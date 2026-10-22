@@ -27,6 +27,9 @@ Oben rechts **✎** antippen:
 - **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
   Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
 - Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
+- **Frei platzieren:** ✎ → Seite bearbeiten → „Kacheln frei platzieren (Raster)“ und Spaltenzahl. Dann Kachel auf
+  ein leeres Feld ziehen (Lücken bleiben) oder auf eine andere Kachel (die beiden tauschen). Am Handy stehen die
+  Kacheln einfach untereinander, in der Reihenfolge Zeile für Zeile.
 - Verschieben geht auch direkt: Kachel oder Listeneintrag mit der Maus ziehen bzw. mit dem Finger
   kurz halten (ca. ½ Sekunde) und dann ziehen; danach „Speichern“.
 - **⚙ Allgemein & Mitteilungen** – Titel, Design, Klingel, Push-Regeln.

@@ -715,8 +715,21 @@ const Editor = (() => {
     const msBox = document.createElement('div');
     body.appendChild(msBox);
     const ms = field(msBox, 'Symbolgröße auf dem Grundriss', select([['xs', 'sehr klein'], ['s', 'klein'], ['m', 'normal'], ['l', 'groß']], p.markerSize || 'm'), 'Für Lagepläne mit vielen Symbolen „klein“ oder „sehr klein“ wählen.');
-    const showMs = () => (msBox.hidden = type.value !== 'plan');
+    // tile page: free grid (place tiles anywhere, gaps allowed)
+    const frBox = document.createElement('div');
+    body.appendChild(frBox);
+    const fr = check('Kacheln frei platzieren (Raster, Lücken möglich)', p.free);
+    frBox.appendChild(fr);
+    const colsBox = document.createElement('div');
+    frBox.appendChild(colsBox);
+    const cols = field(colsBox, 'Spalten im Raster', select([3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => [String(n), String(n)]), String(p.cols || 6)), 'Im Bearbeiten-Modus Kachel auf ein leeres Feld oder auf eine andere Kachel ziehen (tauschen). Am Handy stehen die Kacheln einfach untereinander.');
+    const showMs = () => {
+      msBox.hidden = type.value !== 'plan';
+      frBox.hidden = type.value !== 'tiles';
+      colsBox.hidden = !fr.input.checked;
+    };
     type.addEventListener('change', showMs);
+    fr.input.addEventListener('change', showMs);
     showMs();
     const buttons = document.createElement('div');
     buttons.className = 'buttons';
@@ -761,6 +774,8 @@ const Editor = (() => {
       p.name = name.value.trim() || 'Seite';
       p.type = type.value;
       p.markerSize = ms.value;
+      p.free = type.value === 'tiles' && fr.input.checked;
+      p.cols = Number(cols.value);
       const i = l.pages.findIndex(x => x.id === p.id);
       const cur = i >= 0 ? l.pages[i] : null;
       const next = { ...p, tiles: cur ? cur.tiles : [], image: cur ? cur.image : '' };
@@ -943,10 +958,24 @@ const Editor = (() => {
       el.style.transform = `translate(${x - off.x - r.left}px, ${y - off.y - r.top}px)`;
     };
 
+    const free = box.classList.contains('free');
+
     const moveTo = (x, y) => {
       drag.x = x;
       drag.y = y;
       const hit = document.elementFromPoint(x, y);
+      if (free) {
+        // free grid: an empty cell or another tile (they swap places)
+        const over = hit && (hit.closest('.cell') || hit.closest(selector));
+        const target = over && over !== drag.el && over.parentElement === box ? over : null;
+        if (target !== drag.target) {
+          if (drag.target) drag.target.classList.remove('over');
+          if (target) target.classList.add('over');
+          drag.target = target;
+        }
+        place();
+        return;
+      }
       const target = hit && hit.closest(selector);
       if (target && target !== drag.el && target.parentElement === box) {
         const items = [...box.querySelectorAll(selector)];
@@ -968,6 +997,27 @@ const Editor = (() => {
     const finish = () => {
       if (!drag) return;
       clearInterval(drag.timer);
+      if (free) {
+        const t = page.tiles.find(x => x.id === drag.el.dataset.tile);
+        const target = drag.target;
+        drag = null;
+        droppedAt = Date.now();
+        if (t && target) {
+          const cols = Number(box.dataset.cols) || 6;
+          if (target.classList.contains('cell')) {
+            t.gx = Math.min(Number(target.dataset.gx), cols - freeSpan(t, cols).w + 1);
+            t.gy = Number(target.dataset.gy);
+          } else {
+            const o = page.tiles.find(x => x.id === target.dataset.tile);
+            if (o) [t.gx, t.gy, o.gx, o.gy] = [o.gx, o.gy, t.gx, t.gy];
+          }
+          // tiles in the way get the next free place
+          layoutFree(page.tiles, cols, t.id);
+          toast('Verschoben – „Speichern“ nicht vergessen.');
+        }
+        render();
+        return;
+      }
       const ids = [...box.querySelectorAll(selector)].map(el => el.dataset.tile);
       drag = null;
       droppedAt = Date.now();
