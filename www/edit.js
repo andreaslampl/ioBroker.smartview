@@ -722,6 +722,146 @@ const Editor = (() => {
     addTile(page, { x, y });
   }
 
+  // ---------------- move tiles and list rows by dragging ----------------
+
+  let droppedAt = 0;
+
+  /** true right after a drag ended: the click that follows must not open the tile dialog */
+  function justDragged() {
+    return Date.now() - droppedAt < 300;
+  }
+
+  /** Scrolling ancestor of an element (#main, side panel or the page). */
+  function scroller(el) {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowY;
+      if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+    }
+    return document.scrollingElement;
+  }
+
+  /**
+   * Reorder the children `selector` of `box` by dragging; the new order is written to page.tiles.
+   * Mouse: drag after a few pixels. Touch: hold ~0.35 s, then drag (a quick swipe still scrolls).
+   */
+  function sortable(box, page, selector) {
+    let drag = null;
+
+    const begin = (el, x, y) => {
+      const r = el.getBoundingClientRect();
+      drag = { el, off: { x: x - r.left, y: y - r.top }, scroll: scroller(box), x, y };
+      box.classList.add('sorting');
+      el.classList.add('dragging');
+      if (navigator.vibrate) navigator.vibrate(15);
+      place();
+      drag.timer = setInterval(autoScroll, 30);
+    };
+
+    const place = () => {
+      const { el, off, x, y } = drag;
+      el.style.transform = '';
+      const r = el.getBoundingClientRect();
+      el.style.transform = `translate(${x - off.x - r.left}px, ${y - off.y - r.top}px)`;
+    };
+
+    const moveTo = (x, y) => {
+      drag.x = x;
+      drag.y = y;
+      const hit = document.elementFromPoint(x, y);
+      const target = hit && hit.closest(selector);
+      if (target && target !== drag.el && target.parentElement === box) {
+        const items = [...box.querySelectorAll(selector)];
+        box.insertBefore(drag.el, items.indexOf(target) < items.indexOf(drag.el) ? target : target.nextSibling);
+      }
+      place();
+    };
+
+    // near the top or bottom edge the page scrolls along
+    const autoScroll = () => {
+      const s = drag.scroll;
+      const r = s === document.scrollingElement ? { top: 0, bottom: innerHeight } : s.getBoundingClientRect();
+      const dy = drag.y < r.top + 60 ? -12 : drag.y > r.bottom - 60 ? 12 : 0;
+      if (!dy) return;
+      s.scrollTop += dy;
+      moveTo(drag.x, drag.y);
+    };
+
+    const finish = () => {
+      if (!drag) return;
+      clearInterval(drag.timer);
+      const ids = [...box.querySelectorAll(selector)].map(el => el.dataset.tile);
+      drag = null;
+      droppedAt = Date.now();
+      const old = page.tiles.map(t => t.id).join();
+      page.tiles.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+      if (page.tiles.map(t => t.id).join() !== old) toast('Reihenfolge geändert – „Speichern“ nicht vergessen.');
+      render();
+    };
+
+    // mouse and pen
+    box.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch' || e.button !== 0) return;
+      const el = e.target.closest(selector);
+      if (!el || el.parentElement !== box) return;
+      const sx = e.clientX;
+      const sy = e.clientY;
+      const move = ev => {
+        if (!drag) {
+          if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 8) return;
+          begin(el, sx, sy);
+        }
+        ev.preventDefault();
+        moveTo(ev.clientX, ev.clientY);
+      };
+      const up = () => {
+        removeEventListener('pointermove', move);
+        removeEventListener('pointerup', up);
+        removeEventListener('pointercancel', up);
+        finish();
+      };
+      addEventListener('pointermove', move);
+      addEventListener('pointerup', up);
+      addEventListener('pointercancel', up);
+    });
+
+    // touch: long press starts the drag, otherwise the finger scrolls as usual
+    box.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      const el = e.target.closest(selector);
+      if (!el || el.parentElement !== box) return;
+      const t0 = e.touches[0];
+      const sx = t0.clientX;
+      const sy = t0.clientY;
+      let last = { x: sx, y: sy };
+      const hold = setTimeout(() => begin(el, last.x, last.y), 350);
+      const move = ev => {
+        const t = ev.touches[0];
+        last = { x: t.clientX, y: t.clientY };
+        if (!drag) {
+          if (Math.abs(last.x - sx) + Math.abs(last.y - sy) > 10) end();
+          return;
+        }
+        ev.preventDefault();
+        moveTo(last.x, last.y);
+      };
+      const end = () => {
+        clearTimeout(hold);
+        removeEventListener('touchmove', move);
+        removeEventListener('touchend', end);
+        removeEventListener('touchcancel', end);
+        finish();
+      };
+      addEventListener('touchmove', move, { passive: false });
+      addEventListener('touchend', end);
+      addEventListener('touchcancel', end);
+    }, { passive: true });
+
+    // no context menu / text selection from the long press
+    box.addEventListener('contextmenu', e => {
+      if (e.target.closest(selector)) e.preventDefault();
+    });
+  }
+
   function markerDown(e, page, t, el) {
     e.preventDefault();
     e.stopPropagation();
@@ -1027,5 +1167,5 @@ const Editor = (() => {
     }
   });
 
-  return { start, addTile, editTile, addPage, editPage, planTools, planClick, markerDown };
+  return { start, addTile, editTile, addPage, editPage, planTools, planClick, markerDown, sortable, justDragged };
 })();

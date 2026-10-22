@@ -473,6 +473,7 @@ function renderPageInto(box, page) {
     add.innerHTML = icon('plus') + '<span>Kachel</span>';
     add.onclick = () => Editor.addTile(page);
     grid.appendChild(add);
+    Editor.sortable(grid, page, '.tile[data-tile]');
   }
   box.appendChild(grid);
 }
@@ -522,7 +523,7 @@ function renderTile(t, page) {
   fillTile(el, t);
   if (!SV.editing && Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
   el.addEventListener('click', e => {
-    if (SV.editing) return Editor.editTile(page, t);
+    if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
     if (e.target.closest('button, input')) return;
     tileTap(t);
   });
@@ -543,7 +544,7 @@ function renderList(box, page) {
     fillRow(el, t);
     if (!SV.editing && Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
     el.addEventListener('click', e => {
-      if (SV.editing) return Editor.editTile(page, t);
+      if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
       if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind'].includes(t.type)) tileTap(t);
     });
@@ -555,6 +556,7 @@ function renderList(box, page) {
     add.innerHTML = icon('plus') + '<span>Eintrag</span>';
     add.onclick = () => Editor.addTile(page);
     list.appendChild(add);
+    Editor.sortable(list, page, '.lrow[data-tile]');
   }
   box.appendChild(list);
 }

@@ -359,3 +359,8 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .win .wst small { display: block; color: var(--muted); font-size: 12px; }
 .winsheet .wlist { grid-template-columns: 1fr; }
 .win .wic .ic { width: 30px; height: 30px; }
+
+/* edit mode: move tiles / list rows by dragging */
+.editing .tile:not(.addtile), .editing .lrow:not(.addrow) { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.list.sorting { overflow: visible; }
+.dragging { position: relative; z-index: 50; pointer-events: none; opacity: .85; box-shadow: 0 12px 30px rgba(0,0,0,.45); transition: none !important; }

@@ -27,6 +27,8 @@ Oben rechts **✎** antippen:
 - **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
   Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
 - Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
+- Verschieben geht auch direkt: Kachel oder Listeneintrag mit der Maus ziehen bzw. mit dem Finger
+  kurz halten (ca. ½ Sekunde) und dann ziehen; danach „Speichern“.
 - **⚙ Allgemein & Mitteilungen** – Titel, Design, Klingel, Push-Regeln.
 - **Speichern** – alle Geräte zeigen sofort die neue Ansicht.
 

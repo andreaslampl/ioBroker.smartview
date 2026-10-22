@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.11.2",
+    "version": "0.12.0",
     "news": {
+      "0.12.0": {
+        "en": "Edit mode: move tiles and list entries by dragging (mouse: drag, touch: hold briefly, then drag)",
+        "de": "Bearbeiten: Kacheln und Listeneinträge per Ziehen verschieben (Maus: ziehen, Finger: kurz halten, dann ziehen)"
+      },
       "0.11.2": {
         "en": "HTML display: pictures of the web adapter (VIS symbols) are shown, width limited (size large = full width)",
         "de": "HTML-Anzeige: Bilder des web-Adapters (VIS-Symbole) werden angezeigt, Breite begrenzt (Größe groß = volle Breite)"

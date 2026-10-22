@@ -110,6 +110,9 @@ switches/buttons on them.
   state, tilt, invert}; tilt contact wins, then contact; "seit …" from the newest lc of both, refreshed
   every 30 s; tile alert when one is open). The HTML tile stays for other scripts. 0.11.1: own icons
   win-closed / win-tilt / win-open per state (owner asked).
+- 0.12.0: owner asked to move tiles after creating them -> `Editor.sortable()` (edit mode, tile grid and
+  list rows): mouse drags after 8 px, touch after a 350 ms hold (a quick swipe still scrolls), DOM reordered
+  live, page.tiles sorted on drop; `justDragged()` swallows the click after a drop. Checked in Playwright.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions
