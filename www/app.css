@@ -357,3 +357,4 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .win .wst { margin-left: auto; text-align: right; font-size: 14px; white-space: nowrap; }
 .win .wst small { display: block; color: var(--muted); font-size: 12px; }
 .winsheet .wlist { grid-template-columns: 1fr; }
+.win .wic .ic { width: 30px; height: 30px; }

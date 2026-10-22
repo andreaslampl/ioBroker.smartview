@@ -317,7 +317,7 @@ function windowsHtml(t) {
   const sum = open || tilt ? [open ? open + ' offen' : '', tilt ? tilt + ' gekippt' : ''].filter(Boolean).join(' · ') : 'alle geschlossen';
   return '<div class="whead">' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span><span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
     '<div class="wlist">' + list.map(w =>
-      '<div class="win ' + w.status + '"><span class="wic">' + icon('window') + '</span><span class="wname">' + esc(w.label) + '</span>' +
+      '<div class="win ' + w.status + '"><span class="wic">' + icon(w.status === 'open' ? 'win-open' : w.status === 'tilt' ? 'win-tilt' : 'win-closed') + '</span><span class="wname">' + esc(w.label) + '</span>' +
       '<span class="wst">' + WIN_TEXT[w.status] + (w.ts && w.status !== 'unknown' ? ' <small>seit ' + since(w.ts) + '</small>' : '') + '</span></div>').join('') + '</div>';
 }
 

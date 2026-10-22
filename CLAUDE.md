@@ -106,7 +106,8 @@ switches/buttons on them.
   SmartView can switch things. Full width, auto height. Relative image URLs of VIS would not resolve.
 - 0.11.0: owner asked to build the window table without a script -> tile type `windows` (rows {label,
   state, tilt, invert}; tilt contact wins, then contact; "seit …" from the newest lc of both, refreshed
-  every 30 s; tile alert when one is open). The HTML tile stays for other scripts.
+  every 30 s; tile alert when one is open). The HTML tile stays for other scripts. 0.11.1: own icons
+  win-closed / win-tilt / win-open per state (owner asked).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

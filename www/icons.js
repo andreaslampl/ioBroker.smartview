@@ -8,6 +8,10 @@ const ICON_PATHS = {
   socket: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9.5 10v2M14.5 10v2"/><path d="M10 15.5h4"/>',
   blind: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M4 7h16M4 11h16M4 15h16"/><path d="M12 15v4"/>',
   window: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M12 3v18M5 12h14"/>',
+  // window states for the window overview: frame + sash closed / swung open / tilted at the top
+  'win-closed': '<rect x="4" y="3" width="16" height="18" rx="1"/><rect x="6.5" y="5.5" width="11" height="13" rx=".5"/><path d="M15 11v3"/>',
+  'win-open': '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M5 4l7 2.5v11L5 20z" fill="currentColor" fill-opacity=".25"/><path d="M10 11v2.5"/>',
+  'win-tilt': '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M6.5 5.5h11" stroke-dasharray="1.5 2"/><path d="M6.5 18.5h11l-1.6-9.5H8.1z" fill="currentColor" fill-opacity=".25"/><path d="M12 15.5v-2"/>',
   door: '<path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17"/><path d="M4 21h16"/><circle cx="14.5" cy="12" r="1"/>',
   garage: '<path d="M3 10l9-6 9 6v11H3z"/><path d="M7 21v-8h10v8M7 16h10"/>',
   gate: '<path d="M3 20V8M21 20V8"/><path d="M3 10c3-2 15-2 18 0"/><path d="M7 9.5V20M11 9V20M15 9V20M19 9.5V20"/>',

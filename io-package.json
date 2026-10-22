@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.11.0",
+    "version": "0.11.1",
     "news": {
+      "0.11.1": {
+        "en": "Window overview: the window symbol shows closed, tilted or open",
+        "de": "Fensterübersicht: das Fenster-Symbol zeigt zu, gekippt oder offen"
+      },
       "0.11.0": {
         "en": "New tile: window overview - tick the contacts (optional tilt contact), shows closed / tilted / open with the time since the last change, no script needed",
         "de": "Neue Kachel: Fensterübersicht – Kontakte anhaken (optional Kipp-Kontakt), zeigt geschlossen / gekippt / offen mit der Zeit seit der letzten Änderung, ohne Skript"
