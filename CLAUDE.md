@@ -113,6 +113,8 @@ switches/buttons on them.
 - 0.12.0: owner asked to move tiles after creating them -> `Editor.sortable()` (edit mode, tile grid and
   list rows): mouse drags after 8 px, touch after a 350 ms hold (a quick swipe still scrolls), DOM reordered
   live, page.tiles sorted on drop; `justDragged()` swallows the click after a drop. Checked in Playwright.
+  Field: owner re-added the home screen icon via the DuckDNS name; test push and rule push from a data
+  point both arrive on the company iPhone (push is enabled in the app menu, not in iOS settings).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions
