@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.16.2",
+    "version": "0.17.0",
     "news": {
+      "0.17.0": {
+        "en": "Energy flow tile can show only the flow, only today's values or only the day chart - several tiles can be placed separately",
+        "de": "Energiefluss-Kachel kann nur den Fluss, nur die Tageswerte oder nur die Tageskurve zeigen – mehrere Kacheln lassen sich einzeln platzieren"
+      },
       "0.16.2": {
         "en": "Energy flow tile: long consumer names are no longer cut off",
         "de": "Energiefluss-Kachel: lange Verbraucher-Namen werden nicht mehr abgeschnitten"

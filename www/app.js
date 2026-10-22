@@ -1095,18 +1095,29 @@ function energyTile(el, t) {
   energyCss();
   el.classList.add('energy', 'tap');
   if (el.classList.contains('lrow')) el.classList.add('htmlrow');
+  const show = t.show || 'flow';
+  el.classList.toggle('eonly', show === 'today' || show === 'chart');
   if (!el._ef || !el.contains(el._ef.box)) {
-    el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') +
-      (t.instance ? '<div class="eflow"></div>' + (t.show === 'stats' ? '<div class="estats"></div>' : '') : '<div class="planempty">Keine Energie-Instanz gewählt</div>');
-    const box = el.querySelector('.eflow');
-    el._ef = { box, flow: box ? EnergyView.flow(box) : null };
+    // parts: flow (flow, stats), today's values (stats, today), day chart (chart)
+    const parts = (show === 'flow' || show === 'stats' ? '<div class="eflow"></div>' : '') + (show === 'stats' || show === 'today' ? '<div class="estats"></div>' : '') + (show === 'chart' ? '<div class="echart"></div>' : '');
+    el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + (t.instance ? parts : '<div class="planempty">Keine Energie-Instanz gewählt</div>');
+    const box = el.querySelector('.eflow, .estats, .echart');
+    el._ef = { box, flow: el.querySelector('.eflow') ? EnergyView.flow(el.querySelector('.eflow')) : null, chartAt: 0 };
   }
   const d = energyData(t);
   el.classList.toggle('missing', Boolean(t.instance) && !d);
-  if (d && d.s && el._ef.flow) {
-    el._ef.flow.update(d.s, d.view);
+  if (d && d.s) {
+    if (el._ef.flow) el._ef.flow.update(d.s, d.view);
     const st = el.querySelector('.estats');
     if (st) EnergyView.stats(st, d.today, d.s.battery !== null);
+  }
+  // today's curve: new 5-minute values, so reload every 5 minutes at most
+  const ch = el.querySelector('.echart');
+  if (ch && t.instance && Date.now() - el._ef.chartAt > 300000) {
+    el._ef.chartAt = Date.now();
+    api('energy/day?instance=' + encodeURIComponent(t.instance))
+      .then(day => (day.error ? Promise.reject(new Error(day.error)) : EnergyView.chart(ch, day)))
+      .catch(e => (ch.innerHTML = '<p class="muted">' + esc(e.message) + '</p>'));
   }
 }
 

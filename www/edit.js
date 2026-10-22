@@ -73,7 +73,7 @@ const TYPE_FIELDS = {
   heading: [],
   energy: [
     ['instance', 'Energie-Instanz', 'energy'],
-    ['show', 'Anzeige', 'select:flow=nur Energiefluss (antippen = Tageswerte und Kurve);stats=Energiefluss und Tageswerte'],
+    ['show', 'Anzeige', 'select:flow=nur Energiefluss;stats=Energiefluss und Tageswerte;today=nur Tageswerte (Heute);chart=nur Tagesverlauf (Kurve)', 'Für einzeln verschiebbare Teile mehrere Kacheln anlegen, z. B. eine mit Fluss, eine mit Tageswerten, eine mit Kurve. Antippen öffnet immer die große Ansicht.'],
   ],
 };
 

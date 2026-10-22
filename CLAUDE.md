@@ -143,6 +143,8 @@ switches/buttons on them.
   `layoutFree()` (first free cell for tiles without/with clashing place; dropped tile keeps its place),
   edit mode shows empty `.cell`s (+1 row); drop on a cell = move, on a tile = swap. Narrow screens
   (`freeNarrow`: column < 105 px) fall back to the normal grid ordered by row/column.
+- 0.17.0: owner wanted the parts of the energy view as separately movable tiles -> energy `show`
+  flow|stats|today|chart; chart tiles load `/api/energy/day` at most every 5 min.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

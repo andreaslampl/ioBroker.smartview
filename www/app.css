@@ -399,3 +399,6 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .grid.free > .tile:not(.size-l):not(.html):not(.windows):not(.energy) { height: var(--th); }
 .grid.free > .cell { border: 2px dashed var(--line); border-radius: var(--radius); min-height: var(--th); opacity: .45; }
 .grid.free > .cell.over, .grid.free > .tile.over { opacity: 1; border-color: var(--accent); outline: 2px solid var(--accent); }
+.tile.energy.eonly { max-width: none; }
+.tile.energy .echart { width: 100%; }
+.tile.energy .echart .ef-chart { max-height: 300px; }
