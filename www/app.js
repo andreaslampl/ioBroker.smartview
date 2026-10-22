@@ -118,14 +118,17 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window'].map(k => t[k]).concat((t.rows || []).map(r => r.state)).filter(Boolean);
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window'].map(k => t[k])
+    .concat((t.rows || []).map(r => r.state))
+    .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
+    .filter(Boolean);
 }
 
 // ---------------- tile logic ----------------
@@ -276,7 +279,50 @@ function sendMode(t, key) {
 }
 
 /** Highlight state of a tile: 'on', 'alert' or ''. */
+// ---------------- window overview ----------------
+
+/** "3 Min.", "4 Std. 8 Min.", "12 Tage 18 Std." */
+function since(ts) {
+  if (!ts) return '';
+  const m = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+  if (m < 1) return 'gerade eben';
+  const d = Math.floor(m / 1440);
+  const h = Math.floor((m % 1440) / 60);
+  const min = m % 60;
+  if (d) return d + (d === 1 ? ' Tag ' : ' Tage ') + h + ' Std.';
+  if (h) return h + ' Std. ' + min + ' Min.';
+  return min + ' Min.';
+}
+
+/** Status of each window: closed / tilt / open (tilt contact wins), time since the last change. */
+function windowStates(t) {
+  return (t.windows || []).map(w => {
+    const a = w.state ? st(w.state) : null;
+    const b = w.tilt ? st(w.tilt) : null;
+    const known = (a && !a.missing && a.val !== null && a.val !== undefined) || (b && !b.missing && b.val !== null && b.val !== undefined);
+    const open = a && a.val !== null && a.val !== undefined ? (w.invert ? !truthy(a.val) : truthy(a.val)) : false;
+    const tilt = b ? truthy(b.val) : false;
+    const status = !known ? 'unknown' : tilt ? 'tilt' : open ? 'open' : 'closed';
+    const ts = Math.max((a && (a.lc || a.ts)) || 0, (b && (b.lc || b.ts)) || 0);
+    return { label: w.label || (w.state || w.tilt || '').split('.').pop(), status, ts };
+  });
+}
+
+const WIN_TEXT = { open: 'offen', tilt: 'gekippt', closed: 'geschlossen', unknown: 'unbekannt' };
+
+function windowsHtml(t) {
+  const list = windowStates(t);
+  const open = list.filter(w => w.status === 'open').length;
+  const tilt = list.filter(w => w.status === 'tilt').length;
+  const sum = open || tilt ? [open ? open + ' offen' : '', tilt ? tilt + ' gekippt' : ''].filter(Boolean).join(' · ') : 'alle geschlossen';
+  return '<div class="whead">' + icon(tileIcon(t)) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span><span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
+    '<div class="wlist">' + list.map(w =>
+      '<div class="win ' + w.status + '"><span class="wic">' + icon('window') + '</span><span class="wname">' + esc(w.label) + '</span>' +
+      '<span class="wst">' + WIN_TEXT[w.status] + (w.ts && w.status !== 'unknown' ? ' <small>seit ' + since(w.ts) + '</small>' : '') + '</span></div>').join('') + '</div>';
+}
+
 function tileState(t) {
+  if (t.type === 'windows') return windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'blind') return '';
@@ -551,6 +597,10 @@ function fillRow(el, t) {
     case 'heading':
       el.innerHTML = '<span class="lname">' + esc(t.label) + '</span>';
       return;
+    case 'windows':
+      el.classList.add('htmlrow');
+      el.innerHTML = windowsHtml(t);
+      return;
     case 'html':
       el.classList.add('htmlrow');
       el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
@@ -640,7 +690,7 @@ function fillTile(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('missing', missing(t));
-  el.classList.toggle('tap', t.type !== 'heading' && t.type !== 'html');
+  el.classList.toggle('tap', !['heading', 'html', 'windows'].includes(t.type));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
   const ic = '<span class="tic">' + icon(tileIcon(t)) + '</span>';
   let html = '';
@@ -693,6 +743,9 @@ function fillTile(el, t) {
       break;
     case 'html':
       html = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>';
+      break;
+    case 'windows':
+      html = windowsHtml(t);
       break;
     case 'multi': {
       const rows = t.rows || [];
@@ -889,7 +942,10 @@ function fillMarker(el, t) {
     v = f.text + (f.unit ? ' ' + f.unit : '');
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
-  else if (t.type === 'thermostat') {
+  else if (t.type === 'windows') {
+    const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
+    v = n ? n + ' offen' : '';
+  } else if (t.type === 'thermostat') {
     const f = fmt({ decimals: 1, unit: t.unit }, t.status || t.state);
     v = f.text + (f.unit ? ' ' + f.unit : ' °C');
   }
@@ -963,6 +1019,8 @@ function fillSheet(sh, t) {
       (s && s.ts ? '<p class="muted" style="text-align:center">aktualisiert ' + new Date(s.ts).toLocaleString('de-DE') + '</p>' : '');
   } else if (t.type === 'button') {
     body = '<div class="row"><button type="button" data-a="press" class="primary">Auslösen</button></div>';
+  } else if (t.type === 'windows') {
+    body = '<div class="winsheet">' + windowsHtml(t) + '</div>';
   } else if (t.type === 'html') {
     body = '<div class="htmlhost sheethtml"></div>';
   } else if (t.type === 'multi') {
@@ -1280,6 +1338,13 @@ async function start() {
   });
   tickClock();
   setInterval(tickClock, 10000);
+  // window overview: keep the "seit …" times current
+  setInterval(() => {
+    for (const el of document.querySelectorAll('.tile.windows, .lrow.windows')) {
+      const t = findTile(el.dataset.page, el.dataset.tile);
+      if (t) (el.classList.contains('lrow') ? fillRow : fillTile)(el, t);
+    }
+  }, 30000);
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
   try {
     await loadLayout();

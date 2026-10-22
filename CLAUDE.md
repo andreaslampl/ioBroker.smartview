@@ -104,6 +104,9 @@ switches/buttons on them.
   javascript.0.FensterUeberwachung.OverviewTable) -> tile type `html`: read-only, rendered in a shadow
   root (styles stay inside), `safeHtml()` strips scripts/handlers/frames/forms/javascript: URLs since
   SmartView can switch things. Full width, auto height. Relative image URLs of VIS would not resolve.
+- 0.11.0: owner asked to build the window table without a script -> tile type `windows` (rows {label,
+  state, tilt, invert}; tilt contact wins, then contact; "seit …" from the newest lc of both, refreshed
+  every 30 s; tile alert when one is open). The HTML tile stays for other scripts.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

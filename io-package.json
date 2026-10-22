@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "news": {
+      "0.11.0": {
+        "en": "New tile: window overview - tick the contacts (optional tilt contact), shows closed / tilted / open with the time since the last change, no script needed",
+        "de": "Neue Kachel: Fensterübersicht – Kontakte anhaken (optional Kipp-Kontakt), zeigt geschlossen / gekippt / offen mit der Zeit seit der letzten Änderung, ohne Skript"
+      },
       "0.10.0": {
         "en": "New tile: HTML display - shows HTML text from a data point (e.g. a table made by a script, like a VIS basic HTML widget); scripts are not run",
         "de": "Neue Kachel: HTML-Anzeige – zeigt HTML-Text aus einem Datenpunkt (z. B. eine Tabelle aus einem Skript, wie das VIS-Widget Basic HTML); Skripte werden nicht ausgeführt"

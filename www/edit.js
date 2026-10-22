@@ -14,6 +14,7 @@ const TYPE_LABELS = {
   page: 'Seite öffnen (Menü-Knopf)',
   multi: 'Mehrere Werte (z. B. 3 Temperaturen)',
   html: 'HTML-Anzeige (Text mit HTML aus einem Datenpunkt)',
+  windows: 'Fensterübersicht (offen / gekippt / zu)',
   heading: 'Überschrift',
 };
 
@@ -66,6 +67,7 @@ const TYPE_FIELDS = {
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
   page: [['target', 'Seite, die geöffnet wird', 'page']],
   multi: [['rows', 'Werte', 'rows']],
+  windows: [['windows', 'Fenster', 'windows']],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
 };
@@ -321,6 +323,73 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state) };
   }
 
+  /** Window overview: per window name, contact, optional tilt contact, inverted. */
+  function windowsField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Fenster', wrap, 'Pro Fenster den Magnetkontakt (true = offen). Gekippt nur, wenn es einen eigenen Kipp-Kontakt gibt (true = gekippt).');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), state: x.state.value.trim(), tilt: x.tilt.value.trim(), invert: x.invert.input.checked }));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name', textInput(r.label));
+        x.label.placeholder = 'z. B. Küche';
+        x.state = stateField(b, 'Kontakt (offen)', r.state, false);
+        x.tilt = stateField(b, 'Kipp-Kontakt (optional)', r.tilt, false);
+        x.invert = check('Kontakt umgekehrt (true = geschlossen)', r.invert);
+        b.appendChild(x.invert);
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Fenster entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        for (const [txt, dir] of [['▲', -1], ['▼', 1]]) {
+          const mv = document.createElement('button');
+          mv.type = 'button';
+          mv.textContent = txt;
+          mv.onclick = () => {
+            const cur = read();
+            const j = i + dir;
+            if (j < 0 || j >= cur.length) return;
+            [cur[i], cur[j]] = [cur[j], cur[i]];
+            list.splice(0, list.length, ...cur);
+            draw();
+          };
+          tools.appendChild(mv);
+        }
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Fenster';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '', state: '', tilt: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state || r.tilt) };
+  }
+
   // ---------------- tiles ----------------
 
   function addTile(page, pos) {
@@ -364,6 +433,7 @@ const Editor = (() => {
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
+        else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') iconField(body, t.icon || DEFAULT_ICON[t.type], name => (t.icon = name));

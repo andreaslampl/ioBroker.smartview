@@ -111,6 +111,18 @@ test('layout: HTML display tile is read only', () => {
     assert.deepEqual(write, []);
 });
 
+test('layout: window overview - contacts and tilt contacts are read, nothing is writable', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'w', type: 'windows', label: 'Fenster', windows: [
+        { label: 'Küche', state: 'knx.0.Fenster.Kueche', tilt: 'knx.0.Fenster.Kueche_Kipp' },
+        { label: 'Bad', state: 'knx.0.Fenster.Bad', invert: 1, bogus: 'x' },
+    ] }] }] });
+    const w = l.pages[0].tiles[0].windows;
+    assert.deepEqual(w[1], { label: 'Bad', state: 'knx.0.Fenster.Bad', tilt: '', invert: true });
+    const { read, write } = stateIds(l);
+    assert.deepEqual(read.sort(), ['knx.0.Fenster.Bad', 'knx.0.Fenster.Kueche', 'knx.0.Fenster.Kueche_Kipp']);
+    assert.deepEqual(write, []);
+});
+
 test('push rules: fire when the condition becomes true, not again while it stays true', () => {
     assert.equal(triggers({ cond: 'true' }, true, false), true);
     assert.equal(triggers({ cond: 'true' }, true, true), false);
