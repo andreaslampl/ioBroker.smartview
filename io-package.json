@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.16.0",
+    "version": "0.16.1",
     "news": {
+      "0.16.1": {
+        "en": "Energy flow tile: dots to the consumers run from the house to the consumer",
+        "de": "Energiefluss-Kachel: Punkte zu den Verbrauchern laufen vom Haus zum Verbraucher"
+      },
       "0.16.0": {
         "en": "Tile pages can use a free grid: drag tiles to any cell, gaps allowed (option in the page settings); on phones the tiles follow each other",
         "de": "Kachel-Seiten mit freiem Raster: Kacheln auf jedes Feld ziehen, Lücken möglich (Option in den Seiten-Einstellungen); am Handy stehen sie untereinander"
