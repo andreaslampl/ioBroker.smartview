@@ -41,7 +41,7 @@ class FakeAdapter extends EventEmitter {
         this.sent.push({ instance, command, message });
         // another adapter answering (this.handlers[instance](command, message)), else 1 like telegram
         const h = this.handlers && this.handlers[instance];
-        if (callback) {
+        if (typeof callback === 'function') {
             setImmediate(() => callback(h ? h(command, message) : 1));
         }
     }

@@ -52,6 +52,8 @@ switches/buttons on them.
   labels get the page name), `toTile()` for the import. main.js `syncHomekit()` after each layout save, at start
   and when `system.adapter.homekit-easy.N.alive` turns true (sendTo 'sync', also once with [] after the last tick
   is gone); `/api/homekit`, `/api/homekit/devices`. Editor: `homekitField()`, `importHomekit()` (+ Kachel).
+  0.13.1 (`common.messagebox`): messages only from homekit-easy.N: `tiles` (`homekitTiles()`), `link` {tiles} ->
+  `linkTiles()` ticks them, saves the layout, broadcasts, syncs (owner asked for "Aus SmartView" in homekit-easy).
 - `www/vendor/` – pdf.js 4.10.38 legacy build (pdf.min.mjs + worker, Apache-2.0), copied from
   pdfjs-dist on purpose: the npm package pulls the native optional @napi-rs/canvas onto the ioBroker
   host. `edit.js` `pdfToPng()` renders the chosen PDF page (~3000 px, <= 16 MP for iOS) and trims

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.13.0",
+    "version": "0.13.1",
     "news": {
+      "0.13.1": {
+        "en": "homekit-easy can take over tiles from its setup page (\"Aus SmartView\")",
+        "de": "homekit-easy kann Kacheln von seiner Einrichtungsseite aus übernehmen („Aus SmartView …“)"
+      },
       "0.13.0": {
         "en": "Apple Home via homekit-easy: tick \"auch in Apple Home\" on a tile and the device is created there automatically; devices of homekit-easy can be taken over as tiles",
         "de": "Apple Home über homekit-easy: Haken „auch in Apple Home“ an der Kachel, das Gerät wird dort automatisch angelegt; Geräte aus homekit-easy lassen sich als Kacheln übernehmen"
@@ -90,6 +94,7 @@
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "mode": "daemon",
+    "messagebox": true,
     "icon": "smartview.png",
     "extIcon": "https://raw.githubusercontent.com/andreaslampl/ioBroker.smartview/main/admin/smartview.png",
     "readme": "https://github.com/andreaslampl/ioBroker.smartview/blob/main/README.md",

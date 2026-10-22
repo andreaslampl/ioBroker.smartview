@@ -146,6 +146,9 @@ legt homekit-easy das Gerät an und hält es aktuell; Haken weg oder Kachel gel�
 wieder. Gibt es dieselbe Beschriftung auf mehreren Seiten (z. B. „Licht“), heißt das Gerät in Apple Home
 „Seite Beschriftung“, z. B. „EG Licht“.
 
+Das geht auch von homekit-easy aus: dort **„Aus SmartView …“** neben „＋ Gerät“ – die gewählten Kacheln
+bekommen hier den Haken automatisch.
+
 Wer zuerst mit homekit-easy angefangen hat: **✎ → „+ Kachel“ → „Aus homekit-easy übernehmen …“**, Geräte
 anhaken, „Übernehmen“, „Speichern“. Die Kacheln bleiben mit dem Gerät verknüpft.
 

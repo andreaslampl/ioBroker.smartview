@@ -626,3 +626,49 @@ test('adapter: tiles with "auch in HomeKit" become homekit-easy devices, its dev
     assert.match((await api('homekit')).body.last.error, /läuft nicht/);
     assert.equal(syncs.length, 2);
 });
+
+test('adapter: homekit-easy takes over tiles ("Aus SmartView übernehmen"): tick set, saved, synced', async t => {
+    const { adapter, api } = await startAdapter(t);
+    adapter.objects['system.adapter.homekit-easy.0'] = { type: 'instance', common: { name: 'homekit-easy' } };
+    adapter.foreign['system.adapter.homekit-easy.0.alive'] = { val: true, ack: true };
+    const syncs = [];
+    adapter.handlers = { 'homekit-easy.0': (command, message) => (syncs.push(message.devices), { ok: true, created: message.devices.length, updated: 0, removed: 0 }) };
+    await api('layout', {
+        method: 'PUT',
+        body: JSON.stringify({
+            pages: [
+                {
+                    id: 'eg',
+                    name: 'EG',
+                    tiles: [
+                        { id: 'l1', type: 'switch', label: 'Licht', icon: 'bulb', state: 'knx.0.EG.Licht.Wohnzimmer' },
+                        { id: 'w1', type: 'value', label: 'Temperatur', unit: '°C', state: 'knx.0.EG.Temp' },
+                        { id: 'n1', type: 'switch', label: 'ohne Datenpunkt' },
+                        { id: 'k1', type: 'link', label: 'Link', url: 'http://x' },
+                    ],
+                },
+            ],
+        }),
+    });
+    const ask = (from, command, message) =>
+        new Promise(resolve => {
+            const n = (adapter.sent || []).length;
+            adapter.emit('message', { from: `system.adapter.${from}`, command, message, callback: { id: 7 } });
+            const timer = setInterval(() => {
+                const r = (adapter.sent || []).slice(n).find(x => x.command === command && x.instance === `system.adapter.${from}`);
+                if (r) {
+                    clearInterval(timer);
+                    resolve(r.message);
+                }
+            }, 10);
+        });
+    const { tiles } = await ask('homekit-easy.0', 'tiles', {});
+    assert.deepEqual(tiles.map(x => [x.tile, x.default, x.homekit]), [['l1', 'light', ''], ['w1', 'temperature', '']]);
+    const r = await ask('homekit-easy.0', 'link', { tiles: [{ page: 'eg', tile: 'l1', homekit: 'outlet' }, { page: 'eg', tile: 'w1' }, { page: 'eg', tile: 'k1' }] });
+    assert.deepEqual(r, { ok: true, linked: 2, created: 2, error: undefined });
+    const saved = (await api('layout')).body.layout;
+    assert.deepEqual(saved.pages[0].tiles.map(x => x.homekit || ''), ['outlet', 'temperature', '', '']);
+    assert.deepEqual(syncs.at(-1).map(d => d.id), ['sv-eg-l1', 'sv-eg-w1']);
+    // only homekit-easy may do this
+    assert.match((await ask('javascript.0', 'link', { tiles: [] })).error, /not allowed/);
+});

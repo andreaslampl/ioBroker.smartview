@@ -11,7 +11,7 @@ const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
-const { CHOICES, LABELS, devicesFor, toTile } = require('./lib/homekit');
+const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
 
@@ -66,6 +66,7 @@ class SmartView extends utils.Adapter {
         this.on('unload', this.onUnload.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
         this.on('objectChange', this.onObjectChange.bind(this));
+        this.on('message', this.onMessage.bind(this));
     }
 
     async onReady() {
@@ -684,6 +685,84 @@ class SmartView extends utils.Adapter {
             }
         }
         return this.hkLast;
+    }
+
+    /**
+     * Messages from homekit-easy ("Aus SmartView übernehmen" in its setup page):
+     *   tiles -> tiles that can be in Apple Home
+     *   link {tiles: [{page, tile, homekit}]} -> tick "auch in Apple Home" on them, save, sync
+     */
+    async onMessage(obj) {
+        if (!obj || !obj.command) {
+            return;
+        }
+        const reply = res => obj.callback && this.sendTo(obj.from, obj.command, res, obj.callback);
+        const from = String(obj.from || '').replace(/^system\.adapter\./, '');
+        if (!/^homekit-easy\.\d+$/.test(from)) {
+            return reply({ error: `${obj.command} from ${from} not allowed` });
+        }
+        if (!this.store) {
+            return reply({ error: 'SmartView startet noch' });
+        }
+        try {
+            if (obj.command === 'tiles') {
+                return reply({ tiles: this.homekitTiles() });
+            }
+            if (obj.command === 'link') {
+                return reply(await this.linkTiles(obj.message && obj.message.tiles));
+            }
+            reply({ error: `unknown command ${obj.command}` });
+        } catch (err) {
+            this.log.warn(`Message ${obj.command} from ${from}: ${err.message}`);
+            reply({ error: err.message });
+        }
+    }
+
+    /** Tiles that could be in Apple Home, with the choices and whether they already are. */
+    homekitTiles() {
+        const out = [];
+        for (const page of this.store.layout.pages) {
+            for (const t of page.tiles) {
+                const def = t.homekit || defaultType(t);
+                if (!CHOICES[t.type] || !toDevice({ ...t, homekit: def }, page)) {
+                    continue;
+                }
+                out.push({
+                    page: page.id,
+                    pageName: page.name,
+                    tile: t.id,
+                    label: t.label || LABELS[def],
+                    homekit: t.homekit || '',
+                    default: def,
+                    choices: CHOICES[t.type].map(k => [k, LABELS[k]]),
+                });
+            }
+        }
+        return out;
+    }
+
+    async linkTiles(list) {
+        const layout = JSON.parse(JSON.stringify(this.store.layout));
+        let linked = 0;
+        for (const x of Array.isArray(list) ? list : []) {
+            const page = layout.pages.find(p => p.id === (x && x.page));
+            const t = page && page.tiles.find(y => y.id === x.tile);
+            if (t && CHOICES[t.type] && !t.homekit) {
+                t.homekit = cleanChoice(t.type, x.homekit) || defaultType(t);
+                linked++;
+            }
+        }
+        if (!linked) {
+            return { ok: true, linked: 0 };
+        }
+        this.store.save(layout);
+        this.log.info(`homekit-easy: "auch in Apple Home" ticked on ${linked} tile(s)`);
+        if (this.server) {
+            this.server._broadcast({ type: 'layout' });
+        }
+        await this.resubscribe();
+        const res = (await this.syncHomekit()) || {};
+        return { ok: !res.error, linked, created: res.created || 0, error: res.error };
     }
 
     async homekitInfo() {
