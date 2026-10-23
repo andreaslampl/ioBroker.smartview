@@ -289,3 +289,18 @@ test('layout: free grid pages keep tile cells', () => {
     assert.equal(l.pages[0].tiles[1].gx, undefined);
     assert.equal(l.pages[1].free, undefined, 'only tile pages');
 });
+
+test('layout: own tile sizes, plan tile, hidden pages', () => {
+    const { cleanLayout, stateIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [
+        { id: 'a', name: 'A', tiles: [{ id: 't', type: 'switch', state: 's', sw: 3, sh: 20 }, { id: 'p', type: 'planview', target: 'eg' }, { id: 'u', type: 'switch', sw: 0 }] },
+        { id: 'eg', name: 'EG', type: 'plan', hidden: true, tiles: [{ id: 'm', type: 'switch', state: 'knx.0.m', x: 10, y: 10, sw: 2 }] },
+    ] });
+    assert.deepEqual([l.pages[0].tiles[0].sw, l.pages[0].tiles[0].sh], [3, 8]);
+    assert.equal(l.pages[0].tiles[1].target, 'eg');
+    assert.equal(l.pages[0].tiles[2].sw, undefined);
+    assert.equal(l.pages[1].hidden, true);
+    assert.equal(l.pages[1].tiles[0].sw, undefined, 'markers have no size');
+    // the symbols of a plan shown in a tile are read and may be written like on the plan page
+    assert.ok(stateIds(l).write.includes('knx.0.m'));
+});

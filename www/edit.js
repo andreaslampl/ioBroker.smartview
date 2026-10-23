@@ -585,7 +585,7 @@ const Editor = (() => {
         imp.onclick = () => importHomekit(page, d.close);
         body.appendChild(imp);
       }
-      const typeSel = field(body, 'Art', select(Object.entries(TYPE_LABELS).filter(([k]) => !(isPlan && k === 'heading')), t.type));
+      const typeSel = field(body, 'Art', select(Object.entries(TYPE_LABELS).filter(([k]) => !(isPlan && (k === 'heading' || k === 'planview'))), t.type));
       typeSel.onchange = () => {
         collect();
         t.type = typeSel.value;
