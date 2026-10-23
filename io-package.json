@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.17.2",
+    "version": "0.17.3",
     "news": {
+      "0.17.3": {
+        "en": "Fixed: moving a tile with the mouse failed when it was grabbed at a slider, button or camera picture",
+        "de": "Behoben: Verschieben mit der Maus ging nicht, wenn man die Kachel an einem Schieberegler, Knopf oder Kamerabild angefasst hat"
+      },
       "0.17.2": {
         "en": "Edit mode: grip ⠿ on every tile/row to move it at once with finger or mouse (no long press, which Windows touch screens turn into a right click)",
         "de": "Bearbeiten: Griff ⠿ an jeder Kachel/Zeile zum sofortigen Verschieben mit Finger oder Maus (ohne langes Halten, das Windows-Touchscreens zum Rechtsklick machen)"

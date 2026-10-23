@@ -410,3 +410,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .lrow .dragh { top: 50%; transform: translateY(-50%); left: 8px; right: auto; }
 .editing .lrow:not(.addrow) { padding-left: 54px; }
 .dragging .dragh { cursor: grabbing; }
+/* edit mode: controls and pictures inside tiles do not catch the mouse - the whole tile is dragged or edited */
+.editing .tile:not(.addtile) input, .editing .tile:not(.addtile) button, .editing .tile img, .editing .tile .ef-flow,
+.editing .lrow input, .editing .lrow button, .editing .lrow img { pointer-events: none; }
+.editing .tile img, .editing .lrow img { -webkit-user-drag: none; user-select: none; }

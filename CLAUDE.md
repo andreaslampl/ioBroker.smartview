@@ -148,6 +148,9 @@ switches/buttons on them.
 - 0.17.2 field: moving tiles did not work on the owner's Windows touch PC (long press = right click there,
   suspected) -> grip `.dragh` (app.js `dragHandle()` in fillTile/fillRow/energyTile, edit mode only, touch-action
   none) starts the drag at once for every pointer type; the long press stays for the rest of the tile.
+- 0.17.3 field: owner used the mouse on a normal PC. A tile grabbed at its range slider (dimmer) never moved (the
+  input takes the pointer), camera <img> can start a native drag -> in edit mode inputs/buttons/img/flow svg get
+  pointer-events none (the tile gets click and drag), dragstart prevented.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

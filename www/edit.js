@@ -1091,6 +1091,9 @@ const Editor = (() => {
       addEventListener('touchcancel', end);
     }, { passive: true });
 
+    // no native drag of pictures (it would cancel the move)
+    box.addEventListener('dragstart', e => e.preventDefault());
+
     // no context menu / text selection from the long press
     box.addEventListener('contextmenu', e => {
       if (e.target.closest(selector)) e.preventDefault();
