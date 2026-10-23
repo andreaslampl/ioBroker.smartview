@@ -18,6 +18,7 @@ const TYPE_LABELS = {
   heading: 'Überschrift',
   energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
   gate: 'Tor / Garagentor',
+  planview: 'Grundriss / Lageplan (Grundriss-Seite als Kachel)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -45,6 +46,7 @@ const TYPE_FIELDS = {
     ['lockTime', 'Sperre nach dem Alarm', 'number', 'Solange ein Alarm ansteht, ist immer gesperrt. Danach noch so lange (0 = sofort frei).'],
     ['lockUnit', 'Einheit der Sperre', 'select:min=Minuten;s=Sekunden'],
   ],
+  planview: [['target', 'Grundriss-Seite', 'planpage']],
   gate: [
     ['gateMode', 'Ansteuerung', 'select:separate=getrennte Datenpunkte für Auf und Zu;single=ein Datenpunkt für Auf und Zu'],
     ['open', 'Auf (Datenpunkt)', 'state-w', 'nur bei getrennten Datenpunkten'],
@@ -608,6 +610,7 @@ const Editor = (() => {
           inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);
         } else if (kind === 'energy') energyField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
+        else if (kind === 'planpage') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.type === 'plan').map(p => [p.id, p.name])), t[key] || ''), 'Zuerst eine Seite der Art „Grundriss“ anlegen. Beschriftung leer = Name der Seite. In den Seiten-Einstellungen kann die Grundriss-Seite aus der Seitenleiste ausgeblendet werden.');
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
@@ -623,7 +626,22 @@ const Editor = (() => {
         inputs.rotate = { type: 'custom', get: () => Number(rot.value) };
       }
       if (SV.hk && SV.hk.instance && SV.hk.choices[t.type]) inputs.homekit = homekitField(body, t);
-      if (page.type === 'tiles' && t.type !== 'heading') inputs.size = field(body, 'Größe', select([['1', 'normal'], ['w', 'breit (2 Spalten)'], ['l', 'groß (2 × 2)']], t.size || '1'));
+      if (page.type === 'tiles' && t.type !== 'heading') {
+        // own size: empty = default of the type; the grip ◢ on the tile does the same
+        const def = freeSpan({ ...t, sw: 0, sh: 0 }, 12);
+        const sizeRow = document.createElement('div');
+        sizeRow.className = 'sizerow';
+        body.appendChild(sizeRow);
+        const opts = (n, d) => [['', 'Standard (' + d + ')']].concat(Array.from({ length: n }, (_, i) => [String(i + 1), String(i + 1)]));
+        const sw = field(sizeRow, 'Breite (Spalten)', select(opts(6, def.w), t.sw ? String(t.sw) : ''));
+        const sh = field(sizeRow, 'Höhe (Reihen)', select(opts(6, AUTO_H.includes(t.type) ? 'automatisch' : def.h), t.sh ? String(t.sh) : ''));
+        inputs.sw = { type: 'custom', get: () => Number(sw.value) || undefined };
+        inputs.sh = { type: 'custom', get: () => Number(sh.value) || undefined };
+        const h = document.createElement('div');
+        h.className = 'help';
+        h.textContent = 'Oder im Bearbeiten-Modus am Griff ◢ unten rechts an der Kachel ziehen.';
+        sizeRow.appendChild(h);
+      }
       inputs.device = field(body, 'Anzeigen auf', select([['all', 'allen Geräten'], ['phone', 'nur Handy'], ['touch', 'nur Touch-PC / großem Bildschirm']], t.device || 'all'));
 
       const buttons = document.createElement('div');
@@ -735,6 +753,8 @@ const Editor = (() => {
     const msBox = document.createElement('div');
     body.appendChild(msBox);
     const ms = field(msBox, 'Symbolgröße auf dem Grundriss', select([['xs', 'sehr klein'], ['s', 'klein'], ['m', 'normal'], ['l', 'groß']], p.markerSize || 'm'), 'Für Lagepläne mit vielen Symbolen „klein“ oder „sehr klein“ wählen.');
+    const hid = check('In der Seitenleiste ausblenden (z. B. Grundriss nur als Kachel verwenden)', p.hidden);
+    body.appendChild(hid);
     // tile page: free grid (place tiles anywhere, gaps allowed)
     const frBox = document.createElement('div');
     body.appendChild(frBox);
@@ -794,6 +814,7 @@ const Editor = (() => {
       p.name = name.value.trim() || 'Seite';
       p.type = type.value;
       p.markerSize = ms.value;
+      p.hidden = hid.input.checked;
       p.free = type.value === 'tiles' && fr.input.checked;
       p.cols = Number(cols.value);
       const i = l.pages.findIndex(x => x.id === p.id);
@@ -1048,7 +1069,53 @@ const Editor = (() => {
     };
 
     // mouse and pen
+    // size grip ◢: columns / rows follow the pointer, cell by cell
     box.addEventListener('pointerdown', e => {
+      const h = e.target.closest('.sizeh');
+      if (!h || e.button !== 0) return;
+      const el = h.closest(selector);
+      if (!el || el.parentElement !== box) return;
+      const t = page.tiles.find(x => x.id === el.dataset.tile);
+      if (!t) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const cs = getComputedStyle(box);
+      const tracks = cs.gridTemplateColumns.split(' ').filter(Boolean).map(parseFloat);
+      const cols = tracks.length || 1;
+      const gap = parseFloat(cs.columnGap) || 12;
+      const colW = tracks[0] || 150;
+      const rowH = parseFloat(cs.getPropertyValue('--th')) || 132;
+      const r = el.getBoundingClientRect();
+      const free = box.classList.contains('free');
+      let w = 0;
+      let hh = 0;
+      el.classList.add('resizing');
+      const move = ev => {
+        ev.preventDefault();
+        w = Math.max(1, Math.min(cols, Math.round((ev.clientX - r.left + gap) / (colW + gap))));
+        hh = Math.max(1, Math.min(8, Math.round((ev.clientY - r.top + gap) / (rowH + gap))));
+        sizeTile(el, { ...t, sh: hh }, w, hh, free);
+      };
+      const up = () => {
+        removeEventListener('pointermove', move);
+        removeEventListener('pointerup', up);
+        removeEventListener('pointercancel', up);
+        droppedAt = Date.now();
+        if (w && hh) {
+          t.sw = w;
+          t.sh = hh;
+          if (free) layoutFree(page.tiles, Number(box.dataset.cols) || 6, t.id);
+          toast('Größe ' + w + ' × ' + hh + ' – „Speichern“ nicht vergessen.');
+        }
+        render();
+      };
+      addEventListener('pointermove', move);
+      addEventListener('pointerup', up);
+      addEventListener('pointercancel', up);
+    });
+
+    box.addEventListener('pointerdown', e => {
+      if (e.target.closest('.sizeh')) return;
       // the grip ⠿ works for every pointer at once; elsewhere touch uses the long press below
       const grip = e.target.closest('.dragh');
       if ((e.pointerType === 'touch' && !grip) || e.button !== 0) return;
@@ -1081,7 +1148,7 @@ const Editor = (() => {
 
     // touch: long press starts the drag, otherwise the finger scrolls as usual
     box.addEventListener('touchstart', e => {
-      if (e.touches.length !== 1 || e.target.closest('.dragh')) return;
+      if (e.touches.length !== 1 || e.target.closest('.dragh, .sizeh')) return;
       const el = e.target.closest(selector);
       if (!el || el.parentElement !== box) return;
       const t0 = e.touches[0];

@@ -118,7 +118,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -481,7 +481,7 @@ function visibleTiles(page) {
 function currentPage() {
   const l = layout();
   const id = decodeURIComponent(location.hash.slice(1));
-  return l.pages.find(p => p.id === id) || l.pages[0] || null;
+  return l.pages.find(p => p.id === id) || l.pages.find(p => !p.hidden) || l.pages[0] || null;
 }
 
 function sidePages() {
@@ -522,7 +522,7 @@ function renderNav() {
   const inSide = new Set(side ? side.top.concat(side.bottom).map(p => p.id) : []);
   for (const p of l.pages) {
     // pages shown in the right panel need no entry on the touch PC (still there in edit mode)
-    if (inSide.has(p.id) && !SV.editing) continue;
+    if ((inSide.has(p.id) || p.hidden) && !SV.editing) continue;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'navitem' + (SV.page && p.id === SV.page.id ? ' active' : '');
@@ -573,8 +573,38 @@ function renderPage() {
 /** Columns and rows a tile takes in the free grid. */
 function freeSpan(t, cols) {
   if (t.type === 'heading') return { w: cols, h: 1 };
-  if (['html', 'windows', 'energy'].includes(t.type)) return { w: t.size === 'l' ? cols : Math.min(2, cols), h: 1 };
-  return { w: t.size === 'w' || t.size === 'l' ? Math.min(2, cols) : 1, h: t.size === 'l' ? 2 : 1 };
+  const s = AUTO_H.includes(t.type)
+    ? { w: t.size === 'l' ? cols : t.type === 'planview' ? 3 : 2, h: 1 }
+    : { w: t.size === 'w' || t.size === 'l' ? 2 : 1, h: t.size === 'l' ? 2 : 1 };
+  // own size from the tile dialog or the size grip
+  if (t.sw) s.w = t.sw;
+  if (t.sh) s.h = t.sh;
+  return { w: Math.min(s.w, cols), h: s.h };
+}
+
+/** tile types whose height follows their content (unless a height is set) */
+const AUTO_H = ['html', 'windows', 'energy', 'planview'];
+
+/** Columns/rows of a tile element; fixed height for normal tiles, minimum height for content tiles. */
+function sizeTile(el, t, w, h, withRow) {
+  el.style.gridColumn = (withRow ? t.gx + ' / ' : '') + 'span ' + w;
+  if (withRow || t.sh) el.style.gridRow = (withRow ? t.gy + ' / ' : '') + 'span ' + h;
+  const px = 'calc(' + h + ' * var(--th) + ' + (h - 1) + ' * var(--gap))';
+  // a plan tile with its own height: the plan is fitted into it
+  if (AUTO_H.includes(t.type) && !(t.type === 'planview' && t.sh)) el.style.minHeight = t.sh ? px : '';
+  else el.style.height = px;
+}
+
+/** Normal grid: own sizes, never wider than the columns there are (phone: 2). */
+function applySizes(grid, page) {
+  const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+  for (const el of grid.querySelectorAll(':scope > .tile[data-tile]')) {
+    const t = page.tiles.find(x => x.id === el.dataset.tile);
+    if (t && (t.sw || t.sh || t.type === 'planview')) {
+      const s = freeSpan(t, cols);
+      sizeTile(el, t, s.w, s.h, false);
+    }
+  }
 }
 
 /** Gives tiles without a (valid) place the first free cell; later tiles that overlap earlier ones move too. */
@@ -641,8 +671,7 @@ function renderPageInto(box, page) {
     const el = renderTile(t, page);
     if (free) {
       const s = freeSpan(t, page.cols || 6);
-      el.style.gridColumn = t.gx + ' / span ' + s.w;
-      el.style.gridRow = t.gy + ' / span ' + s.h;
+      sizeTile(el, t, s.w, s.h, true);
     }
     grid.appendChild(el);
   }
@@ -672,6 +701,7 @@ function renderPageInto(box, page) {
     Editor.sortable(grid, page, '.tile[data-tile]');
   }
   box.appendChild(grid);
+  if (!free) applySizes(grid, page);
 }
 
 /** Optional split screen on the touch PC: panels with tabs on the right. */
@@ -720,7 +750,7 @@ function renderTile(t, page) {
   if (!SV.editing && Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
   el.addEventListener('click', e => {
     if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
-    if (e.target.closest('button, input')) return;
+    if (e.target.closest('button, input, .marker')) return;
     tileTap(t);
   });
   return el;
@@ -874,6 +904,8 @@ function fillRow(el, t) {
 /** Edit mode: grip to move a tile at once (touch screens turn a long press into a right click). */
 function dragHandle(el) {
   if (SV.editing && !el.querySelector(':scope > .dragh')) el.insertAdjacentHTML('beforeend', '<span class="dragh" title="Ziehen zum Verschieben" aria-label="Verschieben">⠿</span>');
+  // tiles (not list rows): grip to change the size
+  if (SV.editing && el.classList.contains('tile') && !el.querySelector(':scope > .sizeh')) el.insertAdjacentHTML('beforeend', '<span class="sizeh" title="Ziehen ändert die Größe" aria-label="Größe ändern">◢</span>');
 }
 
 function pageName(id) {
@@ -892,6 +924,11 @@ function tileTap(t) {
     return;
   }
   if (t.type === 'multi' || t.type === 'energy') return openSheet(t);
+  // plan tile: a tap beside the symbols opens the plan page
+  if (t.type === 'planview') {
+    if (t.target) location.hash = encodeURIComponent(t.target);
+    return;
+  }
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
@@ -901,6 +938,7 @@ function tileTap(t) {
 
 function fillTile(el, t) {
   if (t.type === 'energy') return energyTile(el, t);
+  if (t.type === 'planview') return planTile(el, t);
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
@@ -1131,7 +1169,37 @@ function planZoom(page) {
   return (SV.planZoom && SV.planZoom[page.id]) || 1;
 }
 
-function renderMarker(t, page) {
+/** A floor plan page as a tile: picture + symbols, scaled to the tile. */
+function planTile(el, t) {
+  el.classList.add('planview', 'tap');
+  const page = layout().pages.find(p => p.id === t.target && p.type === 'plan');
+  el.innerHTML = (t.label || page ? '<div class="hlabel">' + esc(t.label || page.name) + '</div>' : '') + '<div class="pvbox"></div>';
+  const box = el.querySelector('.pvbox');
+  if (!page || !page.image) {
+    box.innerHTML = '<div class="planempty">' + (page ? 'Diese Grundriss-Seite hat noch kein Bild.' : 'Grundriss-Seite wählen (✎ → Kachel)') + '</div>';
+  } else {
+    const plan = document.createElement('div');
+    plan.className = 'plan ms-' + (page.markerSize || 'm');
+    const img = document.createElement('img');
+    img.className = 'planimg';
+    img.src = 'files/' + encodeURIComponent(page.image);
+    img.alt = page.name;
+    plan.appendChild(img);
+    for (const mt of visibleTiles(page)) plan.appendChild(renderMarker(mt, page, true));
+    box.appendChild(plan);
+    // with an own height: the whole plan fits into the tile
+    const fit = () => {
+      if (!t.sh || !img.naturalWidth) return;
+      const r = img.naturalWidth / img.naturalHeight;
+      plan.style.width = Math.min(box.clientWidth, box.clientHeight * r) + 'px';
+    };
+    img.onload = fit;
+    if (img.complete) fit();
+  }
+  dragHandle(el);
+}
+
+function renderMarker(t, page, inTile) {
   const el = document.createElement('div');
   el.className = 'marker ' + t.type;
   el.dataset.tile = t.id;
@@ -1141,10 +1209,13 @@ function renderMarker(t, page) {
   el.style.top = t.y + '%';
   fillMarker(el, t);
   if (SV.editing) {
-    el.addEventListener('pointerdown', e => Editor.markerDown(e, page, t, el));
+    // inside a plan tile the symbols are moved on the plan page itself
+    if (!inTile) el.addEventListener('pointerdown', e => Editor.markerDown(e, page, t, el));
   } else {
     if (Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
-    el.addEventListener('click', () => {
+    el.addEventListener('click', e => {
+      // inside a plan tile: the tile itself must not react (it would open the plan page)
+      if (inTile) e.stopPropagation();
       if (t.type === 'switch' || t.type === 'button') return tileTap(t);
       if (t.type === 'camera') return openCam(t.camera, t.label);
       if (t.type === 'link') return openLink(t);

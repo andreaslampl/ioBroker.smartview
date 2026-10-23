@@ -415,3 +415,15 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .editing .lrow input, .editing .lrow button, .editing .lrow img { pointer-events: none; }
 .editing .tile img, .editing .lrow img { -webkit-user-drag: none; user-select: none; }
 .rule .andbox { border-left: 3px solid var(--accent); padding-left: 10px; margin: 4px 0 6px; }
+
+/* size grip (edit mode, bottom right) */
+.sizeh { position: absolute; right: 4px; bottom: 4px; z-index: 3; width: 30px; height: 30px; display: flex; align-items: flex-end; justify-content: flex-end;
+  color: var(--accent); font-size: 20px; line-height: 1; cursor: nwse-resize; touch-action: none; user-select: none; }
+.tile.resizing { outline: 2px solid var(--accent); z-index: 5; }
+/* floor plan as a tile */
+.tile.planview { height: auto; overflow: hidden; padding: 10px; }
+.tile.planview .pvbox { flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; }
+.tile.planview .plan { position: relative; width: 100%; }
+.tile.planview .planimg { width: 100%; display: block; border-radius: 10px; }
+.editing .tile.planview .marker { pointer-events: none; }
+.tile.planview[style*='height: calc'] .pvbox { overflow: hidden; }

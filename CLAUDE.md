@@ -163,6 +163,12 @@ switches/buttons on them.
   Gate tile: gateMode separate|single, single level|impulse, impulse for separate, stop, posOpen/posClosed,
   confirm; client `gateStatus()`/`gateCmd()` ("schon offen/zu" -> nothing sent; impulse + unknown -> ask);
   ws {type:'pulse', id, ms} writes true then false (force).
+- 0.20.0: owner wanted every tile resizable and floor plans adjustable / several on one page. Tiles `sw`/`sh`
+  (columns 1-12, rows 1-8; empty = default by type/size): `freeSpan()` honours them, `sizeTile()` sets span +
+  height (min-height for content tiles html/windows/energy/planview), normal grid `applySizes()` clamps to the
+  real column count (phone 2). Edit mode grip `.sizeh` ◢ (sortable listener with stopImmediatePropagation).
+  Tile type `planview` {target: plan page id}: `planTile()` renders the plan with markers (`renderMarker(.., inTile)`,
+  click stops propagation; in edit mode markers inert), with own height the plan is fitted. Pages `hidden`.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

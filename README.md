@@ -27,6 +27,9 @@ Oben rechts **✎** antippen:
 - **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
   Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
 - Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
+- **Größe:** Jede Kachel startet in ihrer Standardgröße. Im Bearbeiten-Modus am Griff **◢** unten rechts ziehen
+  (Spalten × Reihen) oder im Kachel-Dialog „Breite“ / „Höhe“ wählen; „Standard“ stellt sie zurück. Am Handy wird
+  eine Kachel nie breiter als der Bildschirm.
 - **Frei platzieren:** ✎ → Seite bearbeiten → „Kacheln frei platzieren (Raster)“ und Spaltenzahl. Dann Kachel auf
   ein leeres Feld ziehen (Lücken bleiben) oder auf eine andere Kachel (die beiden tauschen). Am Handy stehen die
   Kacheln einfach untereinander, in der Reihenfolge Zeile für Zeile.
@@ -128,6 +131,11 @@ Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig
   z. B. oben Kameras | Photovoltaik, unten Wetterstation. Am Handy bleiben das normale Seiten.
 
 ### Grundriss
+
+**Lagepläne als Kachel:** Kachel-Art „Grundriss / Lageplan“ zeigt eine Grundriss-Seite samt Symbolen (bedienbar)
+auf einer normalen Kachel-Seite – so passen mehrere Lagepläne auf eine Seite, jeder in eigener Größe und frei
+platzierbar. Antippen neben die Symbole öffnet den Plan groß. Die Grundriss-Seiten selbst kann man in den
+Seiten-Einstellungen „In der Seitenleiste ausblenden“; bearbeitet werden sie weiter dort (Symbole setzen/ziehen).
 
 Symbolgröße pro Grundriss-Seite (✎ → Seite bearbeiten → „Symbolgröße auf dem Grundriss“: sehr klein, klein,
 normal, groß) – für Lagepläne mit vielen Symbolen. Jedes Symbol lässt sich im Kachel-Dialog unter
