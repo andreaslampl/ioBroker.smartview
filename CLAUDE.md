@@ -176,6 +176,8 @@ switches/buttons on them.
   big = power while charging else mode; line = control text while not charging; sheet with mode buttons, − / + current
   only in mode manual (else energie would overwrite it); mode buttons on the tile only when size l or sh >= 2.
   Icon `charger`. Checked in Playwright; not yet with the real wallbox.
+- 0.21.1: owner asked to see on the tile when the car is limited by the heat pump (energie 0.5.x). `wbLimited()` =
+  ctrl text mentions Wärmepumpe/Bezugsgrenze -> the line shows the ctrl text also while charging, class `wblim` (orange).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

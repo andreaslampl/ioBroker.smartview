@@ -301,9 +301,16 @@ function wbBig(t) {
 function wbLine(t) {
   const plugged = t.plugged ? val(t.plugged) : undefined;
   const status = String(val(t.status) || (plugged === undefined || plugged === null ? '' : truthy(plugged) ? 'Auto angesteckt' : 'Kein Auto angesteckt'));
-  // while waiting the control's text says more ("Wartet auf Überschuss", "Startet in 0:40")
+  // while waiting the control's text says more ("Wartet auf Überschuss", "Startet in 0:40");
+  // a limit (heat pump, import limit, "not ready in time") is shown while charging too
   const ctrl = t.ctrl ? String(val(t.ctrl) || '') : '';
-  return !wbCharging(t) && ctrl && !/Kein Auto/.test(status) && !wbFault(t) ? ctrl : status;
+  if (!ctrl || /Kein Auto/.test(status) || wbFault(t)) return status;
+  return !wbCharging(t) || wbLimited(t) ? ctrl : status;
+}
+
+/** energie limits the car (heat pump runs, import limit) */
+function wbLimited(t) {
+  return Boolean(t.ctrl) && /Wärmepumpe|Bezugsgrenze/.test(String(val(t.ctrl) || ''));
 }
 
 function wbModeButtons(t) {
@@ -925,7 +932,7 @@ function fillRow(el, t) {
       ctl = gateButtons(t) + '<span class="lval">' + gateText(t) + '</span>';
       break;
     case 'wallbox':
-      ctl = '<span class="lsub">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
+      ctl = '<span class="lsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
       break;
     case 'thermostat': {
       const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
@@ -1039,7 +1046,7 @@ function fillTile(el, t) {
     case 'wallbox': {
       const kwh = t.energy ? fmt({ decimals: 1, unit: 'kWh' }, t.energy) : null;
       html = '<div class="row1">' + ic + '<span class="tval">' + esc(kwh && kwh.text !== '–' ? kwh.text + ' kWh' : '') + '</span></div>' +
-        '<div class="big">' + esc(wbBig(t)) + '</div><div class="tsub">' + esc(wbLine(t)) + '</div>' + label +
+        '<div class="big">' + esc(wbBig(t)) + '</div><div class="tsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</div>' + label +
         (t.mode && (t.size === 'l' || (t.sh || 0) >= 2) ? '<div class="ctl wbm">' + wbModeButtons(t) + '</div>' : '');
       break;
     }

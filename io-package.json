@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.21.0",
+    "version": "0.21.1",
     "news": {
+      "0.21.1": {
+        "en": "Wallbox tile: a limit by energie (heat pump runs, import limit) is shown in orange, also while the car charges with the minimum current",
+        "de": "Wallbox-Kachel: Eine Einschränkung durch energie (Wärmepumpe läuft, Bezugsgrenze) wird orange angezeigt, auch während das Auto mit Mindeststrom lädt"
+      },
       "0.21.0": {
         "en": "New tile wallbox: power, state, charged energy and the PV surplus charging mode of the energie adapter (Siemens VersiCharge via the versicharge adapter: just pick the instances)",
         "de": "Neue Kachel Wallbox: Leistung, Zustand, geladene Energie und Lademodus des PV-Überschussladens aus dem Adapter energie (Siemens VersiCharge über den Adapter versicharge: nur die Instanzen wählen)"

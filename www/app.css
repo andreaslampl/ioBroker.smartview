@@ -346,6 +346,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .wsum { font-size: 14px; color: var(--ok); }
 .wsum.bad { color: var(--bad); }
 .wsum.warn { color: var(--warn); }
+.wblim { color: var(--warn) !important; font-weight: 600; }
 .wlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(270px, 100%), 1fr)); gap: 6px; }
 .win { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(63, 185, 80, .16); border: 1px solid rgba(63, 185, 80, .5); }
 .win.open { background: rgba(248, 81, 73, .2); border-color: var(--bad); }

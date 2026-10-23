@@ -192,6 +192,9 @@ Antippen öffnet das Bedienfenster mit den Modi **PV / Min+PV / Schnell / Aus / 
 energie, Reiter „Wallbox“). Im Modus „Manuell“ lässt sich der Ladestrom mit − / + einstellen. Auf einer großen
 Kachel (Größe „groß“ oder 2 Zeilen hoch) liegen die Modus-Tasten direkt auf der Kachel.
 
+Schränkt energie das Laden ein (Wärmepumpe läuft, Bezugsgrenze), steht der Grund **orange** auf der Kachel, z. B.
+„Pause – Wärmepumpe läuft“ oder „6 A – Wärmepumpe läuft“.
+
 ### Kameras
 
 Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht sie weiter – so
