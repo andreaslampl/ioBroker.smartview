@@ -414,3 +414,4 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .editing .tile:not(.addtile) input, .editing .tile:not(.addtile) button, .editing .tile img, .editing .tile .ef-flow,
 .editing .lrow input, .editing .lrow button, .editing .lrow img { pointer-events: none; }
 .editing .tile img, .editing .lrow img { -webkit-user-drag: none; user-select: none; }
+.rule .andbox { border-left: 3px solid var(--accent); padding-left: 10px; margin: 4px 0 6px; }

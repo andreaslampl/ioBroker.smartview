@@ -151,6 +151,10 @@ switches/buttons on them.
 - 0.17.3 field: owner used the mouse on a normal PC. A tile grabbed at its range slider (dimmer) never moved (the
   input takes the pointer), camera <img> can start a native drag -> in edit mode inputs/buttons/img/flow svg get
   pointer-events none (the tile gets click and drag), dragstart prevented.
+- 0.18.0: owner asked for push rules with "longer than" / "and" or a link to logik -> rule `delay` (minutes) and
+  `and` {state, cond, value}; main `checkRules()`/`evalRule()` (fires when both become true, after the delay only
+  if it stayed true; timers per rule, `resetRules()` after each resubscribe - nothing sent for already true rules).
+  logik 0.4.0 has a `notify` block writing JSON {title, text} to smartview.N.push.message.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

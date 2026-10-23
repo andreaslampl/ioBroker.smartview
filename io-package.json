@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.17.3",
+    "version": "0.18.0",
     "news": {
+      "0.18.0": {
+        "en": "Push rules: \"länger als … Minuten\" (only when the condition holds that long) and \"und zusätzlich wenn …\" (second condition); messages from the logik adapter's new message block",
+        "de": "Mitteilungen: „länger als … Minuten“ (erst wenn die Bedingung so lange gilt) und „und zusätzlich wenn …“ (zweite Bedingung); Mitteilungen vom neuen Baustein im logik-Adapter"
+      },
       "0.17.3": {
         "en": "Fixed: moving a tile with the mouse failed when it was grabbed at a slider, button or camera picture",
         "de": "Behoben: Verschieben mit der Maus ging nicht, wenn man die Kachel an einem Schieberegler, Knopf oder Kamerabild angefasst hat"

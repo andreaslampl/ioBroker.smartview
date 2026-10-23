@@ -687,3 +687,42 @@ test('adapter: energy flow tile reads energie.N.live, day chart only for visible
     assert.equal(day.date, '2026-10-21');
     assert.equal((await api('energy/day?instance=energie.1')).status, 403);
 });
+
+test('adapter: push rules "länger als" and "und zusätzlich"', async t => {
+    const { adapter, api, pushed } = await startAdapter(t);
+    const sub = { endpoint: 'https://push.example/x', keys: { p256dh: 'BOr8x', auth: 'a' } };
+    await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: sub, name: 'iPhone' }) });
+    const layout = {
+        ...LAYOUT,
+        push: [
+            // window open longer than 0.005 min (300 ms) and the light on
+            { id: 'r1', state: 'knx.0.EG.Fenster.Kueche', cond: 'true', delay: 0.005, and: { state: 'knx.0.EG.Licht.Kueche', cond: 'true' }, title: 'Fenster', text: 'Küche offen', channels: { app: true } },
+        ],
+    };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    assert.deepEqual([saved.push[0].delay, saved.push[0].and.state], [0.005, 'knx.0.EG.Licht.Kueche']);
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    adapter.change('knx.0.EG.Licht.Kueche', false);
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    await wait(100);
+    pushed.length = 0;
+    // open, but the light is off: nothing
+    adapter.change('knx.0.EG.Fenster.Kueche', true);
+    await wait(500);
+    assert.equal(pushed.length, 0);
+    // light on: both true now, but only after the delay
+    adapter.change('knx.0.EG.Licht.Kueche', true);
+    await wait(100);
+    assert.equal(pushed.length, 0, 'not yet');
+    await wait(400);
+    assert.equal(pushed.length, 1);
+    assert.equal(pushed[0].body, 'Küche offen');
+    // closed again before the delay is over: nothing
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    await wait(50);
+    adapter.change('knx.0.EG.Fenster.Kueche', true);
+    await wait(100);
+    adapter.change('knx.0.EG.Fenster.Kueche', false);
+    await wait(500);
+    assert.equal(pushed.length, 1);
+});

@@ -222,6 +222,13 @@ einmal, wenn die Bedingung eintritt.
 Aus Skripten/Blockly/Logik: Datenpunkt `smartview.0.push.message` mit Text beschreiben oder mit
 JSON `{"title": "Alarm", "text": "Garage offen", "page": "garage"}`.
 
+### Länger als … / und zusätzlich …
+
+Jede Mitteilung kann zusätzlich **„länger als … Minuten“** (erst senden, wenn die Bedingung so lange
+ununterbrochen gilt, z. B. Fenster länger als 15 Minuten offen) und **„und zusätzlich wenn …“** (zweiter
+Datenpunkt muss auch passen, z. B. Heizung an). Für mehr Logik: im Adapter **logik** den Baustein
+„Mitteilung (Push)“ verwenden – er schickt über diese Instanz (Datenpunkt `smartview.0.push.message`).
+
 ### Echtes Zertifikat (Let's Encrypt) – nichts am iPhone installieren
 
 Darf auf einem Handy kein Zertifikat installiert werden (z. B. Firmen-iPhone), kann SmartView ein

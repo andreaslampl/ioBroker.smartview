@@ -1320,6 +1320,31 @@ const Editor = (() => {
         inp.state = stateField(box, 'Datenpunkt', r.state, false);
         inp.cond = field(box, 'Wenn', select([['true', 'Ein / true wird'], ['false', 'Aus / false wird'], ['eq', 'gleich Wert wird'], ['ne', 'ungleich Wert wird'], ['gt', 'größer als Wert wird'], ['lt', 'kleiner als Wert wird'], ['change', 'sich ändert (jedes Mal)']], r.cond));
         inp.value = field(box, 'Wert (für gleich/größer/kleiner)', textInput(r.value));
+        // "länger als": the condition has to hold this long without interruption
+        const delayBox = document.createElement('div');
+        box.appendChild(delayBox);
+        inp.delay = field(delayBox, 'länger als (Minuten)', textInput(r.delay || '', 'number'), '0 oder leer = sofort. Sonst erst, wenn es so lange ununterbrochen gilt, z. B. Fenster länger als 15 Minuten offen.');
+        inp.delay.min = '0';
+        // optional second condition
+        const andOn = check('und zusätzlich wenn …', Boolean(r.and));
+        box.appendChild(andOn);
+        const andBox = document.createElement('div');
+        andBox.className = 'andbox';
+        box.appendChild(andBox);
+        const a = r.and || { state: '', cond: 'true', value: '' };
+        inp.and = {
+          on: andOn.input,
+          state: stateField(andBox, 'Datenpunkt', a.state, false),
+          cond: field(andBox, 'ist', select([['true', 'Ein / true'], ['false', 'Aus / false'], ['eq', 'gleich Wert'], ['ne', 'ungleich Wert'], ['gt', 'größer als Wert'], ['lt', 'kleiner als Wert']], a.cond)),
+          value: field(andBox, 'Wert', textInput(a.value)),
+        };
+        const showRule = () => {
+          andBox.hidden = !andOn.input.checked;
+          delayBox.hidden = inp.cond.value === 'change';
+        };
+        andOn.input.addEventListener('change', showRule);
+        inp.cond.addEventListener('change', showRule);
+        showRule();
         inp.title = field(box, 'Titel', textInput(r.title));
         inp.title.placeholder = 'z. B. Alarm Garage';
         inp.text = field(box, 'Text', textInput(r.text));
@@ -1354,7 +1379,8 @@ const Editor = (() => {
 
     function collectRules() {
       ruleInputs.forEach((inp, i) => {
-        rules[i] = { ...rules[i], enabled: inp.enabled.checked, state: inp.state.value.trim(), cond: inp.cond.value, value: inp.value.value, title: inp.title.value, text: inp.text.value, page: inp.page.value, channels: { app: inp.channels.app.checked, telegram: inp.channels.telegram.checked, whatsapp: inp.channels.whatsapp.checked } };
+        const and = inp.and.on.checked && inp.and.state.value.trim() ? { state: inp.and.state.value.trim(), cond: inp.and.cond.value, value: inp.and.value.value } : null;
+        rules[i] = { ...rules[i], enabled: inp.enabled.checked, state: inp.state.value.trim(), cond: inp.cond.value, value: inp.value.value, delay: Number(inp.delay.value) || 0, and, title: inp.title.value, text: inp.text.value, page: inp.page.value, channels: { app: inp.channels.app.checked, telegram: inp.channels.telegram.checked, whatsapp: inp.channels.whatsapp.checked } };
       });
     }
     drawRules();

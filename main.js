@@ -5,7 +5,7 @@ const http = require('node:http');
 const https = require('node:https');
 const utils = require('@iobroker/adapter-core');
 const { LayoutStore, stateIds } = require('./lib/layout');
-const { Push, triggers, fill } = require('./lib/push');
+const { Push, matches, triggers, fill } = require('./lib/push');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
@@ -241,7 +241,7 @@ class SmartView extends utils.Adapter {
     async resubscribe() {
         const layout = this.store.layout;
         const { read } = stateIds(layout);
-        const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).map(r => r.state)]);
+        const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).flatMap(r => [r.state, r.and && r.and.state].filter(Boolean))]);
         if (layout.telegram.instance && layout.telegram.ring && this.ringStateId()) {
             ids.add(this.ringStateId());
         }
@@ -263,6 +263,7 @@ class SmartView extends utils.Adapter {
             await this.metaOf(id);
         }
         this.log.debug(`${ids.size} data point(s) subscribed`);
+        this.resetRules();
     }
 
     async metaOf(id) {
@@ -328,24 +329,7 @@ class SmartView extends utils.Adapter {
         const prev = this.pushPrev.get(id);
         const val = state ? state.val : null;
         this.pushPrev.set(id, val);
-        for (const rule of this.store.layout.push) {
-            if (rule.enabled && rule.state === id && triggers(rule, val, prev)) {
-                const page = rule.page ? `./#${encodeURIComponent(rule.page)}` : './';
-                const role = (this.meta.get(id) || {}).role;
-                const title = fill(rule.title, val, role) || this.store.layout.title || 'SmartView';
-                const body = fill(rule.text, val, role) || `${id}: ${fill('{value}', val, role)}`;
-                this.log.info(`Push: ${title} - ${body}`);
-                if (rule.channels.app) {
-                    this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
-                }
-                if (rule.channels.telegram) {
-                    this.telegram({ title, body, page: rule.page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
-                }
-                if (rule.channels.whatsapp) {
-                    this.whatsapp({ title, body, page: rule.page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
-                }
-            }
-        }
+        this.checkRules(id, val, prev);
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.telegram.ring) {
                 this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
@@ -446,6 +430,83 @@ class SmartView extends utils.Adapter {
     }
 
     /** push.message: plain text or JSON {title, text, page}. */
+    // ---------------- push rules: condition, "länger als", "und zusätzlich" ----------------
+
+    /** A watched data point changed: rules on it (or with it as second condition) are checked. */
+    checkRules(id, val, prev) {
+        for (const rule of this.store.layout.push) {
+            if (!rule.enabled || !rule.state) {
+                continue;
+            }
+            if (rule.cond === 'change') {
+                if (rule.state === id && triggers(rule, val, prev) && this.andOk(rule)) {
+                    this.fireRule(rule);
+                }
+            } else if (rule.state === id || (rule.and && rule.and.state === id)) {
+                this.evalRule(rule);
+            }
+        }
+    }
+
+    andOk(rule) {
+        return !rule.and || matches(rule.and, this.pushPrev.get(rule.and.state));
+    }
+
+    ruleActive(rule) {
+        return matches(rule, this.pushPrev.get(rule.state)) && this.andOk(rule);
+    }
+
+    /** Fires when the rule becomes true - after `delay` minutes only if it stayed true all the time. */
+    evalRule(rule) {
+        this.ruleStates = this.ruleStates || new Map();
+        const st = this.ruleStates.get(rule.id) || { active: false, timer: null };
+        this.ruleStates.set(rule.id, st);
+        const now = this.ruleActive(rule);
+        if (now && !st.active) {
+            if (rule.delay > 0) {
+                clearTimeout(st.timer);
+                st.timer = setTimeout(() => {
+                    st.timer = null;
+                    if (this.ruleActive(rule)) {
+                        this.fireRule(rule);
+                    }
+                }, rule.delay * 60000);
+            } else {
+                this.fireRule(rule);
+            }
+        } else if (!now && st.timer) {
+            clearTimeout(st.timer);
+            st.timer = null;
+        }
+        st.active = now;
+    }
+
+    /** After loading the layout: rules start from the current values (nothing is sent for them). */
+    resetRules() {
+        for (const st of (this.ruleStates || new Map()).values()) {
+            clearTimeout(st.timer);
+        }
+        this.ruleStates = new Map(this.store.layout.push.map(r => [r.id, { active: r.enabled && r.cond !== 'change' && Boolean(r.state) && this.ruleActive(r), timer: null }]));
+    }
+
+    fireRule(rule) {
+        const val = this.pushPrev.get(rule.state);
+        const page = rule.page ? `./#${encodeURIComponent(rule.page)}` : './';
+        const role = (this.meta.get(rule.state) || {}).role;
+        const title = fill(rule.title, val, role) || this.store.layout.title || 'SmartView';
+        const body = fill(rule.text, val, role) || `${rule.state}: ${fill('{value}', val, role)}`;
+        this.log.info(`Push: ${title} - ${body}`);
+        if (rule.channels.app) {
+            this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
+        }
+        if (rule.channels.telegram) {
+            this.telegram({ title, body, page: rule.page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+        }
+        if (rule.channels.whatsapp) {
+            this.whatsapp({ title, body, page: rule.page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+        }
+    }
+
     async sendMessage(val) {
         let msg = { title: this.store.layout.title || 'SmartView', body: String(val), url: './' };
         try {
@@ -806,6 +867,9 @@ class SmartView extends utils.Adapter {
         try {
             clearInterval(this.pingTimer);
             clearTimeout(this.hkTimer);
+            for (const st of (this.ruleStates || new Map()).values()) {
+                clearTimeout(st.timer);
+            }
             if (this.timers) {
                 this.timers.stop();
             }
