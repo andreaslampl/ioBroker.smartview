@@ -118,7 +118,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -131,7 +131,7 @@ function tileIc(t) {
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window'].map(k => t[k])
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
@@ -162,15 +162,107 @@ function blindOpen(t) {
 }
 
 function blindText(t) {
+  const lock = blindLock(t);
+  if (lock) return lockText(lock);
   const s = st(t.status || t.state);
   if (!s || s.missing || s.val === null || s.val === undefined) return '–';
   // an up/down object (true/false) says nothing about the position
   if (s.type === 'boolean' || typeof s.val === 'boolean') return '';
   const o = Math.round(blindOpen(t));
+  // awning: "open" = retracted
+  if (t.kind === 'awning') return o >= 99 ? 'Eingefahren' : o <= 1 ? 'Ausgefahren' : 100 - o + ' % ausgefahren';
   return o >= 99 ? 'Offen' : o <= 1 ? 'Zu' : o + ' % offen';
 }
 
+/** Words for the blind buttons (awning: retract / extend). */
+function blindWords(t) {
+  return t.kind === 'awning' ? ['Einfahren', 'Ausfahren'] : ['Auf', 'Ab'];
+}
+
+// ---------------- wind/rain lock (set by the adapter, sent as {type:'locks'}) ----------------
+
+function tileKey(t) {
+  for (const p of layout().pages) if (p.tiles.includes(t)) return p.id + '/' + t.id;
+  return '';
+}
+
+function blindLock(t) {
+  return t.type === 'blind' && SV.locks ? SV.locks[tileKey(t)] || null : null;
+}
+
+function lockText(l) {
+  if (!l.until) return '🔒 ' + l.reason;
+  const s = Math.max(0, Math.round((l.until - Date.now()) / 1000));
+  return '🔒 noch ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+/** Blind locked: say why instead of sending. */
+function blindBlocked(t) {
+  const l = blindLock(t);
+  if (!l) return false;
+  toast((t.kind === 'awning' ? 'Markise' : 'Rollladen') + ' gesperrt: ' + l.reason + (l.until ? ' – ' + lockText(l).replace('🔒 ', '') : ' (solange der Alarm ansteht)'), true);
+  return true;
+}
+
+/** the server sends the remaining time; the end is counted with this device's clock */
+function clientLocks(locks) {
+  const out = {};
+  for (const [k, l] of Object.entries(locks || {})) out[k] = { reason: l.reason, until: l.left ? Date.now() + l.left : null };
+  return out;
+}
+
+function refreshLocked() {
+  for (const p of layout() ? layout().pages : []) for (const t of p.tiles) if (t.type === 'blind' && (t.windAlarm || t.rainAlarm)) refresh(t.state || t.status);
+}
+
+// ---------------- gate ----------------
+
+/** open | closed | moving | unknown from the end position data points */
+function gateStatus(t) {
+  const on = id => truthy(val(id));
+  const known = id => id && val(id) !== undefined && val(id) !== null;
+  if (!known(t.posOpen) && !known(t.posClosed)) return 'unknown';
+  if (known(t.posOpen) && on(t.posOpen)) return 'open';
+  if (known(t.posClosed) && on(t.posClosed)) return 'closed';
+  if (t.posOpen && t.posClosed) return 'moving';
+  return t.posOpen ? 'closed' : 'open';
+}
+
+function gateText(t) {
+  return { open: 'Offen', closed: 'Geschlossen', moving: 'Fährt / Zwischenstellung', unknown: '' }[gateStatus(t)];
+}
+
+/** Open / close / stop with checks: already open or closed -> say so, nothing is sent. */
+function gateCmd(t, dir) {
+  const name = t.label || 'Das Tor';
+  const stt = gateStatus(t);
+  if (dir === 'open' && stt === 'open') return toast(name + ' ist schon offen');
+  if (dir === 'close' && stt === 'closed') return toast(name + ' ist schon zu');
+  const single = t.gateMode === 'single';
+  const impulse = single ? t.single === 'impulse' : t.impulse;
+  if (single && t.single === 'impulse' && dir !== 'stop' && (stt === 'unknown' || stt === 'moving')) {
+    if (!confirm('Stellung von „' + name + '“ unbekannt. Impuls trotzdem senden? Das Tor fährt dann in die nächste Richtung oder bleibt stehen.')) return;
+  } else if (t.confirm && dir !== 'stop' && !confirm(name + (dir === 'open' ? ' öffnen?' : ' schließen?'))) return;
+  const id = dir === 'stop' ? t.stop : single ? t.state : dir === 'open' ? t.open : t.close;
+  if (!id) return toast('Kein Datenpunkt für ' + (dir === 'open' ? 'Auf' : dir === 'close' ? 'Zu' : 'Stopp'), true);
+  if (single && t.single === 'level' && dir !== 'stop') return send(id, dir === 'open');
+  if (impulse) return pulse(id);
+  send(id, true);
+}
+
+function pulse(id) {
+  if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
+  if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
+  SV.ws.send(JSON.stringify({ type: 'pulse', id, ms: 1000 }));
+}
+
+function gateButtons(t, big) {
+  const b = (a, ic, txt) => '<button type="button" data-a="' + a + '" aria-label="' + txt + '">' + icon(ic) + (big ? txt : '') + '</button>';
+  return b('gopen', 'up', 'Auf') + (t.stop ? b('gstop', 'stop', 'Stopp') : '') + b('gclose', 'down', 'Zu');
+}
+
 function blindWrite(t, openPercent) {
+  if (blindBlocked(t)) return;
   const s = st(t.state);
   if (s && s.type === 'boolean') {
     // up/down object (KNX DPT 1.008: false = up, true = down); "Auf/Ab umdrehen" swaps it
@@ -340,7 +432,8 @@ function tileState(t) {
   if (t.type === 'windows') return windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
-  if (t.type === 'blind') return '';
+  if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
+  if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
   if (t.type === 'thermostat') return thermoHeat(t) && thermoHeat(t).on ? 'on' : '';
   if (t.type === 'value' && t.highlight && t.highlight !== 'none') {
     const s = st(t.state);
@@ -731,8 +824,11 @@ function fillRow(el, t) {
       break;
     }
     case 'blind':
-      ctl = '<button type="button" data-a="up" aria-label="Auf">' + icon('up') + '</button><button type="button" data-a="down" aria-label="Ab">' + icon('down') + '</button>' +
+      ctl = '<button type="button" data-a="up" aria-label="' + blindWords(t)[0] + '">' + icon('up') + '</button><button type="button" data-a="down" aria-label="' + blindWords(t)[1] + '">' + icon('down') + '</button>' +
         (t.stop ? '<button type="button" data-a="stop">STOPP</button>' : '') + '<span class="lval">' + blindText(t) + '</span>';
+      break;
+    case 'gate':
+      ctl = gateButtons(t) + '<span class="lval">' + gateText(t) + '</span>';
       break;
     case 'thermostat': {
       const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
@@ -800,7 +896,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'thermostat' || t.type === 'value') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -828,9 +924,12 @@ function fillTile(el, t) {
     }
     case 'blind':
       html = '<div class="row1">' + ic + '<span class="tval">' + blindText(t) + '</span></div>' + label +
-        '<div class="ctl"><button type="button" data-a="up" aria-label="Auf">' + icon('up') + '</button>' +
+        '<div class="ctl"><button type="button" data-a="up" aria-label="' + blindWords(t)[0] + '">' + icon('up') + '</button>' +
         (t.stop ? '<button type="button" data-a="stop" aria-label="Stopp">' + icon('stop') + '</button>' : '') +
-        '<button type="button" data-a="down" aria-label="Ab">' + icon('down') + '</button></div>';
+        '<button type="button" data-a="down" aria-label="' + blindWords(t)[1] + '">' + icon('down') + '</button></div>';
+      break;
+    case 'gate':
+      html = '<div class="row1">' + ic + '<span class="tval">' + gateText(t) + '</span></div>' + label + '<div class="ctl">' + gateButtons(t) + '</div>';
       break;
     case 'value': {
       const f = fmt(t, t.state);
@@ -911,7 +1010,11 @@ function bindControls(el, t) {
         else if (t.switchState) send(t.switchState, next > 0);
         return;
       }
-      if (a === 'up') blindWrite(t, 100);
+      if ((a === 'up' || a === 'down' || a === 'stop') && blindBlocked(t)) return;
+      if (a === 'gopen') gateCmd(t, 'open');
+      else if (a === 'gclose') gateCmd(t, 'close');
+      else if (a === 'gstop') gateCmd(t, 'stop');
+      else if (a === 'up') blindWrite(t, 100);
       else if (a === 'down') blindWrite(t, 0);
       else if (a === 'stop') send(t.stop, true);
       else if (a === 'plus') thermoStep(t, 1);
@@ -1062,6 +1165,7 @@ function fillMarker(el, t) {
     v = f.text + (f.unit ? ' ' + f.unit : '');
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
+  else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
     v = d && d.s ? EnergyView.fmtW(d.s.pv) : '';
@@ -1208,11 +1312,14 @@ function fillSheet(sh, t) {
       (t.state ? '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '">' : '') +
       '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';
   } else if (t.type === 'blind') {
+    const w = blindWords(t);
     body = '<div class="bigval" data-out>' + blindText(t) + '</div>' +
-      '<input type="range" data-kind="blind" min="0" max="100" step="5" value="' + Math.round(blindOpen(t)) + '">' +
-      '<div class="row"><button type="button" data-a="up">' + icon('up') + 'Auf</button>' +
+      (blindLock(t) ? '' : '<input type="range" data-kind="blind" min="0" max="100" step="5" value="' + Math.round(blindOpen(t)) + '">') +
+      '<div class="row"><button type="button" data-a="up">' + icon('up') + w[0] + '</button>' +
       (t.stop ? '<button type="button" data-a="stop">' + icon('stop') + 'Stopp</button>' : '') +
-      '<button type="button" data-a="down">' + icon('down') + 'Ab</button></div>';
+      '<button type="button" data-a="down">' + icon('down') + w[1] + '</button></div>';
+  } else if (t.type === 'gate') {
+    body = '<div class="bigval">' + (gateText(t) || '–') + '</div><div class="row">' + gateButtons(t, true) + '</div>';
   } else if (t.type === 'thermostat') {
     const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
     const u = x => esc(x.unit || '°C');
@@ -1479,7 +1586,11 @@ function connect() {
   };
   ws.onmessage = ev => {
     const msg = JSON.parse(ev.data);
-    if (msg.type === 'init') {
+    if (msg.type === 'locks') {
+      SV.locks = clientLocks(msg.locks);
+      refreshLocked();
+    } else if (msg.type === 'init') {
+      SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
       render();
@@ -1562,6 +1673,8 @@ async function start() {
   });
   tickClock();
   setInterval(tickClock, 10000);
+  // countdown of wind/rain locks
+  setInterval(() => SV.locks && Object.values(SV.locks).some(l => l.until) && refreshLocked(), 1000);
   // window overview: keep the "seit …" times current
   setInterval(() => {
     for (const el of document.querySelectorAll('.tile.windows, .lrow.windows')) {

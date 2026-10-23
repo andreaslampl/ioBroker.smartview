@@ -17,6 +17,7 @@ const TYPE_LABELS = {
   windows: 'Fensterübersicht (offen / gekippt / zu)',
   heading: 'Überschrift',
   energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
+  gate: 'Tor / Garagentor',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -36,6 +37,25 @@ const TYPE_FIELDS = {
     ['stop', 'Stopp (optional)', 'state-w'],
     ['status', 'Rückmeldung Position (optional)', 'state-r'],
     ['closed100', 'Auf/Ab umdrehen', 'check', 'Haken setzen, wenn Auf und Ab vertauscht sind (bei Position: 100 % = zu; bei Auf/Ab-Objekt: true = auf)'],
+    ['kind', 'Art', 'select:blind=Rollladen / Jalousie;awning=Markise (Einfahren / Ausfahren)'],
+    ['windAlarm', 'Windalarm (optional)', 'state-r', 'true = Alarm – oder eine Windgeschwindigkeit mit Grenzwert darunter'],
+    ['windMin', 'Windalarm ab (optional)', 'number', 'Nur wenn der Datenpunkt eine Windgeschwindigkeit ist, z. B. 40 (km/h). Leer = true/false.'],
+    ['rainAlarm', 'Regenalarm (optional)', 'state-r', 'true = Regen'],
+    ['protect', 'Bei Wind- oder Regenalarm', 'select:up=automatisch Auf / Einfahren;down=automatisch Ab;none=nicht fahren, nur sperren'],
+    ['lockTime', 'Sperre nach dem Alarm', 'number', 'Solange ein Alarm ansteht, ist immer gesperrt. Danach noch so lange (0 = sofort frei).'],
+    ['lockUnit', 'Einheit der Sperre', 'select:min=Minuten;s=Sekunden'],
+  ],
+  gate: [
+    ['gateMode', 'Ansteuerung', 'select:separate=getrennte Datenpunkte für Auf und Zu;single=ein Datenpunkt für Auf und Zu'],
+    ['open', 'Auf (Datenpunkt)', 'state-w', 'nur bei getrennten Datenpunkten'],
+    ['close', 'Zu (Datenpunkt)', 'state-w', 'nur bei getrennten Datenpunkten'],
+    ['state', 'Auf/Zu (Datenpunkt)', 'state-w', 'nur bei einem Datenpunkt'],
+    ['single', 'Ein Datenpunkt: Befehl', 'select:level=true = auf, false = zu;impulse=Taster-Impuls (jeder Impuls fährt bzw. stoppt)'],
+    ['impulse', 'Getrennte Datenpunkte als Impuls senden (true, nach 1 s wieder false)', 'check'],
+    ['stop', 'Stopp (optional)', 'state-w'],
+    ['posOpen', 'Position oben / offen (optional)', 'state-r', 'Endlage, true = ganz offen'],
+    ['posClosed', 'Position unten / zu (optional)', 'state-r', 'Endlage, true = ganz geschlossen'],
+    ['confirm', 'Vorher nachfragen', 'check'],
   ],
   value: [
     ['state', 'Datenpunkt', 'state-r'],

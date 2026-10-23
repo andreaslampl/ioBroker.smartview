@@ -137,7 +137,8 @@ class SmartView extends utils.Adapter {
             adapter: {
                 urls: () => this.urlList,
                 stateInfo: id => this.stateInfo(id),
-                setValue: (id, val) => this.setValue(id, val),
+                setValue: (id, val, opt) => this.setValue(id, val, opt),
+                locks: () => this.lockInfo(),
                 objectList: fresh => this.objectList(fresh),
                 stateValues: ids => this.stateValues(ids),
                 cameras: () => this.cameras(),
@@ -264,6 +265,7 @@ class SmartView extends utils.Adapter {
         }
         this.log.debug(`${ids.size} data point(s) subscribed`);
         this.resetRules();
+        this.checkProtection();
     }
 
     async metaOf(id) {
@@ -286,7 +288,12 @@ class SmartView extends utils.Adapter {
     }
 
     /** Command from the page: write with the type of the data point, as a command (ack = false). */
-    async setValue(id, val) {
+    async setValue(id, val, { force = false } = {}) {
+        // blinds locked by wind/rain: no commands from the page or the time switch
+        const lock = force ? null : this.lockFor(id);
+        if (lock) {
+            throw new Error(`Gesperrt (${lock.reason}${lock.until ? `, noch ${Math.ceil((lock.until - Date.now()) / 60000)} min` : ''})`);
+        }
         const { type } = await this.metaOf(id);
         let v = val;
         if (type === 'boolean') {
@@ -330,6 +337,9 @@ class SmartView extends utils.Adapter {
         const val = state ? state.val : null;
         this.pushPrev.set(id, val);
         this.checkRules(id, val, prev);
+        if (this.protectIds && this.protectIds.has(id)) {
+            this.checkProtection();
+        }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.telegram.ring) {
                 this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
@@ -430,6 +440,115 @@ class SmartView extends utils.Adapter {
     }
 
     /** push.message: plain text or JSON {title, text, page}. */
+    // ---------------- blinds/awnings: wind and rain protection ----------------
+
+    /** Blind tiles with a wind or rain alarm: {key, page, tile}. */
+    protectedBlinds() {
+        const out = [];
+        for (const p of this.store.layout.pages) {
+            for (const t of p.tiles) {
+                if (t.type === 'blind' && (t.windAlarm || t.rainAlarm)) {
+                    out.push({ key: `${p.id}/${t.id}`, tile: t });
+                }
+            }
+        }
+        return out;
+    }
+
+    alarmOf(t) {
+        const v = id => (this.liveStates.get(id) || {}).val;
+        const num = x => (typeof x === 'boolean' ? Number(x) : Number(x));
+        const isOn = x => x === true || x === 1 || x === 'true' || x === '1' || x === 'on';
+        if (t.windAlarm) {
+            const w = v(t.windAlarm);
+            if (t.windMin ? num(w) >= t.windMin : isOn(w)) {
+                return 'Windalarm';
+            }
+        }
+        if (t.rainAlarm && isOn(v(t.rainAlarm))) {
+            return 'Regenalarm';
+        }
+        return '';
+    }
+
+    /**
+     * Alarm on: drive to the safe position once and lock; alarm off: stay locked for lockTime.
+     * Called after every change of an alarm data point and after loading the layout.
+     */
+    checkProtection() {
+        this.lockState = this.lockState || new Map();
+        const list = this.protectedBlinds();
+        this.protectIds = new Set(list.flatMap(b => [b.tile.windAlarm, b.tile.rainAlarm].filter(Boolean)));
+        const keys = new Set(list.map(b => b.key));
+        let changed = false;
+        for (const key of [...this.lockState.keys()]) {
+            if (!keys.has(key)) {
+                clearTimeout(this.lockState.get(key).timer);
+                this.lockState.delete(key);
+                changed = true;
+            }
+        }
+        for (const { key, tile } of list) {
+            const reason = this.alarmOf(tile);
+            const cur = this.lockState.get(key);
+            if (reason && (!cur || cur.until || cur.reason !== reason)) {
+                if (cur) {
+                    clearTimeout(cur.timer);
+                }
+                const first = !cur || cur.until; // newly locked (not just another alarm on top)
+                this.lockState.set(key, { reason, until: null, tile });
+                changed = true;
+                if (first && tile.protect !== 'none') {
+                    this.log.info(`${tile.label || key}: ${reason} - ${tile.protect === 'down' ? 'down' : 'up'}, locked`);
+                    this.driveSafe(tile).catch(err => this.log.warn(`${tile.label || key}: ${err.message}`));
+                }
+            } else if (!reason && cur && !cur.until) {
+                const ms = (Number(tile.lockTime) || 0) * (tile.lockUnit === 's' ? 1000 : 60000);
+                if (ms > 0) {
+                    cur.until = Date.now() + ms;
+                    cur.timer = setTimeout(() => {
+                        this.lockState.delete(key);
+                        this.log.info(`${tile.label || key}: unlocked`);
+                        this.server && this.server.locksChanged(this.lockInfo());
+                    }, ms);
+                } else {
+                    this.lockState.delete(key);
+                }
+                changed = true;
+            }
+        }
+        if (changed && this.server) {
+            this.server.locksChanged(this.lockInfo());
+        }
+    }
+
+    async driveSafe(tile) {
+        const open = tile.protect === 'down' ? 0 : 100;
+        if ((await this.metaOf(tile.state)).type === 'boolean') {
+            await this.setValue(tile.state, tile.closed100 ? open > 0 : open === 0, { force: true });
+        } else {
+            await this.setValue(tile.state, tile.closed100 ? 100 - open : open, { force: true });
+        }
+    }
+
+    lockInfo() {
+        const out = {};
+        for (const [key, l] of this.lockState || []) {
+            out[key] = { reason: l.reason, left: l.until ? Math.max(0, l.until - Date.now()) : null };
+        }
+        return out;
+    }
+
+    /** Lock of a blind whose data points include `id`. */
+    lockFor(id) {
+        for (const l of (this.lockState || new Map()).values()) {
+            if (l.tile.state === id || l.tile.stop === id) {
+                return l;
+            }
+        }
+        return null;
+    }
+
     // ---------------- push rules: condition, "länger als", "und zusätzlich" ----------------
 
     /** A watched data point changed: rules on it (or with it as second condition) are checked. */
@@ -867,7 +986,7 @@ class SmartView extends utils.Adapter {
         try {
             clearInterval(this.pingTimer);
             clearTimeout(this.hkTimer);
-            for (const st of (this.ruleStates || new Map()).values()) {
+            for (const st of [...(this.ruleStates || new Map()).values(), ...(this.lockState || new Map()).values()]) {
                 clearTimeout(st.timer);
             }
             if (this.timers) {

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "news": {
+      "0.19.0": {
+        "en": "Blinds/awnings: wind and rain alarm drive to a safe position and lock (shown on the tile, lock time after the alarm); new tile gate (separate or one data point, impulse, end positions, \"already open\" hint)",
+        "de": "Rollläden/Markisen: Wind- und Regenalarm fahren in die sichere Position und sperren (Anzeige auf der Kachel, Sperrzeit nach dem Alarm); neue Kachel Tor (getrennte oder ein Datenpunkt, Impuls, Endlagen, Hinweis „schon offen“)"
+      },
       "0.18.0": {
         "en": "Push rules: \"länger als … Minuten\" (only when the condition holds that long) and \"und zusätzlich wenn …\" (second condition); messages from the logik adapter's new message block",
         "de": "Mitteilungen: „länger als … Minuten“ (erst wenn die Bedingung so lange gilt) und „und zusätzlich wenn …“ (zweite Bedingung); Mitteilungen vom neuen Baustein im logik-Adapter"

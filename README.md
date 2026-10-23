@@ -67,6 +67,22 @@ erscheinen als Text.
 Datenpunkt: Position in % oder ein Auf/Ab-Objekt (true/false, z. B. KNX 1-Bit: false = auf, true = ab).
 Sind Auf und Ab vertauscht, den Haken **„Auf/Ab umdrehen“** setzen.
 
+**Markise und Wind-/Regenschutz:** Unter „Art“ Markise wählen (Knöpfe Einfahren/Ausfahren). Optional
+**Windalarm** (true/false oder Windgeschwindigkeit mit Grenzwert) und **Regenalarm**: Kommt ein Alarm, fährt
+der Adapter die Markise bzw. den Rollladen selbst in die sichere Position (Auf/Einfahren, Ab oder nur sperren)
+– auch wenn kein Gerät offen ist. Solange der Alarm ansteht und danach noch die eingestellte **Sperrzeit**
+(Sekunden oder Minuten) gehen keine Befehle durch, auch keine Zeitschaltuhr. Die Kachel zeigt 🔒 mit Grund
+bzw. Restzeit.
+
+### Tor / Garagentor
+
+- **Getrennte Datenpunkte** für Auf und Zu (optional als Impuls: true, nach 1 s false) oder **ein Datenpunkt**:
+  true = auf / false = zu, oder **Taster-Impuls** (jeder Impuls fährt bzw. stoppt).
+- **Stopp** optional, **Endlagen** „Position oben“ und „Position unten“ optional → Anzeige offen / geschlossen /
+  fährt.
+- Ist das Tor schon offen und man drückt Auf, kommt **„… ist schon offen“** und es wird nichts gesendet (ebenso
+  „schon zu“). Beim Taster-Impuls mit unbekannter Stellung wird vorher nachgefragt; optional immer nachfragen.
+
 ### Heizung / Raumregler
 
 Nur der Sollwert ist Pflicht, alles andere kommt dazu, wenn es eingetragen ist:

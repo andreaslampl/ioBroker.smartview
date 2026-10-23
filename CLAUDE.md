@@ -155,6 +155,14 @@ switches/buttons on them.
   `and` {state, cond, value}; main `checkRules()`/`evalRule()` (fires when both become true, after the delay only
   if it stayed true; timers per rule, `resetRules()` after each resubscribe - nothing sent for already true rules).
   logik 0.4.0 has a `notify` block writing JSON {title, text} to smartview.N.push.message.
+- 0.19.0: owner asked for awning/blind wind+rain protection with lock (shown) and a gate tile. Blind options `kind`
+  (blind|awning: texts Einfahren/Ausfahren), `windAlarm` (+ `windMin` threshold for speeds), `rainAlarm`, `protect`
+  up|down|none, `lockTime` + `lockUnit` (min|s). main `checkProtection()` (after resubscribe and on alarm changes):
+  alarm -> `driveSafe()` once (force) and lock; alarm gone -> lock until lockTime; `setValue` rejects locked
+  state/stop unless `force`; locks pushed as {type:'locks'} with `left` ms (client counts with its clock).
+  Gate tile: gateMode separate|single, single level|impulse, impulse for separate, stop, posOpen/posClosed,
+  confirm; client `gateStatus()`/`gateCmd()` ("schon offen/zu" -> nothing sent; impulse + unknown -> ask);
+  ws {type:'pulse', id, ms} writes true then false (force).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

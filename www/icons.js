@@ -4,6 +4,7 @@
 const ICON_PATHS = {
   bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
   lamp: '<path d="M8 3h8l3 8H5z"/><path d="M12 11v8M8 21h8"/>',
+  awning: '<path d="M3 3v18M3 5h15l3 7H6z"/><path d="M6 12c0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0"/>',
   walllamp: '<path d="M4 4v16M4 16h8v-4"/><path d="M7 4h10l-3 8h-4z"/><path d="M19 6h1M19 10h1"/>',
   ceiling: '<path d="M4 3h16M12 3v5"/><path d="M5 15a7 7 0 0 1 14 0z"/><path d="M10 18h4M12 20v1"/>',
   lantern: '<path d="M12 2v2M9 4h6l2 3H7z"/><path d="M8 7h8l-1 10H9z"/><path d="M10 17v3h4v-3M12 10v4"/>',
@@ -61,7 +62,7 @@ const ICON_PATHS = {
 };
 
 const ICON_LABELS = {
-  bulb: 'Licht', lamp: 'Lampe', walllamp: 'Wandlampe', ceiling: 'Deckenlampe', lantern: 'Außenleuchte', power: 'Ein/Aus', socket: 'Steckdose', blind: 'Rollladen', window: 'Fenster',
+  bulb: 'Licht', lamp: 'Lampe', walllamp: 'Wandlampe', awning: 'Markise', ceiling: 'Deckenlampe', lantern: 'Außenleuchte', power: 'Ein/Aus', socket: 'Steckdose', blind: 'Rollladen', window: 'Fenster',
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',

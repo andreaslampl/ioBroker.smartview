@@ -726,3 +726,57 @@ test('adapter: push rules "länger als" and "und zusätzlich"', async t => {
     await wait(500);
     assert.equal(pushed.length, 1);
 });
+
+test('adapter: awning retracts on wind/rain, stays locked, gate impulse', async t => {
+    const { adapter, api, port } = await startAdapter(t, {}, a => {
+        a.add('0_userdata.0.Regen', { name: 'Regen', type: 'boolean', role: 'sensor.rain', write: false }, false);
+        a.add('knx.0.Tor.Taster', { name: 'Tor', type: 'boolean', role: 'button', write: true }, false);
+        a.add('knx.0.Tor.Zu', { name: 'Tor zu', type: 'boolean', role: 'sensor', write: false }, true);
+    });
+    const layout = {
+        pages: [
+            {
+                id: 'aussen',
+                name: 'Außen',
+                tiles: [
+                    // wind as speed (m/s), alarm from 10; locked 1 s after the alarm
+                    { id: 'mk', type: 'blind', kind: 'awning', label: 'Markise', state: 'knx.0.EG.Rollladen.Wohnzimmer', windAlarm: '0_userdata.0.Wetter.Wind', windMin: 10, rainAlarm: '0_userdata.0.Regen', protect: 'up', lockTime: 1, lockUnit: 's' },
+                    { id: 'tor', type: 'gate', label: 'Tor', gateMode: 'single', single: 'impulse', state: 'knx.0.Tor.Taster', posClosed: 'knx.0.Tor.Zu' },
+                ],
+            },
+        ],
+    };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    assert.deepEqual([saved.pages[0].tiles[0].kind, saved.pages[0].tiles[0].windMin, saved.pages[0].tiles[1].single], ['awning', 10, 'impulse']);
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    adapter.writes.length = 0;
+
+    // rain: drives to "up" (open = retracted) and locks
+    adapter.change('0_userdata.0.Regen', true);
+    await until(() => adapter.writes.some(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer'));
+    assert.deepEqual(adapter.writes.find(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer'), ['knx.0.EG.Rollladen.Wohnzimmer', 100, false]);
+    await until(() => c.msgs.some(m => m.type === 'locks' && m.locks['aussen/mk']));
+    assert.equal(c.msgs.filter(m => m.type === 'locks').pop().locks['aussen/mk'].reason, 'Regenalarm');
+    // the page cannot move it now
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Rollladen.Wohnzimmer', val: 0 }));
+    await until(() => c.msgs.some(m => m.type === 'error' && /Gesperrt \(Regenalarm/.test(m.text)));
+    // wind on top: no second drive; rain gone: wind still locks
+    adapter.change('0_userdata.0.Wetter.Wind', 14);
+    adapter.change('0_userdata.0.Regen', false);
+    await until(() => c.msgs.filter(m => m.type === 'locks').pop().locks['aussen/mk'].reason === 'Windalarm');
+    assert.equal(adapter.writes.filter(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer').length, 1);
+    // wind gone: locked another second, then free
+    adapter.change('0_userdata.0.Wetter.Wind', 3);
+    await until(() => (c.msgs.filter(m => m.type === 'locks').pop().locks['aussen/mk'] || {}).left > 0);
+    await until(() => !c.msgs.filter(m => m.type === 'locks').pop().locks['aussen/mk'], 3000);
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Rollladen.Wohnzimmer', val: 0 }));
+    await until(() => adapter.writes.some(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer' && w[1] === 0));
+
+    // gate impulse: true, false after the pulse
+    c.ws.send(JSON.stringify({ type: 'pulse', id: 'knx.0.Tor.Taster', ms: 200 }));
+    await until(() => adapter.writes.filter(w => w[0] === 'knx.0.Tor.Taster').length === 2, 2000);
+    assert.deepEqual(adapter.writes.filter(w => w[0] === 'knx.0.Tor.Taster').map(w => w[1]), [true, false]);
+});
