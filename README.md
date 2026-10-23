@@ -59,6 +59,7 @@ ausschalten.
 | Mehrere Werte | bis zu 8 Datenpunkte mit Bezeichnung (z. B. Helligkeit Ost/West, 3 Temperaturfühler) | antippen = groß anzeigen |
 | Fensterübersicht | pro Fenster Name, Magnetkontakt (true = offen), optional Kipp-Kontakt und „umgekehrt“ | geschlossen (grün) / gekippt (orange) / offen (rot) mit „seit …“; oben die Anzahl offener Fenster |
 | HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“; dort steht er als `{datenpunkt}`) | aktualisiert sich live; Bilder des web-Adapters (VIS-Symbole) werden über SmartView geladen; Größe „groß“ = volle Breite |
+| Wallbox | Wallbox-Instanz (versicharge) und Energie-Instanz, oder Datenpunkte selbst | antippen = Lademodus, Details (siehe unten) |
 | Überschrift | – | – |
 
 Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Bewegung/Ruhe“ bzw.
@@ -178,6 +179,18 @@ Eigenverbrauch) oder nur Tageskurve – für einzeln verschiebbare Teile einfach
 Antippen öffnet die große Ansicht mit Tageskurve (‹ › blättert durch die letzten Tage). Datenpunkte,
 Modbus-Faktoren, die Darstellung (rund/eckig, Linien, Animation, Symbole) und die Anordnung der Symbole
 („Anordnen“ auf der Seite /flow des Adapters) stellt man im Adapter energie ein, nicht in SmartView. Größe „groß“ = volle Breite.
+
+### Wallbox
+
+Kachel-Art **„Wallbox“**: Ladeleistung, Zustand (Kein Auto / angesteckt / Lädt / Fehler), in diesem Ladevorgang
+geladene kWh und der Lademodus des PV-Überschussladens. Bei der **Siemens VersiCharge** genügt es, die
+Wallbox-Instanz (Adapter [versicharge](https://github.com/andreaslampl/ioBroker.versicharge)) und die
+Energie-Instanz zu wählen – die Datenpunkte füllt SmartView beim Speichern selbst aus. Andere Wallboxen: die
+Datenpunkte selbst wählen.
+
+Antippen öffnet das Bedienfenster mit den Modi **PV / Min+PV / Schnell / Aus / Manuell** (Regelung im Adapter
+energie, Reiter „Wallbox“). Im Modus „Manuell“ lässt sich der Ladestrom mit − / + einstellen. Auf einer großen
+Kachel (Größe „groß“ oder 2 Zeilen hoch) liegen die Modus-Tasten direkt auf der Kachel.
 
 ### Kameras
 

@@ -118,7 +118,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -131,7 +131,7 @@ function tileIc(t) {
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed'].map(k => t[k])
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
@@ -259,6 +259,69 @@ function pulse(id) {
 function gateButtons(t, big) {
   const b = (a, ic, txt) => '<button type="button" data-a="' + a + '" aria-label="' + txt + '">' + icon(ic) + (big ? txt : '') + '</button>';
   return b('gopen', 'up', 'Auf') + (t.stop ? b('gstop', 'stop', 'Stopp') : '') + b('gclose', 'down', 'Zu');
+}
+
+// ---------------- wallbox (adapter versicharge + surplus charging of energie) ----------------
+
+const WB_MODES = { pv: 'PV', minpv: 'Min+PV', fast: 'Schnell', off: 'Aus', manual: 'Manuell' };
+
+function wbModes(t) {
+  const s = st(t.mode) || {};
+  const map = s.states && typeof s.states === 'object' && Object.keys(s.states).length ? s.states : WB_MODES;
+  return Object.entries(map).map(([k, v]) => [k, String(v)]);
+}
+
+function wbModeText(t) {
+  const v = val(t.mode);
+  const hit = wbModes(t).find(([k]) => k === String(v));
+  return hit ? hit[1] : '';
+}
+
+function wbPower(t) {
+  const v = Number(val(t.state));
+  return t.state && val(t.state) !== null && val(t.state) !== undefined && Number.isFinite(v) ? v : null;
+}
+
+function wbCharging(t) {
+  const p = wbPower(t);
+  return p !== null ? p >= 50 : /^Lädt/.test(String(val(t.status) || ''));
+}
+
+function wbFault(t) {
+  return /Fehler|Störung/.test(String(val(t.status) || ''));
+}
+
+/** big value: power while charging, else the mode */
+function wbBig(t) {
+  const p = wbPower(t);
+  if (wbCharging(t) && p !== null) return EnergyView.fmtW(p);
+  return wbModeText(t) || (p !== null ? EnergyView.fmtW(p) : '–');
+}
+
+function wbLine(t) {
+  const plugged = t.plugged ? val(t.plugged) : undefined;
+  const status = String(val(t.status) || (plugged === undefined || plugged === null ? '' : truthy(plugged) ? 'Auto angesteckt' : 'Kein Auto angesteckt'));
+  // while waiting the control's text says more ("Wartet auf Überschuss", "Startet in 0:40")
+  const ctrl = t.ctrl ? String(val(t.ctrl) || '') : '';
+  return !wbCharging(t) && ctrl && !/Kein Auto/.test(status) && !wbFault(t) ? ctrl : status;
+}
+
+function wbModeButtons(t) {
+  const cur = String(val(t.mode));
+  return wbModes(t).map(([k, v]) => '<button type="button" data-a="wbmode" data-v="' + esc(k) + '"' + (k === cur ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('');
+}
+
+/** manual current (only when energie does not control: mode Manuell or no mode data point) */
+function wbManual(t) {
+  return t.current && (!t.mode || String(val(t.mode)) === 'manual');
+}
+
+function wbCurrentStep(t, d) {
+  const s = st(t.current) || {};
+  const max = Number.isFinite(Number(s.max)) && Number(s.max) >= 6 ? Number(s.max) : 32;
+  const cur = Number(val(t.current)) || 0;
+  const next = d > 0 ? (cur < 6 ? 6 : Math.min(max, Math.floor(cur) + 1)) : cur <= 6 ? 0 : Math.ceil(cur) - 1;
+  send(t.current, next);
 }
 
 function blindWrite(t, openPercent) {
@@ -434,6 +497,7 @@ function tileState(t) {
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
   if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
+  if (t.type === 'wallbox') return wbFault(t) ? 'alert' : wbCharging(t) ? 'on' : '';
   if (t.type === 'thermostat') return thermoHeat(t) && thermoHeat(t).on ? 'on' : '';
   if (t.type === 'value' && t.highlight && t.highlight !== 'none') {
     const s = st(t.state);
@@ -860,6 +924,9 @@ function fillRow(el, t) {
     case 'gate':
       ctl = gateButtons(t) + '<span class="lval">' + gateText(t) + '</span>';
       break;
+    case 'wallbox':
+      ctl = '<span class="lsub">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
+      break;
     case 'thermostat': {
       const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
       const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
@@ -933,7 +1000,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -969,6 +1036,13 @@ function fillTile(el, t) {
     case 'gate':
       html = '<div class="row1">' + ic + '<span class="tval">' + gateText(t) + '</span></div>' + label + '<div class="ctl">' + gateButtons(t) + '</div>';
       break;
+    case 'wallbox': {
+      const kwh = t.energy ? fmt({ decimals: 1, unit: 'kWh' }, t.energy) : null;
+      html = '<div class="row1">' + ic + '<span class="tval">' + esc(kwh && kwh.text !== '–' ? kwh.text + ' kWh' : '') + '</span></div>' +
+        '<div class="big">' + esc(wbBig(t)) + '</div><div class="tsub">' + esc(wbLine(t)) + '</div>' + label +
+        (t.mode && (t.size === 'l' || (t.sh || 0) >= 2) ? '<div class="ctl wbm">' + wbModeButtons(t) + '</div>' : '');
+      break;
+    }
     case 'value': {
       const f = fmt(t, t.state);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(f.text) + (f.unit ? '<small>' + esc(f.unit) + '</small>' : '') + '</div>' + label;
@@ -1058,6 +1132,9 @@ function bindControls(el, t) {
       else if (a === 'plus') thermoStep(t, 1);
       else if (a === 'minus') thermoStep(t, -1);
       else if (a === 'mode') sendMode(t, b.dataset.v);
+      else if (a === 'wbmode') send(t.mode, b.dataset.v);
+      else if (a === 'wbplus') wbCurrentStep(t, 1);
+      else if (a === 'wbminus') wbCurrentStep(t, -1);
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
@@ -1237,6 +1314,7 @@ function fillMarker(el, t) {
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
+  else if (t.type === 'wallbox') v = wbBig(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
     v = d && d.s ? EnergyView.fmtW(d.s.pv) : '';
@@ -1391,6 +1469,21 @@ function fillSheet(sh, t) {
       '<button type="button" data-a="down">' + icon('down') + w[1] + '</button></div>';
   } else if (t.type === 'gate') {
     body = '<div class="bigval">' + (gateText(t) || '–') + '</div><div class="row">' + gateButtons(t, true) + '</div>';
+  } else if (t.type === 'wallbox') {
+    const info = [];
+    const p = wbPower(t);
+    if (t.status || t.plugged) info.push(['Zustand', esc(wbLine(t) === String(val(t.ctrl) || '') ? String(val(t.status) || '–') : wbLine(t))]);
+    if (t.ctrl) info.push(['Laderegelung', esc(String(val(t.ctrl) || '–'))]);
+    if (p !== null) info.push(['Ladeleistung', esc(EnergyView.fmtW(p))]);
+    if (t.energy) info.push(['Geladen', esc(fmt({ decimals: 2, unit: 'kWh' }, t.energy).text) + ' kWh']);
+    if (t.current) {
+      const c = Number(val(t.current));
+      info.push(['Ladestrom', Number.isFinite(c) ? (c >= 6 ? esc(String(c).replace('.', ',')) + ' A' : 'Pause') : '–']);
+    }
+    body = '<div class="bigval">' + esc(wbBig(t)) + '</div>' +
+      (t.mode ? '<div class="row modes">' + wbModeButtons(t) + '</div>' : '') +
+      (wbManual(t) ? '<div class="row"><button type="button" data-a="wbminus" aria-label="weniger Strom">' + icon('minus') + '</button><button type="button" data-a="wbplus" aria-label="mehr Strom">' + icon('plus') + '</button></div>' : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'thermostat') {
     const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
     const u = x => esc(x.unit || '°C');

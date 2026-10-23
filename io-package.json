@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.20.0",
+    "version": "0.21.0",
     "news": {
+      "0.21.0": {
+        "en": "New tile wallbox: power, state, charged energy and the PV surplus charging mode of the energie adapter (Siemens VersiCharge via the versicharge adapter: just pick the instances)",
+        "de": "Neue Kachel Wallbox: Leistung, Zustand, geladene Energie und Lademodus des PV-Überschussladens aus dem Adapter energie (Siemens VersiCharge über den Adapter versicharge: nur die Instanzen wählen)"
+      },
       "0.20.0": {
         "en": "Every tile can get its own size (grip in edit mode or width/height in the dialog); new tile floor plan: several plans on one page, each in its own size; pages can be hidden from the page bar",
         "de": "Jede Kachel in eigener Größe (Griff im Bearbeiten-Modus oder Breite/Höhe im Dialog); neue Kachel Grundriss: mehrere Lagepläne auf einer Seite, jeder in eigener Größe; Seiten lassen sich aus der Seitenleiste ausblenden"

@@ -150,6 +150,7 @@ class SmartView extends utils.Adapter {
                 },
                 homekit: () => this.homekitInfo(),
                 energyInstances: () => this.instancesOf('energie'),
+                chargerInstances: () => this.instancesOf('versicharge'),
                 energyDay: (instance, date) => this.energyDay(instance, date),
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),

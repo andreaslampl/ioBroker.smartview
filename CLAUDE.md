@@ -169,6 +169,13 @@ switches/buttons on them.
   real column count (phone 2). Edit mode grip `.sizeh` ◢ (sortable listener with stopImmediatePropagation).
   Tile type `planview` {target: plan page id}: `planTile()` renders the plan with markers (`renderMarker(.., inTile)`,
   click stops propagation; in edit mode markers inert), with own height the plan is fitted. Pages `hidden`.
+- 0.21.0: owner's wallbox (Siemens VersiCharge, so far only in evcc) -> new adapter ioBroker.versicharge + surplus
+  charging in energie 0.4.0 + tile type `wallbox` {state power, status, plugged, energy (session kWh), mode (w,
+  energie.N.wallbox.mode), ctrl (energie's control text), current (w)}; options `charger` 'versicharge.N' / `instance`
+  'energie.N' fill empty fields (or those of another instance) in `fillWallbox()` on save. app.js `wb*` helpers:
+  big = power while charging else mode; line = control text while not charging; sheet with mode buttons, − / + current
+  only in mode manual (else energie would overwrite it); mode buttons on the tile only when size l or sh >= 2.
+  Icon `charger`. Checked in Playwright; not yet with the real wallbox.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

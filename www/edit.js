@@ -19,6 +19,7 @@ const TYPE_LABELS = {
   energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
   gate: 'Tor / Garagentor',
   planview: 'Grundriss / Lageplan (Grundriss-Seite als Kachel)',
+  wallbox: 'Wallbox (Laden, PV-Überschuss)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -93,6 +94,17 @@ const TYPE_FIELDS = {
   windows: [['windows', 'Fenster', 'windows']],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
+  wallbox: [
+    ['charger', 'Wallbox-Instanz', 'charger', 'Füllt die Datenpunkte unten aus (Adapter versicharge). Andere Wallboxen: Datenpunkte selbst wählen.'],
+    ['instance', 'Überschussladen (Energie-Instanz)', 'energy', 'Lademodus PV / Min+PV / Schnell / Aus vom Adapter „energie“ (Reiter Wallbox in dessen Einstellungen)'],
+    ['state', 'Ladeleistung (W)', 'state-r'],
+    ['status', 'Zustand (Text)', 'state-r'],
+    ['plugged', 'Auto angesteckt (optional)', 'state-r'],
+    ['energy', 'Geladen in kWh (optional)', 'state-r'],
+    ['mode', 'Lademodus (optional)', 'state-w'],
+    ['ctrl', 'Laderegelung (Text, optional)', 'state-r'],
+    ['current', 'Ladestrom in A (optional)', 'state-w', 'Mit − / + einstellbar, wenn der Lademodus „Manuell“ ist oder es keinen Lademodus gibt'],
+  ],
   energy: [
     ['instance', 'Energie-Instanz', 'energy'],
     ['show', 'Anzeige', 'select:flow=nur Energiefluss;stats=Energiefluss und Tageswerte;today=nur Tageswerte (Heute);chart=nur Tagesverlauf (Kurve)', 'Für einzeln verschiebbare Teile mehrere Kacheln anlegen, z. B. eine mit Fluss, eine mit Tageswerten, eine mit Kurve. Antippen öffnet immer die große Ansicht.'],
@@ -417,9 +429,29 @@ const Editor = (() => {
   }
 
   /** Instance of the energie adapter for the energy flow tile. */
-  async function energyField(box, value) {
-    const s = select([['', '(wählen)']], value || '');
-    field(box, 'Energie-Instanz', s, 'Datenpunkte, Modbus-Faktoren usw. werden im Adapter „energie“ eingestellt.');
+  /** wallbox tile: instance of the versicharge adapter ('' = choose the data points by hand) */
+  async function chargerField(box, value, label, help) {
+    const s = select([['', '(keine – Datenpunkte selbst wählen)']], value || '');
+    field(box, label, s, help);
+    let list = [];
+    try {
+      list = (await api('energy')).chargers || [];
+    } catch (e) {
+      // not installed
+    }
+    for (const id of list.concat(value && !list.includes(value) ? [value] : [])) {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = id + (list.includes(id) ? '' : ' (nicht gefunden)');
+      s.appendChild(o);
+    }
+    s.value = value === undefined ? list[0] || '' : value || '';
+    return s;
+  }
+
+  async function energyField(box, value, own) {
+    const s = select([['', own ? '(keines)' : '(wählen)']], value || '');
+    field(box, own ? own[0] : 'Energie-Instanz', s, own ? own[1] : 'Datenpunkte, Modbus-Faktoren usw. werden im Adapter „energie“ eingestellt.');
     let list = [];
     try {
       list = (await api('energy')).instances;
@@ -608,7 +640,8 @@ const Editor = (() => {
         else if (kind.startsWith('select:')) {
           const opts = kind.slice(7).split(';').map(x => x.split('='));
           inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);
-        } else if (kind === 'energy') energyField(body, t[key]).then(s => (inputs[key] = s));
+        } else if (kind === 'energy') energyField(body, t[key], t.type === 'wallbox' ? [label, help] : null).then(s => (inputs[key] = s));
+        else if (kind === 'charger') chargerField(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'planpage') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.type === 'plan').map(p => [p.id, p.name])), t[key] || ''), 'Zuerst eine Seite der Art „Grundriss“ anlegen. Beschriftung leer = Name der Seite. In den Seiten-Einstellungen kann die Grundriss-Seite aus der Seitenleiste ausgeblendet werden.');
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');

@@ -304,3 +304,21 @@ test('layout: own tile sizes, plan tile, hidden pages', () => {
     // the symbols of a plan shown in a tile are read and may be written like on the plan page
     assert.ok(stateIds(l).write.includes('knx.0.m'));
 });
+
+test('wallbox tile: instances fill the data points, mode and current are writable', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'wb', type: 'wallbox', charger: 'versicharge.0', instance: 'energie.0', status: 'my.own.status' }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.state, 'versicharge.0.power.total');
+    assert.equal(t.status, 'my.own.status', 'own data point stays');
+    assert.equal(t.energy, 'versicharge.0.energy.session');
+    assert.equal(t.mode, 'energie.0.wallbox.mode');
+    assert.equal(t.ctrl, 'energie.0.wallbox.status');
+    const { write } = stateIds(l);
+    assert.ok(write.includes('energie.0.wallbox.mode'));
+    assert.ok(write.includes('versicharge.0.control.current'));
+    assert.ok(!write.includes('versicharge.0.power.total'));
+    // another instance replaces the old instance's data points
+    const t2 = cleanLayout({ pages: [{ id: 'p', tiles: [{ ...t, charger: 'versicharge.1' }] }] }).pages[0].tiles[0];
+    assert.equal(t2.state, 'versicharge.1.power.total');
+    assert.equal(cleanLayout({ pages: [{ id: 'p', tiles: [{ type: 'wallbox', charger: 'evil.0' }] }] }).pages[0].tiles[0].charger, '');
+});

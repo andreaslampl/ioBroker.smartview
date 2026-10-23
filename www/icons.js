@@ -39,6 +39,7 @@ const ICON_PATHS = {
   home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
   fire: '<path d="M12 21a7 7 0 0 0 7-7c0-4-3-6-4-9-1 3-3 4-4 2-1 2-6 4-6 7a7 7 0 0 0 7 7z"/><path d="M12 21a3 3 0 0 0 3-3c0-2-2-3-3-5-1 2-3 3-3 5a3 3 0 0 0 3 3z"/>',
   water: '<path d="M3 15c2 0 2 1.5 4.5 1.5S9.5 15 12 15s2.5 1.5 4.5 1.5S19 15 21 15"/><path d="M3 19c2 0 2 1.5 4.5 1.5S9.5 19 12 19s2.5 1.5 4.5 1.5S19 19 21 19"/><path d="M12 3s4 4 4 7a4 4 0 0 1-8 0c0-3 4-7 4-7z"/>',
+  charger: '<rect x="4" y="3" width="10" height="18" rx="2"/><path d="M10 7l-3 4h3l-2 4"/><path d="M14 11h2a2 2 0 0 1 2 2v4a2 2 0 0 0 4 0V9l-2-2"/>',
   car: '<path d="M5 16V12l2-5h10l2 5v4"/><path d="M3 12h18v4H3z"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/>',
   tree: '<path d="M12 3l6 8h-3l4 5H5l4-5H6z"/><path d="M12 16v5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
@@ -66,7 +67,7 @@ const ICON_LABELS = {
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
-  scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', tree: 'Garten', info: 'Info',
+  scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', tree: 'Garten', info: 'Info',
   star: 'Favorit', gauge: 'Anzeige',
 };
 
