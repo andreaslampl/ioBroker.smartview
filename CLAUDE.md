@@ -145,6 +145,9 @@ switches/buttons on them.
   (`freeNarrow`: column < 105 px) fall back to the normal grid ordered by row/column.
 - 0.17.0: owner wanted the parts of the energy view as separately movable tiles -> energy `show`
   flow|stats|today|chart; chart tiles load `/api/energy/day` at most every 5 min.
+- 0.17.2 field: moving tiles did not work on the owner's Windows touch PC (long press = right click there,
+  suspected) -> grip `.dragh` (app.js `dragHandle()` in fillTile/fillRow/energyTile, edit mode only, touch-action
+  none) starts the drag at once for every pointer type; the long press stays for the rest of the tile.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

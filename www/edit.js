@@ -1029,11 +1029,17 @@ const Editor = (() => {
 
     // mouse and pen
     box.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'touch' || e.button !== 0) return;
+      // the grip ⠿ works for every pointer at once; elsewhere touch uses the long press below
+      const grip = e.target.closest('.dragh');
+      if ((e.pointerType === 'touch' && !grip) || e.button !== 0) return;
       const el = e.target.closest(selector);
       if (!el || el.parentElement !== box) return;
       const sx = e.clientX;
       const sy = e.clientY;
+      if (grip) {
+        e.preventDefault();
+        begin(el, sx, sy);
+      }
       const move = ev => {
         if (!drag) {
           if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) < 8) return;
@@ -1055,7 +1061,7 @@ const Editor = (() => {
 
     // touch: long press starts the drag, otherwise the finger scrolls as usual
     box.addEventListener('touchstart', e => {
-      if (e.touches.length !== 1) return;
+      if (e.touches.length !== 1 || e.target.closest('.dragh')) return;
       const el = e.target.closest(selector);
       if (!el || el.parentElement !== box) return;
       const t0 = e.touches[0];

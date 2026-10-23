@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.17.1",
+    "version": "0.17.2",
     "news": {
+      "0.17.2": {
+        "en": "Edit mode: grip ⠿ on every tile/row to move it at once with finger or mouse (no long press, which Windows touch screens turn into a right click)",
+        "de": "Bearbeiten: Griff ⠿ an jeder Kachel/Zeile zum sofortigen Verschieben mit Finger oder Maus (ohne langes Halten, das Windows-Touchscreens zum Rechtsklick machen)"
+      },
       "0.17.1": {
         "en": "Energy flow tile shows the own arrangement of the symbols from the energie adapter",
         "de": "Energiefluss-Kachel zeigt die eigene Anordnung der Symbole aus dem Adapter energie"

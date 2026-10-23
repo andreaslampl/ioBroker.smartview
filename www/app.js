@@ -772,6 +772,12 @@ function fillRow(el, t) {
   el.innerHTML = head + '<span class="lctl">' + ctl + '</span>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
   bindControls(el, t);
   Timers.mark(el, t);
+  dragHandle(el);
+}
+
+/** Edit mode: grip to move a tile at once (touch screens turn a long press into a right click). */
+function dragHandle(el) {
+  if (SV.editing && !el.querySelector(':scope > .dragh')) el.insertAdjacentHTML('beforeend', '<span class="dragh" title="Ziehen zum Verschieben" aria-label="Verschieben">⠿</span>');
 }
 
 function pageName(id) {
@@ -879,6 +885,7 @@ function fillTile(el, t) {
   if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));
   bindControls(el, t);
   Timers.mark(el, t);
+  dragHandle(el);
   el.classList.toggle('multirow', t.type === 'multi' && (t.rows || []).length > 1);
   if (t.type === 'camera') {
     const img = el.querySelector('img.camimg');
@@ -1104,6 +1111,7 @@ function energyTile(el, t) {
     const box = el.querySelector('.eflow, .estats, .echart');
     el._ef = { box, flow: el.querySelector('.eflow') ? EnergyView.flow(el.querySelector('.eflow')) : null, chartAt: 0 };
   }
+  dragHandle(el);
   const d = energyData(t);
   el.classList.toggle('missing', Boolean(t.instance) && !d);
   if (d && d.s) {

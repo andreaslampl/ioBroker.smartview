@@ -402,3 +402,11 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.energy.eonly { max-width: none; }
 .tile.energy .echart { width: 100%; }
 .tile.energy .echart .ef-chart { max-height: 300px; }
+
+/* edit mode: grip to move a tile (works at once with finger and mouse) */
+.dragh { position: absolute; top: 6px; right: 6px; z-index: 3; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; background: var(--accent); color: #fff; font-size: 22px; line-height: 1; cursor: grab; touch-action: none; user-select: none; opacity: .9; }
+.lrow { position: relative; }
+.lrow .dragh { top: 50%; transform: translateY(-50%); left: 8px; right: auto; }
+.editing .lrow:not(.addrow) { padding-left: 54px; }
+.dragging .dragh { cursor: grabbing; }
