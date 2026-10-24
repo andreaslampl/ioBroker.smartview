@@ -211,7 +211,14 @@ switches/buttons on them.
 - 0.24.2 field: still gaps between camera rows - a content tile with an own height (`sh`) only had min-height, taller
   content (the owner's HTML/windows list) stretched the rows it spans. Now `sizeTile()` gives AUTO_H tiles with `sh` a
   fixed height + class `fixh` (overflow hidden; .htmlhost / .wlist scroll, energy flow svg scaled to fit).
-- Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
+- 0.25.0: owner asked that the display turns on when it rings -> `www/screen.js` (`Screen`): per device
+  localStorage `sv.screenOff` minutes (menu cycles 0/1/2/5/10/30/60, "jetzt ausschalten"), black `.screenoff` overlay
+  (z-index 1000; pointerdown swallowed, wake on click so the waking tap switches nothing), not while a ring/call
+  overlay is open or in edit mode; screen wake lock while awake, released when dark, requested again on ring
+  (`Screen.ring()` from `checkRing()` and intercom.js `update()`); without the feature the ring lock is released after
+  3 min. A browser cannot reliably switch on a monitor Windows turned off - recommended: Windows display off "never".
+  Checked in Playwright (tap does not switch the tile below, ring wakes, off ignored while ringing).
+- Ideas not done yet: charts/history.
 
 ## Conventions
 

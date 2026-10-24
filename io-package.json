@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.24.2",
+    "version": "0.25.0",
     "news": {
+      "0.25.0": {
+        "en": "Screen off for the touch PC (per device, menu): black after 1-60 min without a touch, a tap or the doorbell wakes it; wake lock while awake and when it rings",
+        "de": "Bildschirm aus für den Touch-PC (pro Gerät, Menü): schwarz nach 1–60 Min. ohne Berühren, Tippen oder Klingeln weckt ihn; Wake-Lock solange wach und beim Klingeln"
+      },
       "0.24.2": {
         "en": "Content tiles (energy flow, HTML, windows) with an own height keep exactly that height - the content scrolls or is scaled instead of pulling the tiles beside them apart",
         "de": "Inhalts-Kacheln (Energiefluss, HTML, Fenster) mit eigener Höhe bleiben genau so hoch – der Inhalt scrollt bzw. wird verkleinert, statt die Kacheln daneben auseinanderzuziehen"

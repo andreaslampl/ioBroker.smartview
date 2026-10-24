@@ -1861,6 +1861,7 @@ function checkRing() {
   if (ringing && !SV.ringDismissed && !(SV.cam && SV.cam.ring) && !SV.editing) {
     closeSheet();
     openCam(r.camera, '', true);
+    if (typeof Screen !== 'undefined') Screen.ring();
   } else if (!ringing) {
     SV.ringDismissed = false;
     if (SV.cam && SV.cam.ring) closeCam();
@@ -1928,7 +1929,7 @@ async function openMenu() {
   closeSheet();
   const ov = document.createElement('div');
   ov.className = 'overlay bottom';
-  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div><div data-users></div>' +
+  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div><div data-screen></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
     (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + 'Vollbild</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
@@ -1953,6 +1954,7 @@ async function openMenu() {
   if (full) full.onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
   renderPushMenu(ov.querySelector('[data-push]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
+  if (typeof Screen !== 'undefined') Screen.menuItems(ov.querySelector('[data-screen]'));
   Users.menuItems(ov.querySelector('[data-users]'));
 }
 

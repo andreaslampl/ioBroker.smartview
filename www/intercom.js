@@ -125,6 +125,7 @@ const Intercom = (() => {
       cleanup();
       closeCall();
     } else if (!dismissed && !SV.editing && (ringing || state.mine)) {
+      if (ringing && !overlay && typeof Screen !== 'undefined') Screen.ring();
       openCall();
     } else if (overlay && !ringing && !state.mine) {
       closeCall(); // answered on another device

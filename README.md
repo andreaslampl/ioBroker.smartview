@@ -370,6 +370,18 @@ verwendet wird).
 als HTML-Widget: `<iframe src="http://<ioBroker-IP>:8098/" style="width:100%;height:100%;border:0"></iframe>`.
 Mit `?device=touch` bzw. `?device=phone` lässt sich die Darstellung erzwingen.
 
+
+### Bildschirm aus / beim Klingeln an
+
+Im Menü ⚙ (pro Gerät): **„Bildschirm aus nach“** nie / 1 / 2 / 5 / 10 / 30 / 60 Minuten ohne Berühren, und
+**„Bildschirm jetzt ausschalten“**. Der Bildschirm wird dann schwarz; **ein Tipp weckt ihn** (der Tipp schaltet nichts),
+**beim Klingeln geht er sofort an** und zeigt Kamera bzw. Sprechanlage. Während eines Anrufs geht er nicht aus.
+
+Solange SmartView wach ist, hält es den Monitor per Wake-Lock an (Windows schaltet ihn dann nicht selbst ab); beim
+Klingeln wird der Wake-Lock neu angefordert, was einen von Windows abgeschalteten Monitor wieder einschalten kann.
+Der Wake-Lock braucht eine sichere Verbindung (https, oder http mit dem Edge-Flag
+„unsafely-treat-insecure-origin-as-secure“ wie für das Mikrofon). Am zuverlässigsten: in Windows „Bildschirm
+ausschalten“ auf **Nie** stellen und das Ausschalten SmartView überlassen.
 ## Einstellungen
 
 | Einstellung | Bedeutung |

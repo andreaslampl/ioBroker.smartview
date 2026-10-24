@@ -457,3 +457,6 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.energy.fixh .eflow { flex: 1; min-height: 0; max-width: none; display: flex; justify-content: center; }
 .tile.energy.fixh .eflow svg { width: 100%; height: 100%; max-height: 100%; display: block; }
 .tile.energy.fixh .echart { flex: 1; min-height: 0; }
+
+/* screen off (touch PC): black above everything, the first touch only wakes */
+.screenoff { position: fixed; inset: 0; z-index: 1000; background: #000; cursor: none; }
