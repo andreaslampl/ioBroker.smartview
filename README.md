@@ -149,6 +149,19 @@ Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt �
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
+### Fensterübersicht: Magnetkontakte auswerten
+
+Pro Fenster bis zu zwei Kontakte (true = offen, jeder einzeln „umgekehrt“) und die **Auswertung** passend zur
+Verdrahtung:
+
+| Auswertung | zu | gekippt | offen |
+|---|---|---|---|
+| Kontakt 1 = offen, Kontakt 2 = gekippt (Standard) | beide zu | Kontakt 2 offen | nur Kontakt 1 offen |
+| ein Kontakt offen = gekippt, beide offen = offen | beide zu | einer offen | beide offen |
+| eigene Tabelle | für jede der 4 Kombinationen frei wählbar | | |
+
+Ein neues Fenster übernimmt die Einstellungen des vorigen (meist sind alle gleich verdrahtet).
+
 ### Lageplan: Ebenen und Kameras
 
 - **Ebenen (Gewerke):** Oben am Lageplan (und klein in der Lageplan-Kachel) gibt es Knöpfe für Licht, Beschattung,

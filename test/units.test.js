@@ -331,3 +331,16 @@ test('floor plan layer of a tile: only known layers are kept', () => {
     ] }] });
     assert.deepEqual(l.pages[0].tiles.map(t => t.layer), ['brand', undefined, undefined]);
 });
+
+test('window overview: evaluation per window (tilt contact, two contacts, own table)', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'w', type: 'windows', windows: [
+        { state: 'a', tilt: 'b' },
+        { state: 'a', tilt: 'b', logic: 'both', invert2: true },
+        { state: 'a', tilt: 'b', logic: 'table', map: 'zoto' },
+        { state: 'a', logic: 'table', map: 'bad!' },
+    ] }] }] });
+    const w = l.pages[0].tiles[0].windows;
+    assert.deepEqual(w.map(x => x.logic), ['tilt', 'both', 'table', 'table']);
+    assert.deepEqual(w.map(x => x.map), ['ztoo', 'ztoo', 'zoto', 'ztoo']);
+    assert.deepEqual(w.map(x => x.invert2), [false, true, false, false]);
+});

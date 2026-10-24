@@ -442,3 +442,5 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.planview .planimg { width: 100%; display: block; border-radius: 10px; }
 .editing .tile.planview .marker { pointer-events: none; }
 .tile.planview[style*='height: calc'] .pvbox { overflow: hidden; }
+
+.wintable { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; align-items: center; padding: 6px 10px; border-left: 3px solid var(--accent); margin: 4px 0 8px; }

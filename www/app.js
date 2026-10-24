@@ -476,10 +476,16 @@ function windowStates(t) {
   return (t.windows || []).map(w => {
     const a = w.state ? st(w.state) : null;
     const b = w.tilt ? st(w.tilt) : null;
-    const known = (a && !a.missing && a.val !== null && a.val !== undefined) || (b && !b.missing && b.val !== null && b.val !== undefined);
-    const open = a && a.val !== null && a.val !== undefined ? (w.invert ? !truthy(a.val) : truthy(a.val)) : false;
-    const tilt = b ? truthy(b.val) : false;
-    const status = !known ? 'unknown' : tilt ? 'tilt' : open ? 'open' : 'closed';
+    const has = x => x && !x.missing && x.val !== null && x.val !== undefined;
+    const known = has(a) || has(b);
+    // contact 1 / contact 2 open (true), each optionally inverted
+    const k1 = has(a) ? (w.invert ? !truthy(a.val) : truthy(a.val)) : false;
+    const k2 = has(b) ? (w.invert2 ? !truthy(b.val) : truthy(b.val)) : false;
+    let status;
+    if (!known) status = 'unknown';
+    else if (w.logic === 'both') status = k1 && k2 ? 'open' : k1 || k2 ? 'tilt' : 'closed';
+    else if (w.logic === 'table') status = { z: 'closed', t: 'tilt', o: 'open' }[String(w.map || 'ztoo')[(k1 ? 1 : 0) + (k2 ? 2 : 0)]] || 'closed';
+    else status = k2 ? 'tilt' : k1 ? 'open' : 'closed';
     const ts = Math.max((a && (a.lc || a.ts)) || 0, (b && (b.lc || b.ts)) || 0);
     return { label: w.label || (w.state || w.tilt || '').split('.').pop(), status, ts };
   });

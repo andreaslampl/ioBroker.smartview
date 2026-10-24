@@ -527,10 +527,19 @@ const Editor = (() => {
   function windowsField(box, rows) {
     const wrap = document.createElement('div');
     wrap.className = 'rules';
-    field(box, 'Fenster', wrap, 'Pro Fenster den Magnetkontakt (true = offen). Gekippt nur, wenn es einen eigenen Kipp-Kontakt gibt (true = gekippt).');
+    field(box, 'Fenster', wrap, 'Pro Fenster die Magnetkontakte (true = offen) und wie sie ausgewertet werden – je nach Verdrahtung.');
     const list = rows.map(r => ({ ...r }));
     let rowInputs = [];
-    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), state: x.state.value.trim(), tilt: x.tilt.value.trim(), invert: x.invert.input.checked }));
+    const read = () =>
+      rowInputs.map(x => ({
+        label: x.label.value.trim(),
+        state: x.state.value.trim(),
+        tilt: x.tilt.value.trim(),
+        invert: x.invert.input.checked,
+        invert2: x.invert2.input.checked,
+        logic: x.logic.value,
+        map: x.map.map(m => m.value).join(''),
+      }));
     function draw() {
       wrap.textContent = '';
       rowInputs = [];
@@ -540,10 +549,26 @@ const Editor = (() => {
         const x = {};
         x.label = field(b, 'Name', textInput(r.label));
         x.label.placeholder = 'z. B. Küche';
-        x.state = stateField(b, 'Kontakt (offen)', r.state, false);
-        x.tilt = stateField(b, 'Kipp-Kontakt (optional)', r.tilt, false);
-        x.invert = check('Kontakt umgekehrt (true = geschlossen)', r.invert);
+        x.logic = field(b, 'Auswertung', select([
+          ['tilt', 'Kontakt 1 = offen, Kontakt 2 = gekippt'],
+          ['both', 'ein Kontakt offen = gekippt, beide offen = offen'],
+          ['table', 'eigene Tabelle'],
+        ], r.logic || 'tilt'));
+        x.state = stateField(b, 'Kontakt 1', r.state, false);
+        x.invert = check('Kontakt 1 umgekehrt (true = geschlossen)', r.invert);
         b.appendChild(x.invert);
+        x.tilt = stateField(b, 'Kontakt 2 (optional)', r.tilt, false);
+        x.invert2 = check('Kontakt 2 umgekehrt (true = geschlossen)', r.invert2);
+        b.appendChild(x.invert2);
+        // own table: status for each combination of the two contacts
+        const tbl = document.createElement('div');
+        tbl.className = 'wintable';
+        const map = /^[zto]{4}$/.test(r.map || '') ? r.map : 'ztoo';
+        x.map = ['beide zu', 'nur Kontakt 1 offen', 'nur Kontakt 2 offen', 'beide offen'].map((txt, k) => field(tbl, txt, select([['z', 'zu'], ['t', 'gekippt'], ['o', 'offen']], map[k])));
+        b.appendChild(tbl);
+        const showTable = () => (tbl.style.display = x.logic.value === 'table' ? '' : 'none');
+        x.logic.addEventListener('change', showTable);
+        showTable();
         const tools = document.createElement('div');
         tools.className = 'buttons';
         const del = document.createElement('button');
@@ -580,7 +605,9 @@ const Editor = (() => {
       add.textContent = '+ Fenster';
       add.onclick = () => {
         const cur = read();
-        cur.push({ label: '', state: '', tilt: '' });
+        // a new window takes the wiring of the one before (usually all windows are wired the same)
+        const prev = cur[cur.length - 1];
+        cur.push({ label: '', state: '', tilt: '', logic: prev ? prev.logic : 'tilt', map: prev ? prev.map : 'ztoo', invert: prev ? prev.invert : false, invert2: prev ? prev.invert2 : false });
         list.splice(0, list.length, ...cur);
         draw();
       };

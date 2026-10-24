@@ -186,6 +186,10 @@ switches/buttons on them.
   `.marker.lhidden:not(.alert)` = markers in alarm stay visible. `camPop()` = fixed preview (single image polling via
   camimg) on pointerenter with pointerType mouse, removed on leave/click/renderPlan. Editor field "Ebene im Lageplan"
   only on plan pages. Checked in Playwright.
+- 0.23.0: owner's window contacts (MK): tilted = one contact open while the "closed" contact is still closed, open =
+  both open; other installations differ -> windows rows `logic` tilt (default, old behaviour) | both | table + `map`
+  (4 letters z/t/o for: both closed, only 1 open, only 2 open, both open), `invert2` for contact 2. app.js
+  `windowStates()`; editor `windowsField()` (table only shown for logic table, new rows copy the previous row's wiring).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

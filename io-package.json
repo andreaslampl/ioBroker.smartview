@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.22.0",
+    "version": "0.23.0",
     "news": {
+      "0.23.0": {
+        "en": "Window overview: evaluation per window - tilt contact (as before), two contacts (one open = tilted, both = open) or an own table for every combination; both contacts can be inverted",
+        "de": "Fensterübersicht: Auswertung pro Fenster – Kipp-Kontakt (wie bisher), zwei Kontakte (einer offen = gekippt, beide = offen) oder eigene Tabelle für jede Kombination; beide Kontakte umkehrbar"
+      },
       "0.22.0": {
         "en": "Floor plan: show/hide layers (light, shading, heating, windows/doors, security, fire, camera, energy) - symbols in alarm stay visible; camera symbols show a live preview on mouse over, click = large",
         "de": "Lageplan: Ebenen ein-/ausblenden (Licht, Beschattung, Heizung, Fenster/Türen, Sicherheit, Brand, Kamera, Energie) – Symbole mit Alarm bleiben sichtbar; Kamera-Symbole zeigen beim Darüberfahren mit der Maus ein Livebild, Klick = groß"
