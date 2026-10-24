@@ -117,7 +117,7 @@ test('layout: window overview - contacts and tilt contacts are read, nothing is 
         { label: 'Bad', state: 'knx.0.Fenster.Bad', invert: 1, bogus: 'x' },
     ] }] }] });
     const w = l.pages[0].tiles[0].windows;
-    assert.deepEqual(w[1], { label: 'Bad', state: 'knx.0.Fenster.Bad', tilt: '', invert: true });
+    assert.deepEqual(w[1], { label: 'Bad', state: 'knx.0.Fenster.Bad', tilt: '', invert: true, invert2: false, logic: 'tilt', map: 'ztoo' });
     const { read, write } = stateIds(l);
     assert.deepEqual(read.sort(), ['knx.0.Fenster.Bad', 'knx.0.Fenster.Kueche', 'knx.0.Fenster.Kueche_Kipp']);
     assert.deepEqual(write, []);
