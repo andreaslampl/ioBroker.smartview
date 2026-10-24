@@ -194,6 +194,8 @@ switches/buttons on them.
   beside it without cells. Now AUTO_H tiles without `sh` get align-self start + min-height --th, `watchRows()`
   (ResizeObserver) measures their natural height, stores the rows in `autoRows` (WeakMap per tile object, not saved)
   used by `freeSpan()`, and re-renders page + side once when that changes (not while a tile is dragged).
+- 0.23.2: owner did not know how to remove a data point picked by mistake (emptying the field worked, but was not
+  obvious) -> `stateField()` has a ✕ button (`.clearbtn`, only visible with a value) that empties the field.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

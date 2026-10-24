@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.23.1",
+    "version": "0.23.2",
     "news": {
+      "0.23.2": {
+        "en": "Tile dialog: ✕ next to every data point field removes a data point picked by mistake",
+        "de": "Kachel-Dialog: ✕ neben jedem Datenpunkt-Feld entfernt einen falsch gewählten Datenpunkt"
+      },
       "0.23.1": {
         "en": "Free grid: content tiles (energy flow, HTML, windows, plan) take as many rows as their height needs - no more dead space beside them, the cells there can be used",
         "de": "Freies Raster: Inhalts-Kacheln (Energiefluss, HTML, Fenster, Lageplan) belegen so viele Zeilen, wie ihre Höhe braucht – kein toter Platz mehr daneben, die Felder dort sind nutzbar"

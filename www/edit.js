@@ -365,20 +365,41 @@ const Editor = (() => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.innerHTML = '📂 Auswählen';
+    // remove a data point picked by mistake
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'clearbtn';
+    clear.textContent = '✕';
+    clear.title = 'Datenpunkt entfernen';
+    clear.setAttribute('aria-label', 'Datenpunkt entfernen');
     row.appendChild(input);
     row.appendChild(btn);
+    row.appendChild(clear);
     field(box, label, row, help);
     const nameEl = document.createElement('div');
     nameEl.className = 'statename';
     box.appendChild(nameEl);
     stateName(value, nameEl);
-    input.onchange = () => stateName(input.value.trim(), nameEl);
+    const showClear = () => (clear.style.visibility = input.value.trim() ? 'visible' : 'hidden');
+    showClear();
+    input.addEventListener('input', showClear);
+    input.onchange = () => {
+      stateName(input.value.trim(), nameEl);
+      showClear();
+    };
+    clear.onclick = () => {
+      input.value = '';
+      stateName('', nameEl);
+      showClear();
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
     btn.onclick = async () => {
       const r = await Picker.open({ api, title: (forOutput ? 'Datenpunkt zum Schalten wählen' : 'Datenpunkt zum Anzeigen wählen') + ' – ' + label, current: input.value.trim(), forOutput });
       if (r) {
         input.value = r.id;
         names[r.id] = r.name || '';
         stateName(r.id, nameEl);
+        showClear();
       }
     };
     return input;
