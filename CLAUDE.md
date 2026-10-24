@@ -190,6 +190,10 @@ switches/buttons on them.
   both open; other installations differ -> windows rows `logic` tilt (default, old behaviour) | both | table + `map`
   (4 letters z/t/o for: both closed, only 1 open, only 2 open, both open), `invert2` for contact 2. app.js
   `windowStates()`; editor `windowsField()` (table only shown for logic table, new rows copy the previous row's wiring).
+- 0.23.1 field: in the free grid an energy tile (content height, 1 row) made row 1 as tall as itself -> dead space
+  beside it without cells. Now AUTO_H tiles without `sh` get align-self start + min-height --th, `watchRows()`
+  (ResizeObserver) measures their natural height, stores the rows in `autoRows` (WeakMap per tile object, not saved)
+  used by `freeSpan()`, and re-renders page + side once when that changes (not while a tile is dragged).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

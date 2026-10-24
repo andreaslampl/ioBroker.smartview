@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.23.0",
+    "version": "0.23.1",
     "news": {
+      "0.23.1": {
+        "en": "Free grid: content tiles (energy flow, HTML, windows, plan) take as many rows as their height needs - no more dead space beside them, the cells there can be used",
+        "de": "Freies Raster: Inhalts-Kacheln (Energiefluss, HTML, Fenster, Lageplan) belegen so viele Zeilen, wie ihre Höhe braucht – kein toter Platz mehr daneben, die Felder dort sind nutzbar"
+      },
       "0.23.0": {
         "en": "Window overview: evaluation per window - tilt contact (as before), two contacts (one open = tilted, both = open) or an own table for every combination; both contacts can be inverted",
         "de": "Fensterübersicht: Auswertung pro Fenster – Kipp-Kontakt (wie bisher), zwei Kontakte (einer offen = gekippt, beide = offen) oder eigene Tabelle für jede Kombination; beide Kontakte umkehrbar"

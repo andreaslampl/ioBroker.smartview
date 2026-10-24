@@ -647,11 +647,17 @@ function renderPage() {
 
 // ---------------- free grid (page.free): tiles at column gx / row gy ----------------
 
+/**
+ * Rows a content tile (energy flow, HTML, windows, plan) really needs in the free grid, measured in the browser;
+ * kept per tile object, not saved in the layout.
+ */
+const autoRows = new WeakMap();
+
 /** Columns and rows a tile takes in the free grid. */
 function freeSpan(t, cols) {
   if (t.type === 'heading') return { w: cols, h: 1 };
   const s = AUTO_H.includes(t.type)
-    ? { w: t.size === 'l' ? cols : t.type === 'planview' ? 3 : 2, h: 1 }
+    ? { w: t.size === 'l' ? cols : t.type === 'planview' ? 3 : 2, h: autoRows.get(t) || 1 }
     : { w: t.size === 'w' || t.size === 'l' ? 2 : 1, h: t.size === 'l' ? 2 : 1 };
   // own size from the tile dialog or the size grip
   if (t.sw) s.w = t.sw;
@@ -744,11 +750,19 @@ function renderPageInto(box, page) {
     grid.dataset.cols = cols;
     grid._used = used;
   }
+  const measure = [];
   for (const t of tiles) {
     const el = renderTile(t, page);
     if (free) {
       const s = freeSpan(t, page.cols || 6);
       sizeTile(el, t, s.w, s.h, true);
+      // content tiles keep their natural height and take as many rows as that needs (else one tall row
+      // would leave dead space beside them)
+      if (AUTO_H.includes(t.type) && !t.sh) {
+        el.style.alignSelf = 'start';
+        el.style.minHeight = 'var(--th)';
+        measure.push([el, t]);
+      }
     }
     grid.appendChild(el);
   }
@@ -779,6 +793,36 @@ function renderPageInto(box, page) {
   }
   box.appendChild(grid);
   if (!free) applySizes(grid, page);
+  if (measure.length) watchRows(grid, measure);
+}
+
+/** Rows needed by content tiles; when that changes, the page is laid out again (once per change). */
+function watchRows(grid, measure) {
+  const css = getComputedStyle(grid);
+  const th = parseFloat(css.getPropertyValue('--th')) || 130;
+  const gap = parseFloat(css.rowGap) || 12;
+  const check = () => {
+    let changed = false;
+    for (const [el, t] of measure) {
+      if (!el.isConnected) continue;
+      const rows = Math.max(1, Math.ceil((el.getBoundingClientRect().height + gap - 2) / (th + gap)));
+      if (rows !== (autoRows.get(t) || 1)) {
+        autoRows.set(t, rows);
+        changed = true;
+      }
+    }
+    if (changed && !document.querySelector('.tile.dragging')) {
+      clearTimeout(watchRows.timer);
+      watchRows.timer = setTimeout(() => {
+        renderPage();
+        renderSide();
+      }, 60);
+    }
+  };
+  if (typeof ResizeObserver === 'function') {
+    const ro = new ResizeObserver(() => (grid.isConnected ? check() : ro.disconnect()));
+    for (const [el] of measure) ro.observe(el);
+  } else setTimeout(check, 300);
 }
 
 /** Optional split screen on the touch PC: panels with tabs on the right. */
