@@ -107,6 +107,9 @@ Heizkreise / Räume“** lassen sich beliebig viele Kreise anlegen (z. B. Fußbo
 mit eigenem Sollwert, Ist-Temperatur, Betriebsart, Heizt/Ventil und Fenster. Die Felder oben in der Kachel sind
 Kreis 1 (Name unter „Name dieses Kreises“). Auf der Kachel wird mit **‹ ›** umgeschaltet, im Bedienfenster mit Knöpfen;
 − / + und die Betriebsart wirken immer auf den gewählten Kreis. Jedes Gerät merkt sich den zuletzt gewählten Kreis.
+**Betriebsarten pro Kreis:** Jeder Kreis hat sein eigenes Feld „Betriebsarten“ (z. B. Fußbodenheizung `0=Standby;1=Automatik;4=Normal`,
+Heizkörper `0=Standby;1=Automatik;2=Normal`). Die Tasten kommen nur aus diesen Texten bzw. aus dem Datenpunkt „Betriebsart
+umschalten“ – nie aus der Rückmeldung/dem Status. Der Status wird unten als „Status“ mit seinen eigenen Texten angezeigt.
 
 ### Zeitschaltuhr
 

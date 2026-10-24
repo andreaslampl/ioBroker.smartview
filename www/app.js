@@ -393,7 +393,7 @@ const CIRC_KEYS = ['state', 'setStatus', 'status', 'humidity', 'mode', 'modeStat
 /** [{label, state, …}] - the tile's own fields are circuit 1; null without extra circuits */
 function thermoCircuits(t) {
   if (!Array.isArray(t.circuits) || !t.circuits.length) return null;
-  const pick = (c, label) => Object.assign({ label }, ...CIRC_KEYS.map(k => ({ [k]: c[k] || '' })));
+  const pick = (c, label) => Object.assign({ label, modes: c.modes || '' }, ...CIRC_KEYS.map(k => ({ [k]: c[k] || '' })));
   return [pick(t, t.circLabel || 'Kreis 1')].concat(t.circuits.map((c, i) => pick(c, c.label || 'Kreis ' + (i + 2))));
 }
 
@@ -417,6 +417,8 @@ function thermoCur(t) {
   const i = circIndex(t, list.length);
   const out = { ...t, _circ: i, _circs: list };
   for (const k of CIRC_KEYS) out[k] = list[i][k];
+  // mode texts belong to the circuit (FBH: 4 = Normal, radiators: 2 = Normal)
+  out.modes = list[i].modes;
   return out;
 }
 
@@ -462,23 +464,41 @@ function thermoSetId(t) {
   return t.setStatus;
 }
 
-/** Operating modes as [[value, text]]: own texts, texts of the data point, or KNX HVAC modes. */
+/**
+ * Mode buttons as [[value, text]]: own texts, texts of the data point that is written ("Betriebsart umschalten"),
+ * or KNX HVAC modes. Never from the feedback/status data point - its numbers may mean something else
+ * (Ochsner: status 1 = Normal Heizbetrieb, mode 1 = Automatik).
+ */
 function thermoModes(t) {
   let map = parseTexts(t.modes);
   if (!Object.keys(map).length) {
-    const s = st(t.modeStatus) || st(t.mode) || {};
+    const s = st(t.mode) || {};
     map = s.states && typeof s.states === 'object' && Object.keys(s.states).length ? s.states : { 1: 'Komfort', 2: 'Standby', 3: 'Nacht', 4: 'Frostschutz' };
   }
   return Object.entries(map).map(([k, v]) => [k, String(v)]);
 }
 
+/** button to highlight: the value of the mode data point itself */
+function thermoModeKey(t) {
+  if (!t.mode) return '';
+  const v = val(t.mode);
+  return v === null || v === undefined ? '' : String(v);
+}
+
+/** mode shown as text: the feedback/status data point with its own texts, else the mode data point */
 function thermoMode(t) {
-  const id = t.modeStatus || t.mode;
-  if (!id) return null;
-  const v = val(id);
-  if (v === null || v === undefined) return { key: '', text: '–' };
-  const hit = thermoModes(t).find(([k]) => k === String(v));
-  return { key: String(v), text: hit ? hit[1] : String(v) };
+  if (t.modeStatus) {
+    const v = val(t.modeStatus);
+    if (v === null || v === undefined) return { key: '', text: '–' };
+    const s = st(t.modeStatus) || {};
+    const text = s.states && typeof s.states === 'object' && s.states[String(v)] !== undefined ? String(s.states[String(v)]) : null;
+    return { key: String(v), text: text || String(v) };
+  }
+  if (!t.mode) return null;
+  const k = thermoModeKey(t);
+  if (k === '') return { key: '', text: '–' };
+  const hit = thermoModes(t).find(([x]) => x === k);
+  return { key: k, text: hit ? hit[1] : k };
 }
 
 /** Heating: on/off data point or valve position in %. */
@@ -1739,13 +1759,13 @@ function fillSheet(sh, t) {
     }
     if (c.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0, unit: '%' }, c.humidity).text) + ' %']);
     const m = thermoMode(c);
-    if (m) info.push(['Betriebsart', esc(m.text)]);
+    if (m) info.push([c.modeStatus ? 'Status' : 'Betriebsart', esc(m.text)]);
     const h = thermoHeat(c);
     if (h) info.push(['Heizung', esc(h.text)]);
     if (c.window) info.push(['Fenster', thermoWindowOpen(c) ? '<span class="bad">offen</span>' : 'zu']);
     body = circSwitcher(c, true) + '<p class="muted" style="text-align:center;margin:0">Soll' + (c._circs ? ' – ' + esc(c._circs[c._circ].label) : '') + '</p><div class="bigval">' + esc(f.text) + ' ' + u(f) + '</div>' +
       '<div class="row"><button type="button" data-a="minus" aria-label="kälter">' + icon('minus') + '</button><button type="button" data-a="plus" aria-label="wärmer">' + icon('plus') + '</button></div>' +
-      (c.mode ? '<div class="row modes">' + thermoModes(c).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (m && m.key === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
+      (c.mode ? '<div class="row modes">' + thermoModes(c).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (thermoModeKey(c) === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'value') {
     const f = fmt(t, t.state);

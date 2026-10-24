@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.24.0",
+    "version": "0.24.1",
     "news": {
+      "0.24.1": {
+        "en": "Heating tile: mode buttons only from the mode data point (or own texts), never from the status data point - the status is shown with its own texts; mode texts per heating circuit",
+        "de": "Heizungs-Kachel: Betriebsart-Tasten nur aus dem Betriebsart-Datenpunkt (oder eigenen Texten), nie aus dem Status – der Status wird mit seinen eigenen Texten angezeigt; Betriebsarten pro Heizkreis"
+      },
       "0.24.0": {
         "en": "Heating tile: as many heating circuits / rooms as needed in one tile, switched with ‹ › on the tile and with buttons in the control sheet (the choice is kept per device)",
         "de": "Heizungs-Kachel: beliebig viele Heizkreise / Räume in einer Kachel, umschalten mit ‹ › auf der Kachel und mit Knöpfen im Bedienfenster (Auswahl wird pro Gerät gemerkt)"

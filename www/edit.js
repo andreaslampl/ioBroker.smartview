@@ -80,7 +80,7 @@ const TYPE_FIELDS = {
     ['humidity', 'Luftfeuchte (optional)', 'state-r'],
     ['mode', 'Betriebsart umschalten (optional)', 'state-w', 'z. B. KNX HVAC-Modus (1 = Komfort, 2 = Standby, 3 = Nacht, 4 = Frostschutz)'],
     ['modeStatus', 'Rückmeldung Betriebsart (optional)', 'state-r'],
-    ['modes', 'Betriebsarten (optional)', 'text', 'Wert=Text; leer = Texte des Datenpunkts oder 1=Komfort;2=Standby;3=Nacht;4=Frostschutz'],
+    ['modes', 'Betriebsarten (optional)', 'text', 'Tasten zum Umschalten, Wert=Text, z. B. 0=Standby;1=Automatik;4=Normal; leer = Texte des Datenpunkts „Betriebsart umschalten“ oder 1=Komfort;2=Standby;3=Nacht;4=Frostschutz. Die Rückmeldung wird mit ihren eigenen Texten angezeigt.'],
     ['heating', 'Heizt gerade / Stellgröße % (optional)', 'state-r', 'Ein/Aus oder Ventilstellung in %'],
     ['window', 'Fenster (optional)', 'state-r', 'Zeigt „Fenster offen“'],
     ['step', 'Schritt', 'number', 'Standard 0,5'],
@@ -657,7 +657,7 @@ const Editor = (() => {
     ];
     const list = rows.map(r => ({ ...r }));
     let rowInputs = [];
-    const read = () => rowInputs.map(x => Object.assign({ label: x.label.value.trim() }, ...keys.map(([k]) => ({ [k]: x[k].value.trim() }))));
+    const read = () => rowInputs.map(x => Object.assign({ label: x.label.value.trim(), modes: x.modes.value.trim() }, ...keys.map(([k]) => ({ [k]: x[k].value.trim() }))));
     function draw() {
       wrap.textContent = '';
       rowInputs = [];
@@ -667,7 +667,11 @@ const Editor = (() => {
         const x = {};
         x.label = field(b, 'Name des Kreises', textInput(r.label));
         x.label.placeholder = 'z. B. Heizkörper, Warmwasser, Bad';
-        for (const [k, label, w] of keys) x[k] = stateField(b, label, r[k], w);
+        for (const [k, label, w] of keys) {
+          x[k] = stateField(b, label, r[k], w);
+          // mode texts right after the mode data points: every circuit has its own numbers
+          if (k === 'modeStatus') x.modes = field(b, 'Betriebsarten dieses Kreises (optional)', textInput(r.modes), 'Wert=Text; z. B. 0=Standby;1=Automatik;2=Normal – leer = Texte des Datenpunkts „Betriebsart umschalten“');
+        }
         const tools = document.createElement('div');
         tools.className = 'buttons';
         const del = document.createElement('button');

@@ -203,6 +203,11 @@ switches/buttons on them.
   device in localStorage `sv.circ.<id>.<label>`), used by tile/row/marker/sheet/plus/minus/mode; `circSwitcher()` ‹ › on
   the tile (replaces the label line), chips in the sheet, ⇄ in list rows; `circSwitch()` re-renders. Editor
   `circuitsField()`. Checked in Playwright.
+- 0.24.1 field: mode buttons were built from the modeStatus data point's states when set - with the Ochsner the status
+  codes differ from the mode codes, so buttons sent wrong values ("schaltet wirr"). Now `thermoModes()` only uses
+  `modes` texts or the `mode` data point's states; highlight = `thermoModeKey()` (value of `mode`); `thermoMode()`
+  shows modeStatus with its own states (row labelled "Status"). Circuits have their own `modes` (FBH 4 = Normal,
+  radiators 2 = Normal).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

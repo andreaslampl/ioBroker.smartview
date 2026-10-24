@@ -357,3 +357,10 @@ test('heating tile with more circuits: fields kept, setpoint and mode of every c
     assert.ok(write.includes('och.0.hk_soll') && write.includes('och.0.hk_mode') && write.includes('och.0.fbh_soll'));
     assert.ok(read.includes('och.0.hk_ist') && !write.includes('och.0.hk_ist'));
 });
+
+test('heating circuits keep their own mode texts', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'h', type: 'thermostat', state: 'a', modes: '4=Normal', circuits: [{ label: 'HK', state: 'b', mode: 'c', modes: '2=Normal' }] }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.modes, '4=Normal');
+    assert.equal(t.circuits[0].modes, '2=Normal');
+});
