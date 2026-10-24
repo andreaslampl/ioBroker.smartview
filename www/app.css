@@ -450,3 +450,10 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile .circsw span { flex: 1; min-width: 0; text-align: center; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile .circsw button { width: 30px; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 18px; line-height: 1; cursor: pointer; padding: 0; }
 .sheet .circs { flex-wrap: wrap; margin-bottom: 6px; }
+
+/* content tiles with an own height: fixed, content scrolls or is scaled */
+.tile.fixh { overflow: hidden !important; display: flex; flex-direction: column; }
+.tile.fixh .htmlhost, .tile.fixh .wlist { flex: 1; min-height: 0; overflow: auto; }
+.tile.energy.fixh .eflow { flex: 1; min-height: 0; max-width: none; display: flex; justify-content: center; }
+.tile.energy.fixh .eflow svg { width: 100%; height: 100%; max-height: 100%; display: block; }
+.tile.energy.fixh .echart { flex: 1; min-height: 0; }

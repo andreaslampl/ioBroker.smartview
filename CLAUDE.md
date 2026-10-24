@@ -208,6 +208,9 @@ switches/buttons on them.
   `modes` texts or the `mode` data point's states; highlight = `thermoModeKey()` (value of `mode`); `thermoMode()`
   shows modeStatus with its own states (row labelled "Status"). Circuits have their own `modes` (FBH 4 = Normal,
   radiators 2 = Normal).
+- 0.24.2 field: still gaps between camera rows - a content tile with an own height (`sh`) only had min-height, taller
+  content (the owner's HTML/windows list) stretched the rows it spans. Now `sizeTile()` gives AUTO_H tiles with `sh` a
+  fixed height + class `fixh` (overflow hidden; .htmlhost / .wlist scroll, energy flow svg scaled to fit).
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.24.1",
+    "version": "0.24.2",
     "news": {
+      "0.24.2": {
+        "en": "Content tiles (energy flow, HTML, windows) with an own height keep exactly that height - the content scrolls or is scaled instead of pulling the tiles beside them apart",
+        "de": "Inhalts-Kacheln (Energiefluss, HTML, Fenster) mit eigener Höhe bleiben genau so hoch – der Inhalt scrollt bzw. wird verkleinert, statt die Kacheln daneben auseinanderzuziehen"
+      },
       "0.24.1": {
         "en": "Heating tile: mode buttons only from the mode data point (or own texts), never from the status data point - the status is shown with its own texts; mode texts per heating circuit",
         "de": "Heizungs-Kachel: Betriebsart-Tasten nur aus dem Betriebsart-Datenpunkt (oder eigenen Texten), nie aus dem Status – der Status wird mit seinen eigenen Texten angezeigt; Betriebsarten pro Heizkreis"

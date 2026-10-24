@@ -754,8 +754,10 @@ function sizeTile(el, t, w, h, withRow) {
   el.style.gridColumn = (withRow ? t.gx + ' / ' : '') + 'span ' + w;
   if (withRow || t.sh) el.style.gridRow = (withRow ? t.gy + ' / ' : '') + 'span ' + h;
   const px = 'calc(' + h + ' * var(--th) + ' + (h - 1) + ' * var(--gap))';
-  // a plan tile with its own height: the plan is fitted into it
-  if (AUTO_H.includes(t.type) && !(t.type === 'planview' && t.sh)) el.style.minHeight = t.sh ? px : '';
+  // a content tile with its own height keeps exactly that height (content scrolls / the flow is scaled) - otherwise a
+  // taller content would stretch the rows and pull the tiles beside it apart; a plan tile is fitted into it
+  el.classList.toggle('fixh', Boolean(AUTO_H.includes(t.type) && t.sh));
+  if (AUTO_H.includes(t.type) && !t.sh) el.style.minHeight = '';
   else el.style.height = px;
 }
 
