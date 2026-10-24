@@ -322,3 +322,12 @@ test('wallbox tile: instances fill the data points, mode and current are writabl
     assert.equal(t2.state, 'versicharge.1.power.total');
     assert.equal(cleanLayout({ pages: [{ id: 'p', tiles: [{ type: 'wallbox', charger: 'evil.0' }] }] }).pages[0].tiles[0].charger, '');
 });
+
+test('floor plan layer of a tile: only known layers are kept', () => {
+    const l = cleanLayout({ pages: [{ id: 'eg', type: 'plan', tiles: [
+        { id: 'a', type: 'switch', layer: 'brand', x: 1, y: 1 },
+        { id: 'b', type: 'switch', layer: 'quatsch', x: 1, y: 1 },
+        { id: 'c', type: 'camera', x: 1, y: 1 },
+    ] }] });
+    assert.deepEqual(l.pages[0].tiles.map(t => t.layer), ['brand', undefined, undefined]);
+});

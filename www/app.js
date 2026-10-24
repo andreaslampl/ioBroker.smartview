@@ -1200,8 +1200,11 @@ function pageOf(el) {
 // ---------------- floor plan ----------------
 
 function renderPlan(main, page) {
+  camPop(null);
   const tools = SV.editing ? Editor.planTools(page) : document.createElement('div');
   tools.classList.add('plantools');
+  const bar = SV.editing ? null : layerBar(page);
+  if (bar && page.image) tools.appendChild(bar);
   if (page.image) {
     // zoom for small screens
     for (const [txt, f] of [['+', 1.5], ['−', 1 / 1.5]]) {
@@ -1271,6 +1274,8 @@ function planTile(el, t) {
     plan.appendChild(img);
     for (const mt of visibleTiles(page)) plan.appendChild(renderMarker(mt, page, true));
     box.appendChild(plan);
+    const bar = SV.editing ? null : layerBar(page, true);
+    if (bar) el.appendChild(bar);
     // with an own height: the whole plan fits into the tile
     const fit = () => {
       if (!t.sh || !img.naturalWidth) return;
@@ -1283,11 +1288,116 @@ function planTile(el, t) {
   dragHandle(el);
 }
 
+// ---------------- floor plan layers (Gewerke) and camera preview ----------------
+
+const LAYERS = [
+  ['licht', 'Licht', 'bulb'],
+  ['beschattung', 'Beschattung', 'blind'],
+  ['klima', 'Heizung / Klima', 'thermometer'],
+  ['fenster', 'Fenster / Türen', 'window'],
+  ['sicherheit', 'Sicherheit', 'shield'],
+  ['brand', 'Brand', 'fire'],
+  ['kamera', 'Kamera', 'camera'],
+  ['energie', 'Energie', 'bolt'],
+  ['sonstiges', 'Sonstiges', 'info'],
+];
+const LAYER_TYPE = { camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
+const LAYER_ICON = {
+  bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
+  blind: 'beschattung', awning: 'beschattung',
+  heat: 'klima', thermometer: 'klima', fan: 'klima', drop: 'klima',
+  window: 'fenster', door: 'fenster', garage: 'fenster', gate: 'fenster',
+  alarm: 'sicherheit', shield: 'sicherheit', lock: 'sicherheit', motion: 'sicherheit',
+  fire: 'brand', camera: 'kamera',
+  socket: 'energie', power: 'energie', bolt: 'energie', energy: 'energie', charger: 'energie', car: 'energie',
+};
+
+/** layer of a tile: chosen in the dialog, else by type, else by symbol */
+function tileLayer(t) {
+  if (t.layer && LAYERS.some(l => l[0] === t.layer)) return t.layer;
+  return LAYER_TYPE[t.type] || LAYER_ICON[tileIcon(t)] || 'sonstiges';
+}
+
+/** hidden layers per plan page and device (only a view setting, not saved in the layout) */
+function hiddenLayers(page) {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('sv.layers.' + page.id) || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function setHiddenLayers(page, set) {
+  try {
+    localStorage.setItem('sv.layers.' + page.id, JSON.stringify([...set]));
+  } catch (e) {
+    // private mode: only for this view
+  }
+}
+
+/** buttons to show/hide the layers of a plan (only when it has at least two) */
+function layerBar(page, small) {
+  const tiles = visibleTiles(page);
+  const used = LAYERS.filter(l => tiles.some(t => tileLayer(t) === l[0]));
+  if (used.length < 2) return null;
+  const hidden = hiddenLayers(page);
+  const bar = document.createElement('div');
+  bar.className = 'layerbar' + (small ? ' small' : '');
+  bar.dataset.page = page.id;
+  for (const [key, name, ic] of used) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'lchip' + (hidden.has(key) ? ' off' : '');
+    b.dataset.layer = key;
+    b.title = name + ' ein-/ausblenden';
+    b.innerHTML = icon(ic) + (small ? '' : '<span>' + esc(name) + '</span>');
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const h = hiddenLayers(page);
+      if (h.has(key)) h.delete(key);
+      else h.add(key);
+      setHiddenLayers(page, h);
+      applyLayers(page);
+    });
+    bar.appendChild(b);
+  }
+  return bar;
+}
+
+/** show/hide the markers of all views of this plan (page and plan tiles); alarms always stay visible (CSS) */
+function applyLayers(page) {
+  const hidden = hiddenLayers(page);
+  const sel = '[data-page="' + CSS.escape(page.id) + '"]';
+  for (const m of document.querySelectorAll('.marker' + sel)) m.classList.toggle('lhidden', hidden.has(m.dataset.layer));
+  for (const b of document.querySelectorAll('.layerbar' + sel + ' .lchip')) b.classList.toggle('off', hidden.has(b.dataset.layer));
+}
+
+/** mouse over a camera symbol: small live picture next to it; null removes it */
+function camPop(el, t) {
+  const old = document.querySelector('.campop');
+  if (old) old.remove();
+  if (!el || !document.body.contains(el)) return;
+  const box = document.createElement('div');
+  box.className = 'campop';
+  box.innerHTML = '<img class="camimg" alt="" data-cam="' + esc(t.camera) + '">' + (t.label ? '<span>' + esc(t.label) + '</span>' : '');
+  document.body.appendChild(box);
+  const r = el.getBoundingClientRect();
+  const w = Math.min(320, window.innerWidth - 16);
+  const h = w * 0.5625 + 34;
+  box.style.width = w + 'px';
+  box.style.left = Math.min(window.innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2)) + 'px';
+  box.style.top = (r.top - h - 10 >= 8 ? r.top - h - 10 : Math.min(window.innerHeight - h - 8, r.bottom + 10)) + 'px';
+  loadCam(box.querySelector('img'));
+  startCams();
+}
+
 function renderMarker(t, page, inTile) {
   const el = document.createElement('div');
   el.className = 'marker ' + t.type;
   el.dataset.tile = t.id;
   el.dataset.page = page.id;
+  el.dataset.layer = tileLayer(t);
+  if (!SV.editing && hiddenLayers(page).has(el.dataset.layer)) el.classList.add('lhidden');
   el.dataset.ids = ' ' + tileIds(t).join(' ') + ' ';
   el.style.left = t.x + '%';
   el.style.top = t.y + '%';
@@ -1297,11 +1407,20 @@ function renderMarker(t, page, inTile) {
     if (!inTile) el.addEventListener('pointerdown', e => Editor.markerDown(e, page, t, el));
   } else {
     if (Timers.supports(t)) Timers.longPress(el, () => openSheet(t));
+    if (t.type === 'camera' && t.camera) {
+      el.addEventListener('pointerenter', e => {
+        if (e.pointerType === 'mouse') camPop(el, t);
+      });
+      el.addEventListener('pointerleave', () => camPop(null));
+    }
     el.addEventListener('click', e => {
       // inside a plan tile: the tile itself must not react (it would open the plan page)
       if (inTile) e.stopPropagation();
       if (t.type === 'switch' || t.type === 'button') return tileTap(t);
-      if (t.type === 'camera') return openCam(t.camera, t.label);
+      if (t.type === 'camera') {
+        camPop(null);
+        return openCam(t.camera, t.label);
+      }
       if (t.type === 'link') return openLink(t);
       openSheet(t);
     });

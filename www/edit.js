@@ -658,6 +658,11 @@ const Editor = (() => {
         show();
         inputs.rotate = { type: 'custom', get: () => Number(rot.value) };
       }
+      if (page.type === 'plan' && t.type !== 'heading') {
+        // layer (Gewerk) for the show/hide buttons on the plan; automatic = by type and symbol
+        const auto = LAYERS.find(l => l[0] === tileLayer({ ...t, layer: '' }));
+        inputs.layer = field(body, 'Ebene im Lageplan', select([['', 'automatisch (' + auto[1] + ')']].concat(LAYERS.map(l => [l[0], l[1]])), t.layer || ''), 'Für die Knöpfe oben am Lageplan, mit denen man z. B. Licht oder Jalousien ein- und ausblendet');
+      }
       if (SV.hk && SV.hk.instance && SV.hk.choices[t.type]) inputs.homekit = homekitField(body, t);
       if (page.type === 'tiles' && t.type !== 'heading') {
         // own size: empty = default of the type; the grip ◢ on the tile does the same

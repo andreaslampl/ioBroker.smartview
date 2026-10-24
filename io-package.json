@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.21.2",
+    "version": "0.22.0",
     "news": {
+      "0.22.0": {
+        "en": "Floor plan: show/hide layers (light, shading, heating, windows/doors, security, fire, camera, energy) - symbols in alarm stay visible; camera symbols show a live preview on mouse over, click = large",
+        "de": "Lageplan: Ebenen ein-/ausblenden (Licht, Beschattung, Heizung, Fenster/Türen, Sicherheit, Brand, Kamera, Energie) – Symbole mit Alarm bleiben sichtbar; Kamera-Symbole zeigen beim Darüberfahren mit der Maus ein Livebild, Klick = groß"
+      },
       "0.21.2": {
         "en": "Energy tile: shows energie 0.6.0's options (consumer lines from PV/grid/battery, animation speed, house colored by grid import)",
         "de": "Energiefluss-Kachel: zeigt die Einstellungen von energie 0.6.0 (Verbraucher-Linien von PV/Netz/Batterie, Geschwindigkeit der Animation, Haus nach Netzbezug eingefärbt)"

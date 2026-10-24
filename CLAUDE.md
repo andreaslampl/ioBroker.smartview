@@ -178,6 +178,14 @@ switches/buttons on them.
   Icon `charger`. Checked in Playwright; not yet with the real wallbox.
 - 0.21.1: owner asked to see on the tile when the car is limited by the heat pump (energie 0.5.x). `wbLimited()` =
   ctrl text mentions Wärmepumpe/Bezugsgrenze -> the line shows the ctrl text also while charging, class `wblim` (orange).
+- 0.22.0: owner asked for camera symbols on the plan with hover preview + click large, and buttons on the plan to
+  show/hide trades (light, blinds, fire, ...) because the plan gets too busy. Tile field `layer` (layout `LAYERS`,
+  '' = auto); app.js `tileLayer()` (dialog value, else `LAYER_TYPE`, else `LAYER_ICON` by symbol, else sonstiges),
+  `layerBar(page, small)` (only layers in use, >= 2; on the plan page in .plantools, small overlay in planview tiles),
+  hidden set per page in localStorage `sv.layers.<page>`, `applyLayers()` updates all views; CSS
+  `.marker.lhidden:not(.alert)` = markers in alarm stay visible. `camPop()` = fixed preview (single image polling via
+  camimg) on pointerenter with pointerType mouse, removed on leave/click/renderPlan. Editor field "Ebene im Lageplan"
+  only on plan pages. Checked in Playwright.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

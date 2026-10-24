@@ -149,6 +149,17 @@ Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt �
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
+### Lageplan: Ebenen und Kameras
+
+- **Ebenen (Gewerke):** Oben am Lageplan (und klein in der Lageplan-Kachel) gibt es Knöpfe für Licht, Beschattung,
+  Heizung/Klima, Fenster/Türen, Sicherheit, Brand, Kamera, Energie und Sonstiges – nur für die Ebenen, die im Plan
+  vorkommen. Antippen blendet die Symbole dieser Ebene aus bzw. wieder ein (gemerkt pro Gerät).
+  **Symbole mit Alarm** (z. B. Rauchmelder, offenes Fenster mit „rot hervorheben“) **bleiben immer sichtbar.**
+- Die Ebene ergibt sich automatisch aus Art und Symbol der Kachel (Lampe → Licht, Rollladen → Beschattung, Flamme →
+  Brand …); im Kachel-Dialog lässt sie sich unter **„Ebene im Lageplan“** ändern.
+- **Kameras im Lageplan:** Kachel-Art „Kamera“ auf den Plan setzen. Mit der Maus darüberfahren zeigt ein kleines
+  Livebild, ein Klick öffnet die Kamera groß (am Handy/Touch: antippen = groß).
+
 ### Klingel und Sprechstelle
 
 Unter ⚙ **Allgemein & Mitteilungen → Klingel**:
