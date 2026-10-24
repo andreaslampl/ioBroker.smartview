@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.21.1",
+    "version": "0.21.2",
     "news": {
+      "0.21.2": {
+        "en": "Energy tile: shows energie 0.6.0's options (consumer lines from PV/grid/battery, animation speed, house colored by grid import)",
+        "de": "Energiefluss-Kachel: zeigt die Einstellungen von energie 0.6.0 (Verbraucher-Linien von PV/Netz/Batterie, Geschwindigkeit der Animation, Haus nach Netzbezug eingefärbt)"
+      },
       "0.21.1": {
         "en": "Wallbox tile: a limit by energie (heat pump runs, import limit) is shown in orange, also while the car charges with the minimum current",
         "de": "Wallbox-Kachel: Eine Einschränkung durch energie (Wärmepumpe läuft, Bezugsgrenze) wird orange angezeigt, auch während das Auto mit Mindeststrom lädt"
