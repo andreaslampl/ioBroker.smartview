@@ -73,6 +73,7 @@ const TYPE_FIELDS = {
     ['confirm', 'Vorher nachfragen', 'check'],
   ],
   thermostat: [
+    ['circLabel', 'Name dieses Kreises (optional)', 'text', 'Nur nötig, wenn es unten weitere Kreise gibt – z. B. „Fußbodenheizung“. Die Felder hier sind Kreis 1.'],
     ['state', 'Sollwert (Datenpunkt)', 'state-w'],
     ['setStatus', 'Rückmeldung Sollwert (optional)', 'state-r', 'Aktueller Sollwert vom Regler, z. B. KNX-Status'],
     ['status', 'Raumtemperatur Ist (optional)', 'state-r'],
@@ -86,6 +87,7 @@ const TYPE_FIELDS = {
     ['min', 'Sollwert min. (optional)', 'number', 'leer = vom Datenpunkt'],
     ['max', 'Sollwert max. (optional)', 'number', 'leer = vom Datenpunkt'],
     ['unit', 'Einheit', 'text', 'Standard °C'],
+    ['circuits', 'Weitere Heizkreise / Räume (optional)', 'circuits'],
   ],
   camera: [['camera', 'Kamera (aus dem livecam-Adapter)', 'camera']],
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
@@ -638,6 +640,66 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.tilt) };
   }
 
+  /** More heating circuits of a heating tile: same data points as circuit 1, switched with ‹ › on the tile. */
+  function circuitsField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Weitere Heizkreise / Räume', wrap, 'Jeder Kreis mit eigenem Sollwert, Ist-Temperatur, Betriebsart … Auf der Kachel wird mit ‹ › umgeschaltet, im Bedienfenster mit Knöpfen.');
+    const keys = [
+      ['state', 'Sollwert', true],
+      ['setStatus', 'Rückmeldung Sollwert (optional)', false],
+      ['status', 'Ist-Temperatur (optional)', false],
+      ['humidity', 'Luftfeuchte (optional)', false],
+      ['mode', 'Betriebsart umschalten (optional)', true],
+      ['modeStatus', 'Rückmeldung Betriebsart (optional)', false],
+      ['heating', 'Heizt / Stellgröße % (optional)', false],
+      ['window', 'Fenster (optional)', false],
+    ];
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => Object.assign({ label: x.label.value.trim() }, ...keys.map(([k]) => ({ [k]: x[k].value.trim() }))));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name des Kreises', textInput(r.label));
+        x.label.placeholder = 'z. B. Heizkörper, Warmwasser, Bad';
+        for (const [k, label, w] of keys) x[k] = stateField(b, label, r[k], w);
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Kreis entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Kreis';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state || r.status || r.mode || r.modeStatus) };
+  }
+
   // ---------------- tiles ----------------
 
   function addTile(page, pos) {
@@ -695,6 +757,7 @@ const Editor = (() => {
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
+        else if (kind === 'circuits') inputs[key] = circuitsField(body, t[key] || []);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') {

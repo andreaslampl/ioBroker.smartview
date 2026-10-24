@@ -196,6 +196,13 @@ switches/buttons on them.
   used by `freeSpan()`, and re-renders page + side once when that changes (not while a tile is dragged).
 - 0.23.2: owner did not know how to remove a data point picked by mistake (emptying the field worked, but was not
   obvious) -> `stateField()` has a ✕ button (`.clearbtn`, only visible with a value) that empties the field.
+- 0.24.0: owner asked for heating circuits to switch within one heating tile (as many as wanted, tile stays small) and
+  whether the tile is for single-room control (yes). Thermostat options `circLabel` + `circuits` [{label, state,
+  setStatus, status, humidity, mode, modeStatus, heating, window}] (max 12; stateIds: same r/w as the tile's own fields).
+  app.js `thermoCircuits()` (own fields = circuit 1), `thermoCur(t)` = tile merged with the chosen circuit (index per
+  device in localStorage `sv.circ.<id>.<label>`), used by tile/row/marker/sheet/plus/minus/mode; `circSwitcher()` ‹ › on
+  the tile (replaces the label line), chips in the sheet, ⇄ in list rows; `circSwitch()` re-renders. Editor
+  `circuitsField()`. Checked in Playwright.
 - Ideas not done yet: screen off for the touch PC (as in livecam's /view), charts/history.
 
 ## Conventions

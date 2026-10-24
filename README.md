@@ -100,6 +100,14 @@ Nur der Sollwert ist Pflicht, alles andere kommt dazu, wenn es eingetragen ist:
 - Raumtemperatur, Luftfeuchte und „Fenster offen“ stehen klein auf der Kachel und groß im Bedienfeld.
 - **Sollwert min./max.**: Grenzen für − / + (leer = vom Datenpunkt).
 
+### Heizkreise in einer Kachel
+
+Die Kachel **„Heizung / Raumregler“** ist ein Raumregler (Einzelraumregelung) – oder mehrere: Unter **„Weitere
+Heizkreise / Räume“** lassen sich beliebig viele Kreise anlegen (z. B. Fußbodenheizung, Heizkörper, Warmwasser), jeder
+mit eigenem Sollwert, Ist-Temperatur, Betriebsart, Heizt/Ventil und Fenster. Die Felder oben in der Kachel sind
+Kreis 1 (Name unter „Name dieses Kreises“). Auf der Kachel wird mit **‹ ›** umgeschaltet, im Bedienfenster mit Knöpfen;
+− / + und die Betriebsart wirken immer auf den gewählten Kreis. Jedes Gerät merkt sich den zuletzt gewählten Kreis.
+
 ### Zeitschaltuhr
 
 Bei **Schaltern, Dimmern und Rollläden**: **lange auf die Kachel drücken** (auch in Listen und auf dem

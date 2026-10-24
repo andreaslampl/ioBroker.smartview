@@ -133,6 +133,7 @@ function tileIc(t) {
 function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
+    .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
 }
@@ -385,6 +386,63 @@ function press(t) {
   send(t.state, v);
 }
 
+// ---------------- heating circuits: one tile, several circuits to switch between ----------------
+
+const CIRC_KEYS = ['state', 'setStatus', 'status', 'humidity', 'mode', 'modeStatus', 'heating', 'window'];
+
+/** [{label, state, …}] - the tile's own fields are circuit 1; null without extra circuits */
+function thermoCircuits(t) {
+  if (!Array.isArray(t.circuits) || !t.circuits.length) return null;
+  const pick = (c, label) => Object.assign({ label }, ...CIRC_KEYS.map(k => ({ [k]: c[k] || '' })));
+  return [pick(t, t.circLabel || 'Kreis 1')].concat(t.circuits.map((c, i) => pick(c, c.label || 'Kreis ' + (i + 2))));
+}
+
+/** chosen circuit per tile and device */
+function circKey(t) {
+  return 'sv.circ.' + t.id + '.' + (t.label || '');
+}
+
+function circIndex(t, n) {
+  try {
+    return Math.min(n - 1, Math.max(0, Number(localStorage.getItem(circKey(t))) || 0));
+  } catch (e) {
+    return SV.circ && SV.circ[circKey(t)] ? Math.min(n - 1, SV.circ[circKey(t)]) : 0;
+  }
+}
+
+/** the tile as seen with its chosen circuit (all display and control code works on this) */
+function thermoCur(t) {
+  const list = thermoCircuits(t);
+  if (!list) return t;
+  const i = circIndex(t, list.length);
+  const out = { ...t, _circ: i, _circs: list };
+  for (const k of CIRC_KEYS) out[k] = list[i][k];
+  return out;
+}
+
+function circSwitch(t, i) {
+  const list = thermoCircuits(t);
+  if (!list) return;
+  const n = ((i % list.length) + list.length) % list.length;
+  try {
+    localStorage.setItem(circKey(t), String(n));
+  } catch (e) {
+    SV.circ = SV.circ || {};
+    SV.circ[circKey(t)] = n;
+  }
+  const sheetOpen = document.querySelector('.sheet[data-tile="' + CSS.escape(t.id) + '"]');
+  renderPage();
+  renderSide();
+  if (sheetOpen) openSheet(t);
+}
+
+/** ‹ circuit › on the tile, or chips in the sheet */
+function circSwitcher(c, chips) {
+  if (!c._circs) return '';
+  if (chips) return '<div class="row modes circs">' + c._circs.map((x, i) => '<button type="button" data-a="circsel" data-v="' + i + '"' + (i === c._circ ? ' class="primary"' : '') + '>' + esc(x.label) + '</button>').join('') + '</div>';
+  return '<div class="circsw"><button type="button" data-a="circ" data-v="-1" aria-label="voriger Kreis">‹</button><span>' + esc(c._circs[c._circ].label) + '</span><button type="button" data-a="circ" data-v="1" aria-label="nächster Kreis">›</button></div>';
+}
+
 function thermoStep(t, dir) {
   const step = t.step || 0.5;
   const cur = toNum(val(thermoSetId(t)));
@@ -511,7 +569,10 @@ function tileState(t) {
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
   if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
   if (t.type === 'wallbox') return wbFault(t) ? 'alert' : wbCharging(t) ? 'on' : '';
-  if (t.type === 'thermostat') return thermoHeat(t) && thermoHeat(t).on ? 'on' : '';
+  if (t.type === 'thermostat') {
+    const c = thermoCur(t);
+    return thermoHeat(c) && thermoHeat(c).on ? 'on' : '';
+  }
   if (t.type === 'value' && t.highlight && t.highlight !== 'none') {
     const s = st(t.state);
     if (!s || s.val === null || s.val === undefined) return '';
@@ -985,10 +1046,11 @@ function fillRow(el, t) {
       ctl = '<span class="lsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
       break;
     case 'thermostat': {
-      const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
-      const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
-      const sub = (a ? ['Ist ' + a.text + ' ' + (a.unit || '°C')] : []).concat(thermoChips(t)).join(' · ');
-      ctl = (sub ? '<span class="lsub">' + esc(sub) + '</span>' : '') +
+      const c = thermoCur(t);
+      const f = fmt({ decimals: 1, unit: c.unit }, thermoSetId(c));
+      const a = c.status ? fmt({ decimals: 1, unit: c.unit }, c.status) : null;
+      const sub = (c._circs ? [c._circs[c._circ].label] : []).concat(a ? ['Ist ' + a.text + ' ' + (a.unit || '°C')] : []).concat(thermoChips(c)).join(' · ');
+      ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Kreis">⇄</button>' : '') + (sub ? '<span class="lsub">' + esc(sub) + '</span>' : '') +
         '<button type="button" data-a="minus" aria-label="weniger">' + icon('minus') + '</button><span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span><button type="button" data-a="plus" aria-label="mehr">' + icon('plus') + '</button>';
       break;
     }
@@ -1109,13 +1171,14 @@ function fillTile(el, t) {
       html = '<div class="row1">' + ic + '</div>' + label;
       break;
     case 'thermostat': {
-      // tap opens the sheet with − / +
-      const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
-      const a = t.status ? fmt({ decimals: 1, unit: t.unit }, t.status) : null;
-      const chips = thermoChips(t);
+      // tap opens the sheet with − / +; with several circuits ‹ › switches them on the tile
+      const c = thermoCur(t);
+      const f = fmt({ decimals: 1, unit: c.unit }, thermoSetId(c));
+      const a = c.status ? fmt({ decimals: 1, unit: c.unit }, c.status) : null;
+      const chips = thermoChips(c);
       html = '<div class="row1">' + ic + '<span class="tval">' + (a ? 'Ist ' + esc(a.text) + ' ' + esc(a.unit || '°C') : '') + '</span></div>' +
         '<div class="big">' + esc(f.text) + '<small>' + esc(f.unit || '°C') + '</small></div>' +
-        (chips.length ? '<div class="tsub">' + esc(chips.join(' · ')) + '</div>' : '') + label;
+        (chips.length ? '<div class="tsub">' + esc(chips.join(' · ')) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
       break;
     }
     case 'camera':
@@ -1186,9 +1249,13 @@ function bindControls(el, t) {
       else if (a === 'up') blindWrite(t, 100);
       else if (a === 'down') blindWrite(t, 0);
       else if (a === 'stop') send(t.stop, true);
-      else if (a === 'plus') thermoStep(t, 1);
-      else if (a === 'minus') thermoStep(t, -1);
-      else if (a === 'mode') sendMode(t, b.dataset.v);
+      else if (a === 'plus') thermoStep(thermoCur(t), 1);
+      else if (a === 'minus') thermoStep(thermoCur(t), -1);
+      else if (a === 'mode') sendMode(thermoCur(t), b.dataset.v);
+      else if (a === 'circ') {
+        const c = thermoCur(t);
+        circSwitch(t, (c._circ || 0) + Number(b.dataset.v));
+      } else if (a === 'circsel') circSwitch(t, Number(b.dataset.v));
       else if (a === 'wbmode') send(t.mode, b.dataset.v);
       else if (a === 'wbplus') wbCurrentStep(t, 1);
       else if (a === 'wbminus') wbCurrentStep(t, -1);
@@ -1499,7 +1566,8 @@ function fillMarker(el, t) {
     const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
     v = n ? n + ' offen' : '';
   } else if (t.type === 'thermostat') {
-    const f = fmt({ decimals: 1, unit: t.unit }, t.status || t.state);
+    const c = thermoCur(t);
+    const f = fmt({ decimals: 1, unit: c.unit }, c.status || c.state);
     v = f.text + (f.unit ? ' ' + f.unit : ' °C');
   }
   el.title = t.label || '';
@@ -1661,22 +1729,23 @@ function fillSheet(sh, t) {
       (wbManual(t) ? '<div class="row"><button type="button" data-a="wbminus" aria-label="weniger Strom">' + icon('minus') + '</button><button type="button" data-a="wbplus" aria-label="mehr Strom">' + icon('plus') + '</button></div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'thermostat') {
-    const f = fmt({ decimals: 1, unit: t.unit }, thermoSetId(t));
+    const c = thermoCur(t);
+    const f = fmt({ decimals: 1, unit: c.unit }, thermoSetId(c));
     const u = x => esc(x.unit || '°C');
     const info = [];
-    if (t.status) {
-      const a = fmt({ decimals: 1, unit: t.unit }, t.status);
-      info.push(['Raumtemperatur', esc(a.text) + ' ' + u(a)]);
+    if (c.status) {
+      const a = fmt({ decimals: 1, unit: c.unit }, c.status);
+      info.push([c._circs ? 'Ist-Temperatur' : 'Raumtemperatur', esc(a.text) + ' ' + u(a)]);
     }
-    if (t.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0, unit: '%' }, t.humidity).text) + ' %']);
-    const m = thermoMode(t);
+    if (c.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0, unit: '%' }, c.humidity).text) + ' %']);
+    const m = thermoMode(c);
     if (m) info.push(['Betriebsart', esc(m.text)]);
-    const h = thermoHeat(t);
+    const h = thermoHeat(c);
     if (h) info.push(['Heizung', esc(h.text)]);
-    if (t.window) info.push(['Fenster', thermoWindowOpen(t) ? '<span class="bad">offen</span>' : 'zu']);
-    body = '<p class="muted" style="text-align:center;margin:0">Soll</p><div class="bigval">' + esc(f.text) + ' ' + u(f) + '</div>' +
+    if (c.window) info.push(['Fenster', thermoWindowOpen(c) ? '<span class="bad">offen</span>' : 'zu']);
+    body = circSwitcher(c, true) + '<p class="muted" style="text-align:center;margin:0">Soll' + (c._circs ? ' – ' + esc(c._circs[c._circ].label) : '') + '</p><div class="bigval">' + esc(f.text) + ' ' + u(f) + '</div>' +
       '<div class="row"><button type="button" data-a="minus" aria-label="kälter">' + icon('minus') + '</button><button type="button" data-a="plus" aria-label="wärmer">' + icon('plus') + '</button></div>' +
-      (t.mode ? '<div class="row modes">' + thermoModes(t).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (m && m.key === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
+      (c.mode ? '<div class="row modes">' + thermoModes(c).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (m && m.key === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'value') {
     const f = fmt(t, t.state);

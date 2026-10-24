@@ -344,3 +344,16 @@ test('window overview: evaluation per window (tilt contact, two contacts, own ta
     assert.deepEqual(w.map(x => x.map), ['ztoo', 'ztoo', 'zoto', 'ztoo']);
     assert.deepEqual(w.map(x => x.invert2), [false, true, false, false]);
 });
+
+test('heating tile with more circuits: fields kept, setpoint and mode of every circuit writable', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{
+        id: 'h', type: 'thermostat', state: 'och.0.fbh_soll', mode: 'och.0.fbh_mode', circLabel: 'Fußboden',
+        circuits: [{ label: 'Heizkörper', state: 'och.0.hk_soll', status: 'och.0.hk_ist', mode: 'och.0.hk_mode', bogus: 'x' }],
+    }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.circLabel, 'Fußboden');
+    assert.deepEqual(t.circuits, [{ label: 'Heizkörper', state: 'och.0.hk_soll', status: 'och.0.hk_ist', mode: 'och.0.hk_mode' }]);
+    const { read, write } = stateIds(l);
+    assert.ok(write.includes('och.0.hk_soll') && write.includes('och.0.hk_mode') && write.includes('och.0.fbh_soll'));
+    assert.ok(read.includes('och.0.hk_ist') && !write.includes('och.0.hk_ist'));
+});

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.23.2",
+    "version": "0.24.0",
     "news": {
+      "0.24.0": {
+        "en": "Heating tile: as many heating circuits / rooms as needed in one tile, switched with ‹ › on the tile and with buttons in the control sheet (the choice is kept per device)",
+        "de": "Heizungs-Kachel: beliebig viele Heizkreise / Räume in einer Kachel, umschalten mit ‹ › auf der Kachel und mit Knöpfen im Bedienfenster (Auswahl wird pro Gerät gemerkt)"
+      },
       "0.23.2": {
         "en": "Tile dialog: ✕ next to every data point field removes a data point picked by mistake",
         "de": "Kachel-Dialog: ✕ neben jedem Datenpunkt-Feld entfernt einen falsch gewählten Datenpunkt"
