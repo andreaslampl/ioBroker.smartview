@@ -218,6 +218,14 @@ switches/buttons on them.
   (`Screen.ring()` from `checkRing()` and intercom.js `update()`); without the feature the ring lock is released after
   3 min. A browser cannot reliably switch on a monitor Windows turned off - recommended: Windows display off "never".
   Checked in Playwright (tap does not switch the tile below, ring wakes, off ignored while ringing).
+- 0.26.0: owner asked that SmartView adapts to any browser/resolution -> tile page option `fit` width|screen +
+  `designW` (320-4000, editor "Breite dieses Bildschirms übernehmen"): `fitWidth(page)` (not on the phone, not while
+  editing), grid `.fit` with fixed width + CSS `zoom` (`applyFit`, again on resize; screen = also fits the height of
+  #main), fixed --th/columns; `freeNarrow` uses designW; `watchRows` divides the rect by `grid._zoom` (Chromium's
+  standardized zoom reports zoomed rects). Same time: full screen left when the tablet locks -> `Screen.fullscreen()`
+  remembers the wish (localStorage `sv.fullscreen`), first tap afterwards only re-enters full screen (pointerdown
+  swallowed, request in click); an exit without a visibility change within 2 s (Esc, back) clears the wish.
+  Both checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

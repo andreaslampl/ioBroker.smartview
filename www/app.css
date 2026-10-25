@@ -410,6 +410,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .ic { transition: transform .15s; }
 
 /* free grid: tiles at fixed cells, empty cells allowed */
+.grid.fit { --th: 150px; margin: 0 auto; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); max-width: none; }
 .grid.free { grid-template-columns: repeat(var(--cols, 6), minmax(0, 1fr)); grid-auto-rows: minmax(var(--th), auto); }
 .grid.free > .tile { max-width: none; }
 .grid.free > .tile:not(.size-l):not(.html):not(.windows):not(.energy) { height: var(--th); }

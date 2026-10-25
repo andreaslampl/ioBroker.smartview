@@ -916,11 +916,30 @@ const Editor = (() => {
     const colsBox = document.createElement('div');
     frBox.appendChild(colsBox);
     const cols = field(colsBox, 'Spalten im Raster', select([3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => [String(n), String(n)]), String(p.cols || 6)), 'Im Bearbeiten-Modus Kachel auf ein leeres Feld oder auf eine andere Kachel ziehen (tauschen). Am Handy stehen die Kacheln einfach untereinander.');
+    // tile page: scaled to the screen (any browser / resolution looks the same)
+    const fitBox = document.createElement('div');
+    frBox.appendChild(fitBox);
+    const fit = field(fitBox, 'An Bildschirm anpassen', select([['', 'nein (Kacheln fließen je nach Breite)'], ['width', 'Breite – alles mitskalieren, senkrecht scrollen'], ['screen', 'Ganzer Bildschirm – alles sichtbar, kein Scrollen']], p.fit || ''), 'Die Seite wird für die Entwurfsbreite angeordnet und dann auf jedem Bildschirm gleichmäßig vergrößert oder verkleinert (auch die Schrift) – wie „Skalieren“ in VIS. Am Handy und im Bearbeiten-Modus wird nicht skaliert.');
+    const dwBox = document.createElement('div');
+    fitBox.appendChild(dwBox);
+    const mainW = () => {
+      const m = document.getElementById('main');
+      const c = getComputedStyle(m);
+      return Math.round(m.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight));
+    };
+    const dw = field(dwBox, 'Entwurfsbreite (Pixel)', textInput(p.designW || mainW(), 'number'), 'Breite, für die die Seite gestaltet ist – am besten die Breite des Hauptgeräts (z. B. Touch-PC).');
+    const take = document.createElement('button');
+    take.type = 'button';
+    take.textContent = 'Breite dieses Bildschirms übernehmen';
+    take.onclick = () => (dw.value = mainW());
+    dwBox.appendChild(take);
     const showMs = () => {
       msBox.hidden = type.value !== 'plan';
       frBox.hidden = type.value !== 'tiles';
       colsBox.hidden = !fr.input.checked;
+      dwBox.hidden = !fit.value;
     };
+    fit.addEventListener('change', showMs);
     type.addEventListener('change', showMs);
     fr.input.addEventListener('change', showMs);
     showMs();
@@ -969,6 +988,8 @@ const Editor = (() => {
       p.markerSize = ms.value;
       p.hidden = hid.input.checked;
       p.free = type.value === 'tiles' && fr.input.checked;
+      p.fit = type.value === 'tiles' ? fit.value : '';
+      p.designW = Math.round(Number(dw.value)) || mainW();
       p.cols = Number(cols.value);
       const i = l.pages.findIndex(x => x.id === p.id);
       const cur = i >= 0 ? l.pages[i] : null;

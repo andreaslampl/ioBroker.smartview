@@ -382,6 +382,27 @@ Klingeln wird der Wake-Lock neu angefordert, was einen von Windows abgeschaltete
 Der Wake-Lock braucht eine sichere Verbindung (https, oder http mit dem Edge-Flag
 „unsafely-treat-insecure-origin-as-secure“ wie für das Mikrofon). Am zuverlässigsten: in Windows „Bildschirm
 ausschalten“ auf **Nie** stellen und das Ausschalten SmartView überlassen.
+
+### Vollbild bleibt
+
+⚙ → **„Vollbild (bleibt nach dem Sperren)“**: Wenn das Tablet sperrt, verlässt der Browser das Vollbild – das lässt
+sich nicht verhindern, und zurück geht es nur nach einer Berührung. SmartView merkt sich (pro Gerät), dass Vollbild
+gewünscht ist: **der erste Tipp nach dem Aufwecken schaltet wieder auf Vollbild** (und sonst nichts). Wer das Vollbild
+selbst beendet (⚙ → „Vollbild beenden“, Esc, Zurück-Geste), bleibt draußen. Ganz ohne Tippen: SmartView als App
+auf den Startbildschirm legen (Chrome/Edge: „Zum Startbildschirm hinzufügen“ bzw. „App installieren“) – dann gibt es
+keine Browserleiste.
+
+### An Bildschirm anpassen (jede Auflösung)
+
+Normalerweise fließen die Kacheln je nach Breite (breiter Bildschirm = mehr Spalten). Soll eine Seite überall gleich
+aussehen, im Seiten-Dialog **„An Bildschirm anpassen“** wählen:
+
+- **Breite** – die Seite wird für die **Entwurfsbreite** angeordnet und dann so vergrößert/verkleinert (auch Schrift
+  und Symbole), dass sie genau die Breite füllt; nach unten wird gescrollt.
+- **Ganzer Bildschirm** – zusätzlich so klein, dass die ganze Seite ohne Scrollen sichtbar ist.
+
+Die Entwurfsbreite am besten am Hauptgerät mit **„Breite dieses Bildschirms übernehmen“** setzen. Am Handy und im
+Bearbeiten-Modus wird nicht skaliert.
 ## Einstellungen
 
 | Einstellung | Bedeutung |

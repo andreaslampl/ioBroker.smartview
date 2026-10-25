@@ -290,6 +290,17 @@ test('layout: free grid pages keep tile cells', () => {
     assert.equal(l.pages[1].free, undefined, 'only tile pages');
 });
 
+test('layout: pages scaled to the screen', () => {
+    const { cleanLayout } = require('../lib/layout');
+    const l = cleanLayout({ pages: [
+        { id: 'a', name: 'A', fit: 'width', designW: 99999, tiles: [] },
+        { id: 'b', name: 'B', fit: 'screen', tiles: [] },
+        { id: 'c', name: 'C', fit: 'zoom', designW: 800, tiles: [] },
+        { id: 'd', name: 'D', type: 'list', fit: 'width', tiles: [] },
+    ] });
+    assert.deepEqual(l.pages.map(p => [p.fit, p.designW]), [['width', 4000], ['screen', 1280], [undefined, undefined], [undefined, undefined]]);
+});
+
 test('layout: own tile sizes, plan tile, hidden pages', () => {
     const { cleanLayout, stateIds } = require('../lib/layout');
     const l = cleanLayout({ pages: [

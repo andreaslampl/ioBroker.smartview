@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.25.0",
+    "version": "0.26.0",
     "news": {
+      "0.26.0": {
+        "en": "Pages can be scaled to any screen (option 'An Bildschirm anpassen': width or whole screen, from a design width); full screen comes back with the first tap after the tablet was locked",
+        "de": "Seiten passen sich jedem Bildschirm an (Option „An Bildschirm anpassen“: Breite oder ganzer Bildschirm, ab einer Entwurfsbreite); Vollbild kommt nach dem Sperren des Tablets mit dem ersten Tipp zurück"
+      },
       "0.25.0": {
         "en": "Screen off for the touch PC (per device, menu): black after 1-60 min without a touch, a tap or the doorbell wakes it; wake lock while awake and when it rings",
         "de": "Bildschirm aus für den Touch-PC (pro Gerät, Menü): schwarz nach 1–60 Min. ohne Berühren, Tippen oder Klingeln weckt ihn; Wake-Lock solange wach und beim Klingeln"

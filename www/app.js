@@ -811,7 +811,32 @@ function layoutFree(tiles, cols, keep) {
 
 /** Free grid only where the columns are wide enough; on the phone the tiles just follow each other. */
 function freeNarrow(box, page) {
-  return (box.clientWidth || innerWidth) / (page.cols || 6) < 105;
+  return (fitWidth(page) || box.clientWidth || innerWidth) / (page.cols || 6) < 105;
+}
+
+/** Page laid out at a fixed width and scaled to the screen (not on the phone, not while editing): that width, else 0. */
+function fitWidth(page) {
+  return page && page.fit && !SV.editing && device() !== 'phone' ? page.designW || 1280 : 0;
+}
+
+/** Zoom of a scaled page: width of the container / design width; "screen" also fits the height (no scrolling). */
+function applyFit(grid) {
+  const page = grid._fit;
+  const box = grid.parentElement;
+  if (!page || !box) return;
+  const css = getComputedStyle(box);
+  const padX = parseFloat(css.paddingLeft) + parseFloat(css.paddingRight);
+  const padY = parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+  grid.style.zoom = '';
+  const w = fitWidth(page);
+  let z = Math.max(0.1, (box.clientWidth - padX) / w);
+  if (page.fit === 'screen' && box.id === 'main') {
+    const h = grid.offsetHeight;
+    if (h > 0) z = Math.min(z, (box.clientHeight - padY) / h);
+  }
+  z = Math.round(z * 1000) / 1000;
+  grid.style.zoom = String(z);
+  grid._zoom = z;
 }
 
 /** Content of a page (tiles, list or floor plan) into a container. */
@@ -874,8 +899,15 @@ function renderPageInto(box, page) {
     grid.appendChild(add);
     Editor.sortable(grid, page, '.tile[data-tile]');
   }
+  const fw = fitWidth(page);
+  if (fw) {
+    grid.classList.add('fit');
+    grid.style.width = fw + 'px';
+    grid._fit = page;
+  }
   box.appendChild(grid);
   if (!free) applySizes(grid, page);
+  if (fw) applyFit(grid);
   if (measure.length) watchRows(grid, measure);
 }
 
@@ -888,7 +920,7 @@ function watchRows(grid, measure) {
     let changed = false;
     for (const [el, t] of measure) {
       if (!el.isConnected) continue;
-      const rows = Math.max(1, Math.ceil((el.getBoundingClientRect().height + gap - 2) / (th + gap)));
+      const rows = Math.max(1, Math.ceil((el.getBoundingClientRect().height / (grid._zoom || 1) + gap - 2) / (th + gap)));
       if (rows !== (autoRows.get(t) || 1)) {
         autoRows.set(t, rows);
         changed = true;
@@ -1931,7 +1963,7 @@ async function openMenu() {
   ov.className = 'overlay bottom';
   ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div><div data-screen></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
-    (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + 'Vollbild</button>' : '') +
+    (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + (document.fullscreenElement ? 'Vollbild beenden' : 'Vollbild (bleibt nach dem Sperren)') + '</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
     '<button type="button" class="item" data-reload>' + icon('home') + 'Neu laden</button></div>';
   ov.addEventListener('click', e => {
@@ -1951,7 +1983,7 @@ async function openMenu() {
     applyTheme();
   };
   const full = ov.querySelector('[data-full]');
-  if (full) full.onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
+  if (full) full.onclick = () => Screen.fullscreen();
   renderPushMenu(ov.querySelector('[data-push]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
   if (typeof Screen !== 'undefined') Screen.menuItems(ov.querySelector('[data-screen]'));
@@ -2099,7 +2131,7 @@ async function start() {
       lastDev = device();
       lastNarrow = narrow;
       render();
-    }
+    } else for (const g of document.querySelectorAll('.grid.fit')) applyFit(g);
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && SV.ws && SV.ws.readyState > 1) connect();

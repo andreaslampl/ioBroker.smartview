@@ -64,6 +64,7 @@ const Screen = (() => {
       blank.addEventListener('click', e => {
         e.preventDefault();
         e.stopPropagation();
+        if (wantFull() && document.fullscreenEnabled && !document.fullscreenElement) enterFull();
         wake();
       });
       document.body.appendChild(blank);
@@ -105,6 +106,70 @@ const Screen = (() => {
     arm();
   }
 
+  // ---- full screen that comes back: the browser leaves full screen when the tablet locks; requestFullscreen needs a
+  // tap, so the first tap after that only returns to full screen (like waking the black screen) ----
+  const FKEY = 'sv.fullscreen';
+  let lastVis = 0;
+  let swallow = false;
+  let failed = false;
+
+  function wantFull() {
+    try {
+      return localStorage.getItem(FKEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setWant(on) {
+    try {
+      localStorage.setItem(FKEY, on ? '1' : '0');
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function enterFull() {
+    return document.documentElement.requestFullscreen().then(() => (failed = false), () => (failed = true));
+  }
+
+  /** menu button: on = full screen now and after every lock, off = leave it */
+  function fullscreen() {
+    if (document.fullscreenElement) {
+      setWant(false);
+      document.exitFullscreen().catch(() => {});
+    } else {
+      setWant(true);
+      enterFull();
+    }
+    const ov = document.querySelector('.overlay .sheet.menu');
+    if (ov) ov.closest('.overlay').remove();
+  }
+
+  const missing = () => wantFull() && document.fullscreenEnabled && !document.fullscreenElement && !failed && !blank;
+  document.addEventListener('visibilitychange', () => (lastVis = Date.now()));
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) return;
+    // left without the page being hidden around it (Esc, back gesture): the user wanted out
+    const at = Date.now();
+    setTimeout(() => {
+      if (Math.abs(lastVis - at) > 2000 && document.visibilityState === 'visible' && !document.fullscreenElement) setWant(false);
+    }, 2000);
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!missing()) return;
+    swallow = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  document.addEventListener('click', e => {
+    if (!swallow) return;
+    swallow = false;
+    e.preventDefault();
+    e.stopPropagation();
+    enterFull();
+  }, true);
+
   /** entries for the ⚙ menu: time until dark (per device) and "now" */
   function menuItems(box) {
     const b = document.createElement('button');
@@ -139,5 +204,5 @@ const Screen = (() => {
     box.append(b, now);
   }
 
-  return { ring, wake, off, menuItems };
+  return { ring, wake, off, menuItems, fullscreen };
 })();
