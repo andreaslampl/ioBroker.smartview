@@ -937,7 +937,6 @@ const Editor = (() => {
       msBox.hidden = type.value !== 'plan';
       frBox.hidden = type.value !== 'tiles';
       colsBox.hidden = !fr.input.checked;
-      fitBox.hidden = type.value === 'list';
       dwBox.hidden = !fit.value;
     };
     fit.addEventListener('change', showMs);
@@ -989,7 +988,7 @@ const Editor = (() => {
       p.markerSize = ms.value;
       p.hidden = hid.input.checked;
       p.free = type.value === 'tiles' && fr.input.checked;
-      p.fit = type.value !== 'list' ? fit.value : '';
+      p.fit = fit.value;
       p.designW = Math.round(Number(dw.value)) || mainW();
       p.cols = Number(cols.value);
       const i = l.pages.findIndex(x => x.id === p.id);

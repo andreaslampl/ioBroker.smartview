@@ -299,7 +299,7 @@ test('layout: pages scaled to the screen', () => {
         { id: 'd', name: 'D', type: 'list', fit: 'width', tiles: [] },
         { id: 'e', name: 'E', type: 'plan', fit: 'screen', designW: 1400, tiles: [] },
     ] });
-    assert.deepEqual(l.pages.map(p => [p.fit, p.designW]), [['width', 4000], ['screen', 1280], [undefined, undefined], [undefined, undefined], ['screen', 1400]]);
+    assert.deepEqual(l.pages.map(p => [p.fit, p.designW]), [['width', 4000], ['screen', 1280], [undefined, undefined], ['width', 1280], ['screen', 1400]]);
 });
 
 test('layout: own tile sizes, plan tile, hidden pages', () => {

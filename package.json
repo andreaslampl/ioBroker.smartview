@@ -1,6 +1,6 @@
 {
   "name": "iobroker.smartview",
-  "version": "0.26.1",
+  "version": "0.26.2",
   "description": "SmartView: touch and phone visualization for ioBroker (web app with push notifications)",
   "author": "andreaslampl",
   "license": "MIT",

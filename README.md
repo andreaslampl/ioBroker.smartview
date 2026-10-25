@@ -401,7 +401,7 @@ aussehen, im Seiten-Dialog **„An Bildschirm anpassen“** wählen:
   und Symbole), dass sie genau die Breite füllt; nach unten wird gescrollt.
 - **Ganzer Bildschirm** – zusätzlich so klein, dass die ganze Seite ohne Scrollen sichtbar ist.
 
-Das gibt es für Kachel-Seiten und **Grundriss-Seiten**: beim Grundriss werden Plan und Symbole gemeinsam
+Das gibt es für **alle Seitenarten** (Kacheln, Liste, Grundriss – auch in den Bereichen rechts). Beim Grundriss werden Plan und Symbole gemeinsam
 skaliert, die Symbole sind also auf jedem Bildschirm gleich groß im Verhältnis zum Plan (ohne die Option wird nur das
 Bild kleiner, die Symbole nicht). Die Tasten − / + zoomen zusätzlich.
 

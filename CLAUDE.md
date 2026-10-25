@@ -230,6 +230,8 @@ switches/buttons on them.
   width designW + CSS zoom (`applyPlanFit`: frame width / designW, screen = also the height left below the frame top,
   times the −/+ planZoom), so the symbols scale with the plan. Checked in Playwright (symbol = 3.14 % of the plan at
   every size, clicks still switch).
+- 0.26.2: owner: "bei allen Arten von Ansichten" -> list pages too (`.list.fit`, same `applyFit`); fit is now kept for
+  every page type. Screen mode keeps 10 px spare and floors the zoom (a 6 px scroll bar came back with lists).
 - Ideas not done yet: charts/history.
 
 ## Conventions

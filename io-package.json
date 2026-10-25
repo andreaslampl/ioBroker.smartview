@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.26.1",
+    "version": "0.26.2",
     "news": {
+      "0.26.2": {
+        "en": "'An Bildschirm anpassen' for every page type (tiles, list, floor plan), also in side panels",
+        "de": "„An Bildschirm anpassen“ für alle Seitenarten (Kacheln, Liste, Grundriss), auch in den Seitenbereichen"
+      },
       "0.26.1": {
         "en": "'An Bildschirm anpassen' also for floor plan pages: the plan and its symbols are scaled together",
         "de": "„An Bildschirm anpassen“ auch für Grundriss-Seiten: Plan und Symbole werden gemeinsam skaliert"

@@ -832,9 +832,10 @@ function applyFit(grid) {
   let z = Math.max(0.1, (box.clientWidth - padX) / w);
   if (page.fit === 'screen' && box.id === 'main') {
     const h = grid.offsetHeight;
-    if (h > 0) z = Math.min(z, (box.clientHeight - padY) / h);
+    // a few px to spare: rounding of the zoomed rows must not bring back a scroll bar
+    if (h > 0) z = Math.min(z, (box.clientHeight - padY - 10) / h);
   }
-  z = Math.round(z * 1000) / 1000;
+  z = Math.floor(z * 1000) / 1000;
   grid.style.zoom = String(z);
   grid._zoom = z;
 }
@@ -1020,7 +1021,14 @@ function renderList(box, page) {
     list.appendChild(add);
     Editor.sortable(list, page, '.lrow[data-tile]');
   }
+  const fw = fitWidth(page);
+  if (fw) {
+    list.classList.add('fit');
+    list.style.width = fw + 'px';
+    list._fit = page;
+  }
   box.appendChild(list);
+  if (fw) applyFit(list);
 }
 
 /**
@@ -2162,7 +2170,7 @@ async function start() {
       lastNarrow = narrow;
       render();
     } else {
-      for (const g of document.querySelectorAll('.grid.fit')) applyFit(g);
+      for (const g of document.querySelectorAll('.grid.fit, .list.fit')) applyFit(g);
       for (const p of document.querySelectorAll('.plan.fit')) applyPlanFit(p);
     }
   });
