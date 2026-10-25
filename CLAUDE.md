@@ -226,6 +226,10 @@ switches/buttons on them.
   remembers the wish (localStorage `sv.fullscreen`), first tap afterwards only re-enters full screen (pointerdown
   swallowed, request in click); an exit without a visibility change within 2 s (Esc, back) clears the wish.
   Both checked in Playwright.
+- 0.26.1: owner missed the option on floor plan pages -> `fit`/`designW` also for plan pages: `.plan.fit` gets
+  width designW + CSS zoom (`applyPlanFit`: frame width / designW, screen = also the height left below the frame top,
+  times the −/+ planZoom), so the symbols scale with the plan. Checked in Playwright (symbol = 3.14 % of the plan at
+  every size, clicks still switch).
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -401,6 +401,10 @@ aussehen, im Seiten-Dialog **„An Bildschirm anpassen“** wählen:
   und Symbole), dass sie genau die Breite füllt; nach unten wird gescrollt.
 - **Ganzer Bildschirm** – zusätzlich so klein, dass die ganze Seite ohne Scrollen sichtbar ist.
 
+Das gibt es für Kachel-Seiten und **Grundriss-Seiten**: beim Grundriss werden Plan und Symbole gemeinsam
+skaliert, die Symbole sind also auf jedem Bildschirm gleich groß im Verhältnis zum Plan (ohne die Option wird nur das
+Bild kleiner, die Symbole nicht). Die Tasten − / + zoomen zusätzlich.
+
 Die Entwurfsbreite am besten am Hauptgerät mit **„Breite dieses Bildschirms übernehmen“** setzen. Am Handy und im
 Bearbeiten-Modus wird nicht skaliert.
 ## Einstellungen

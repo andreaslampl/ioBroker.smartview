@@ -1412,6 +1412,16 @@ function renderPlan(main, page) {
   if (SV.editing) plan.addEventListener('click', e => Editor.planClick(e, page, plan));
   wrap.appendChild(plan);
   main.appendChild(wrap);
+  const fw = fitWidth(page);
+  if (fw) {
+    // laid out at the design width and zoomed as a whole, so the symbols grow and shrink with the plan
+    plan.classList.add('fit');
+    plan.style.width = fw + 'px';
+    plan._fit = page;
+    img.onload = () => applyPlanFit(plan);
+    if (img.complete) applyPlanFit(plan);
+    return;
+  }
   // fit the plan to the height of the screen on wide screens
   img.onload = () => {
     if (zoom === 1 && device() === 'touch') {
@@ -1421,6 +1431,26 @@ function renderPlan(main, page) {
       plan.style.width = w + 'px';
     }
   };
+}
+
+/** Zoom of a scaled floor plan: width of its frame / design width; "screen" also fits the visible height. */
+function applyPlanFit(plan) {
+  const page = plan._fit;
+  const wrap = plan.parentElement;
+  const img = plan.querySelector('img.planimg');
+  if (!page || !wrap || !img || !img.naturalWidth) return;
+  const w = fitWidth(page);
+  let z = wrap.clientWidth / w;
+  if (page.fit === 'screen') {
+    const box = wrap.closest('#main, .sidecontent') || wrap.parentElement;
+    const pad = parseFloat(getComputedStyle(box).paddingBottom) || 0;
+    const bottom = Math.min(innerHeight, box.getBoundingClientRect().bottom) - pad;
+    const availH = bottom - wrap.getBoundingClientRect().top - 2;
+    const h = w * img.naturalHeight / img.naturalWidth;
+    if (availH > 50) z = Math.min(z, availH / h);
+  }
+  z = Math.max(0.05, Math.round(z * planZoom(page) * 1000) / 1000);
+  plan.style.zoom = String(z);
 }
 
 function planZoom(page) {
@@ -2131,7 +2161,10 @@ async function start() {
       lastDev = device();
       lastNarrow = narrow;
       render();
-    } else for (const g of document.querySelectorAll('.grid.fit')) applyFit(g);
+    } else {
+      for (const g of document.querySelectorAll('.grid.fit')) applyFit(g);
+      for (const p of document.querySelectorAll('.plan.fit')) applyPlanFit(p);
+    }
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && SV.ws && SV.ws.readyState > 1) connect();

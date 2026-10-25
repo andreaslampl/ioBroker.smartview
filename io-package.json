@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.26.0",
+    "version": "0.26.1",
     "news": {
+      "0.26.1": {
+        "en": "'An Bildschirm anpassen' also for floor plan pages: the plan and its symbols are scaled together",
+        "de": "„An Bildschirm anpassen“ auch für Grundriss-Seiten: Plan und Symbole werden gemeinsam skaliert"
+      },
       "0.26.0": {
         "en": "Pages can be scaled to any screen (option 'An Bildschirm anpassen': width or whole screen, from a design width); full screen comes back with the first tap after the tablet was locked",
         "de": "Seiten passen sich jedem Bildschirm an (Option „An Bildschirm anpassen“: Breite oder ganzer Bildschirm, ab einer Entwurfsbreite); Vollbild kommt nach dem Sperren des Tablets mit dem ersten Tipp zurück"
