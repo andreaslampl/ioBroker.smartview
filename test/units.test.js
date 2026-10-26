@@ -271,6 +271,8 @@ test('homekit: tiles <-> homekit-easy devices', () => {
     // long ids stay valid for homekit-easy
     assert.match(toDevice({ id: 'x'.repeat(40), type: 'switch', state: 's', homekit: 'switch' }, page).id, /^sv-[0-9a-f]{16}$/);
     // inverted contact: texts swapped; doorbell becomes a plain camera tile
+    assert.deepEqual([toTile({ id: 'm', type: 'blind', name: 'Markise', move: 'knx.0.AufAb', moveInvert: true })].map(t => [t.state, t.closed100]), [['knx.0.AufAb', true]]);
+    assert.equal(devicesFor({ pages: [{ id: 'a', tiles: [{ id: 'b', type: 'blind', state: 's', homekit: 'blind', closed100: true }] }] })[0].moveInvert, true);
     assert.equal(toTile({ id: 'k', type: 'contact', name: 'Tür', state: 's', invert: true }).texts, 'true=zu;false=offen');
     const bell = toTile({ id: 'd', type: 'doorbell', name: 'Klingel', camera: 'livecam.0.cameras.tuer', ring: 'r' });
     assert.deepEqual([bell.type, bell.homekit, bell.hkId], ['camera', undefined, undefined]);

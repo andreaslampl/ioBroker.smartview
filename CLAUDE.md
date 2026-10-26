@@ -235,6 +235,8 @@ switches/buttons on them.
 - 0.26.3: owner: blind percent reversed (100 % = open) while up/down was right -> blind option `posInvert` ("Prozent
   umdrehen"): percent means 100 = closed when `closed100 XOR posInvert` (app.js `pctClosed100()`, main driveSafe/
   fireTimer, homekit.js sends the effective closed100); the boolean up/down still follows `closed100` only.
+- 0.26.4: homekit-easy 0.4.2 got an up/down field `move` for blinds; a boolean blind state is treated as up/down there.
+  homekit.js sends `moveInvert` when `closed100` is ticked, import of a move-only device -> tile state = move.
 - Ideas not done yet: charts/history.
 
 ## Conventions

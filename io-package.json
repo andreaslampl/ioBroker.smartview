@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.26.3",
+    "version": "0.26.4",
     "news": {
+      "0.26.4": {
+        "en": "Apple Home: blinds with an up/down data point are passed on as such (homekit-easy 0.4.2+), imported up/down blinds work",
+        "de": "Apple Home: Jalousien mit Auf/Ab-Datenpunkt werden als solche übergeben (homekit-easy 0.4.2+), importierte Auf/Ab-Jalousien funktionieren"
+      },
       "0.26.3": {
         "en": "Blind: new checkbox 'Prozent umdrehen' swaps only the position in % (up/down true/false stays as it is)",
         "de": "Jalousie: neuer Haken „Prozent umdrehen“ dreht nur die Position in % um (Auf/Ab true/false bleibt wie es ist)"
