@@ -275,8 +275,14 @@ test('homekit: tiles <-> homekit-easy devices', () => {
     const bell = toTile({ id: 'd', type: 'doorbell', name: 'Klingel', camera: 'livecam.0.cameras.tuer', ring: 'r' });
     assert.deepEqual([bell.type, bell.homekit, bell.hkId], ['camera', undefined, undefined]);
     // two tiles linked to the same device: only one device
+    assert.equal(devicesFor({ pages: [{ id: 'a', tiles: [{ id: 'b', type: 'blind', state: 's', homekit: 'blind', closed100: true, posInvert: true }] }] })[0].closed100, undefined, 'percent swapped back');
+    assert.equal(cleanLayoutForTest().pages[0].tiles[0].posInvert, true);
     assert.equal(devicesFor({ pages: [{ id: 'a', tiles: [{ id: '1', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }, { id: '2', type: 'switch', state: 's', homekit: 'light', hkId: 'own' }] }] }).length, 1);
 });
+
+function cleanLayoutForTest() {
+    return require('../lib/layout').cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'b', type: 'blind', state: 's', posInvert: 1 }] }] });
+}
 
 test('layout: free grid pages keep tile cells', () => {
     const { cleanLayout } = require('../lib/layout');

@@ -232,6 +232,9 @@ switches/buttons on them.
   every size, clicks still switch).
 - 0.26.2: owner: "bei allen Arten von Ansichten" -> list pages too (`.list.fit`, same `applyFit`); fit is now kept for
   every page type. Screen mode keeps 10 px spare and floors the zoom (a 6 px scroll bar came back with lists).
+- 0.26.3: owner: blind percent reversed (100 % = open) while up/down was right -> blind option `posInvert` ("Prozent
+  umdrehen"): percent means 100 = closed when `closed100 XOR posInvert` (app.js `pctClosed100()`, main driveSafe/
+  fireTimer, homekit.js sends the effective closed100); the boolean up/down still follows `closed100` only.
 - Ideas not done yet: charts/history.
 
 ## Conventions

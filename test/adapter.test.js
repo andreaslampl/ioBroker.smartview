@@ -275,6 +275,7 @@ test('adapter: time switches per tile via the API, writes like the buttons', asy
                         { id: 'l1', type: 'switch', state: 'knx.0.EG.Licht.Wohnzimmer', invert: false },
                         { id: 'd1', type: 'dimmer', state: 'knx.0.EG.Licht.Essen_Dimmer' },
                         { id: 'r1', type: 'blind', state: 'knx.0.EG.Rollladen.Wohnzimmer', closed100: true },
+                        { id: 'r2', type: 'blind', state: 'knx.0.EG.Rollladen.Wohnzimmer', closed100: true, posInvert: true },
                         { id: 'v1', type: 'value', state: 'knx.0.EG.Fenster.Kueche' },
                     ],
                 },
@@ -299,6 +300,9 @@ test('adapter: time switches per tile via the API, writes like the buttons', asy
         ['knx.0.EG.Rollladen.Wohnzimmer', 100, false], // closed100: down = 100
         ['knx.0.EG.Rollladen.Wohnzimmer', 75, false], // 25 % open
     ]);
+    // "Prozent umdrehen" swaps the percent meaning again: 100 = open
+    await adapter.fireTimer(tile('r2'), 'position', 25, { at: 'time', time: '21:00' });
+    assert.deepEqual(adapter.writes.at(-1), ['knx.0.EG.Rollladen.Wohnzimmer', 25, false]);
 });
 
 test('adapter: users - login, own pages only, watch-only users cannot switch, only admins edit', async t => {

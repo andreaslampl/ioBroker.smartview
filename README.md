@@ -70,6 +70,9 @@ erscheinen als Text.
 
 Datenpunkt: Position in % oder ein Auf/Ab-Objekt (true/false, z. B. KNX 1-Bit: false = auf, true = ab).
 Sind Auf und Ab vertauscht, den Haken **„Auf/Ab umdrehen“** setzen.
+Stimmt Auf/Ab, aber die **Prozent** sind verkehrt (z. B. 100 % = offen, 0 % = zu), zusätzlich den Haken
+**„Prozent umdrehen (0 % ↔ 100 %)“** setzen – er dreht nur die Position in % um (Anzeige, Schieber, Zeitschaltuhr,
+Wind-/Regenschutz, Apple Home), das Auf/Ab-Objekt bleibt unberührt.
 
 **Markise und Wind-/Regenschutz:** Unter „Art“ Markise wählen (Knöpfe Einfahren/Ausfahren). Optional
 **Windalarm** (true/false oder Windgeschwindigkeit mit Grenzwert) und **Regenalarm**: Kommt ein Alarm, fährt

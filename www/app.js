@@ -159,7 +159,12 @@ function dimOn(t) {
 /** Blind position as percent open (0 = closed, 100 = open). */
 function blindOpen(t) {
   const p = toNum(val(t.status || t.state));
-  return t.closed100 ? 100 - p : p;
+  return pctClosed100(t) ? 100 - p : p;
+}
+
+/** Position data points: 100 % = closed? ("Auf/Ab umdrehen", swapped again by "Prozent umdrehen") */
+function pctClosed100(t) {
+  return Boolean(t.closed100) !== Boolean(t.posInvert);
 }
 
 function blindText(t) {
@@ -341,7 +346,7 @@ function blindWrite(t, openPercent) {
     const down = openPercent === 0;
     return send(t.state, t.closed100 ? !down : down);
   }
-  send(t.state, t.closed100 ? 100 - openPercent : openPercent);
+  send(t.state, pctClosed100(t) ? 100 - openPercent : openPercent);
 }
 
 function lastLevel(t) {

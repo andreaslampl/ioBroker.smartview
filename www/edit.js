@@ -39,6 +39,7 @@ const TYPE_FIELDS = {
     ['stop', 'Stopp (optional)', 'state-w'],
     ['status', 'Rückmeldung Position (optional)', 'state-r'],
     ['closed100', 'Auf/Ab umdrehen', 'check', 'Haken setzen, wenn Auf und Ab vertauscht sind (bei Position: 100 % = zu; bei Auf/Ab-Objekt: true = auf)'],
+    ['posInvert', 'Prozent umdrehen (0 % ↔ 100 %)', 'check', 'Nur für die Position in %: Haken setzen, wenn Prozent verkehrt angezeigt bzw. gefahren wird (z. B. 100 % = offen). Auf/Ab (true/false) bleibt davon unberührt.'],
     ['kind', 'Art', 'select:blind=Rollladen / Jalousie;awning=Markise (Einfahren / Ausfahren)'],
     ['windAlarm', 'Windalarm (optional)', 'state-r', 'true = Alarm – oder eine Windgeschwindigkeit mit Grenzwert darunter'],
     ['windMin', 'Windalarm ab (optional)', 'number', 'Nur wenn der Datenpunkt eine Windgeschwindigkeit ist, z. B. 40 (km/h). Leer = true/false.'],

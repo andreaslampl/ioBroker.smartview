@@ -528,7 +528,7 @@ class SmartView extends utils.Adapter {
         if ((await this.metaOf(tile.state)).type === 'boolean') {
             await this.setValue(tile.state, tile.closed100 ? open > 0 : open === 0, { force: true });
         } else {
-            await this.setValue(tile.state, tile.closed100 ? 100 - open : open, { force: true });
+            await this.setValue(tile.state, Boolean(tile.closed100) !== Boolean(tile.posInvert) ? 100 - open : open, { force: true });
         }
     }
 
@@ -715,7 +715,7 @@ class SmartView extends utils.Adapter {
                 // up/down object (KNX: false = up, true = down); "Auf/Ab umdrehen" swaps it
                 await this.setValue(tile.state, tile.closed100 ? open > 0 : open === 0);
             } else {
-                await this.setValue(tile.state, tile.closed100 ? 100 - open : open);
+                await this.setValue(tile.state, Boolean(tile.closed100) !== Boolean(tile.posInvert) ? 100 - open : open);
             }
         }
     }

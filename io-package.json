@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.26.2",
+    "version": "0.26.3",
     "news": {
+      "0.26.3": {
+        "en": "Blind: new checkbox 'Prozent umdrehen' swaps only the position in % (up/down true/false stays as it is)",
+        "de": "Jalousie: neuer Haken „Prozent umdrehen“ dreht nur die Position in % um (Auf/Ab true/false bleibt wie es ist)"
+      },
       "0.26.2": {
         "en": "'An Bildschirm anpassen' for every page type (tiles, list, floor plan), also in side panels",
         "de": "„An Bildschirm anpassen“ für alle Seitenarten (Kacheln, Liste, Grundriss), auch in den Seitenbereichen"
