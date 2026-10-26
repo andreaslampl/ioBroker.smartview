@@ -131,7 +131,7 @@ function tileIc(t) {
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current'].map(k => t[k])
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
@@ -570,25 +570,80 @@ function windowStates(t) {
     else if (w.logic === 'table') status = { z: 'closed', t: 'tilt', o: 'open' }[String(w.map || 'ztoo')[(k1 ? 1 : 0) + (k2 ? 2 : 0)]] || 'closed';
     else status = k2 ? 'tilt' : k1 ? 'open' : 'closed';
     const ts = Math.max((a && (a.lc || a.ts)) || 0, (b && (b.lc || b.ts)) || 0);
-    return { label: w.label || (w.state || w.tilt || '').split('.').pop(), status, ts };
+    return { label: w.label || (w.state || w.tilt || '').split('.').pop(), group: w.group || '', status, ts };
   });
 }
 
+const WIN_RANK = { open: 3, tilt: 2, unknown: 1, closed: 0 };
+
+/**
+ * Entries of the window tile: single windows, or one entry per area (`group`) with the worst status, its open/tilted
+ * members as detail ("Fenster 1 offen · Tür gekippt") and since when the oldest of them is open.
+ */
+function windowEntries(t) {
+  const out = [];
+  const groups = new Map();
+  for (const w of windowStates(t)) {
+    if (!w.group) {
+      out.push({ ...w, members: [w] });
+      continue;
+    }
+    let g = groups.get(w.group);
+    if (!g) {
+      g = { label: w.group, group: true, members: [] };
+      groups.set(w.group, g);
+      out.push(g);
+    }
+    g.members.push(w);
+  }
+  for (const g of groups.values()) {
+    const m = g.members;
+    const worst = m.reduce((a, b) => (WIN_RANK[b.status] > WIN_RANK[a.status] ? b : a));
+    g.status = m.every(x => x.status === 'unknown') ? 'unknown' : worst.status === 'unknown' ? 'closed' : worst.status;
+    const notClosed = m.filter(x => x.status === 'open' || x.status === 'tilt');
+    // open: since when the first one is open; closed: the last change
+    g.ts = notClosed.length ? Math.min(...notClosed.map(x => x.ts || Date.now())) : Math.max(0, ...m.map(x => x.ts || 0));
+    g.detail = notClosed.map(x => x.label + ' ' + WIN_TEXT[x.status]).join(' · ');
+  }
+  return out;
+}
+
 const WIN_TEXT = { open: 'offen', tilt: 'gekippt', closed: 'geschlossen', unknown: 'unbekannt' };
+
+/** "Warnen, wenn" of the window tile is true (e.g. rain, alarm system armed) and something is open or tilted */
+function windowsWarn(t) {
+  if (!t.warnWhen || !truthy(val(t.warnWhen))) return false;
+  return windowStates(t).some(w => w.status === 'open' || w.status === 'tilt');
+}
 
 function windowsHtml(t) {
   const list = windowStates(t);
   const open = list.filter(w => w.status === 'open').length;
   const tilt = list.filter(w => w.status === 'tilt').length;
   const sum = open || tilt ? [open ? open + ' offen' : '', tilt ? tilt + ' gekippt' : ''].filter(Boolean).join(' · ') : 'alle geschlossen';
-  return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span><span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
-    '<div class="wlist">' + list.map(w =>
-      '<div class="win ' + w.status + '"><span class="wic">' + icon(w.status === 'open' ? 'win-open' : w.status === 'tilt' ? 'win-tilt' : 'win-closed') + '</span><span class="wname">' + esc(w.label) + '</span>' +
-      '<span class="wst">' + WIN_TEXT[w.status] + (w.ts && w.status !== 'unknown' ? ' <small>seit ' + since(w.ts) + '</small>' : '') + '</span></div>').join('') + '</div>';
+  const warn = windowsWarn(t);
+  const longMs = t.warnMin > 0 ? t.warnMin * 60000 : 0;
+  let entries = windowEntries(t);
+  // only open / tilted ones (open first); everything closed = just the heading
+  if (t.onlyOpen) entries = entries.filter(e => e.status !== 'closed').sort((a, b) => WIN_RANK[b.status] - WIN_RANK[a.status]);
+  const row = e => {
+    const active = e.status === 'open' || e.status === 'tilt';
+    const long = active && longMs && e.ts && Date.now() - e.ts >= longMs;
+    const cls = 'win ' + e.status + (long ? ' long' : '') + (warn && active ? ' warnnow' : '') + (e.group ? ' wgroup' : '');
+    const n = e.group ? e.members.filter(x => x.status === 'open' || x.status === 'tilt').length : 0;
+    const st = e.group && n > 1 ? n + ' ' + (e.members.some(x => x.status === 'open') ? 'offen' : 'gekippt') : WIN_TEXT[e.status];
+    return '<div class="' + cls + '"><span class="wic">' + icon(e.status === 'open' ? 'win-open' : e.status === 'tilt' ? 'win-tilt' : 'win-closed') + '</span>' +
+      '<span class="wname">' + esc(e.label) + (e.detail ? '<small class="wdetail">' + esc(e.detail) + '</small>' : '') + '</span>' +
+      '<span class="wst">' + esc(st) + (e.ts && e.status !== 'unknown' ? ' <small>' + (long ? '⚠ ' : '') + 'seit ' + since(e.ts) + '</small>' : '') + '</span></div>';
+  };
+  return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span>' +
+    (warn ? '<span class="wwarn">' + esc(t.warnText || 'Achtung') + '</span>' : '') +
+    '<span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
+    (entries.length ? '<div class="wlist">' + entries.map(row).join('') + '</div>' : '');
 }
 
 function tileState(t) {
-  if (t.type === 'windows') return windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
+  if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';

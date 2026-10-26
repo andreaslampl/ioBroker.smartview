@@ -176,6 +176,17 @@ Verdrahtung:
 
 Ein neues Fenster übernimmt die Einstellungen des vorigen (meist sind alle gleich verdrahtet).
 
+Optionen der Fenster-Kachel (alle freiwillig, ohne sie bleibt alles wie bisher):
+
+- **Bereich** pro Fenster: Fenster mit gleichem Bereich (z. B. „Küche“) stehen als **eine Zeile** da – alle zu =
+  „Küche geschlossen“, sonst „Küche“ mit „links offen · Tür gekippt“ darunter und seit wann.
+- **Nur offene / gekippte anzeigen**: Sind alle zu, steht nur die Überschrift mit „alle geschlossen“ da; geht etwas
+  auf, erscheint es (offene zuerst).
+- **Hervorheben, wenn länger offen als … Minuten**: Das Fenster wird rot mit ⚠ markiert.
+- **Warnen, wenn** (Datenpunkt, z. B. Regen, Alarmanlage scharf, Heizung an) + **Warntext**: Ist er true und etwas
+  offen oder gekippt, erscheint der Warntext rot in der Überschrift und die offenen Fenster sind rot umrandet.
+  Für eine Mitteilung aufs Handy dazu eine Push-Regel mit „und“ anlegen.
+
 ### Lageplan: Ebenen und Kameras
 
 - **Ebenen (Gewerke):** Oben am Lageplan (und klein in der Lageplan-Kachel) gibt es Knöpfe für Licht, Beschattung,

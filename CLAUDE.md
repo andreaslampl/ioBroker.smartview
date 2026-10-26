@@ -237,6 +237,11 @@ switches/buttons on them.
   fireTimer, homekit.js sends the effective closed100); the boolean up/down still follows `closed100` only.
 - 0.26.4: homekit-easy 0.4.2 got an up/down field `move` for blinds; a boolean blind state is treated as up/down there.
   homekit.js sends `moveInvert` when `closed100` is ticked, import of a move-only device -> tile state = move.
+- 0.27.0: owner asked (as options) for several contacts per area ("Küche 1 offen"), showing only open ones (all closed =
+  heading only) and other ideas -> windows rows `group` (stored only when set), tile options `onlyOpen`, `warnMin`
+  (min, row class `long` + ⚠), `warnWhen` (read state, `windowsWarn()`: true and something open/tilted -> header
+  badge `warnText`, rows `warnnow`, tile alert), `warnText`. app.js `windowEntries()` (groups: worst status, detail =
+  open/tilted members, ts = since the first one opened). Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

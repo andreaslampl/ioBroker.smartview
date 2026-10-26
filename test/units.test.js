@@ -384,3 +384,13 @@ test('heating circuits keep their own mode texts', () => {
     assert.equal(t.modes, '4=Normal');
     assert.equal(t.circuits[0].modes, '2=Normal');
 });
+
+test('layout: window tile with areas, only open ones, warning', () => {
+    const { cleanLayout, stateIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'w', type: 'windows', onlyOpen: 1, warnMin: '15', warnWhen: 'knx.0.Regen', warnText: 'Regen!',
+        windows: [{ label: 'links', group: ' Küche ', state: 'k.1' }, { label: 'rechts', group: 'Küche', state: 'k.2' }] }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.deepEqual([t.onlyOpen, t.warnMin, t.warnWhen, t.warnText, t.windows[0].group], [true, 15, 'knx.0.Regen', 'Regen!', 'Küche']);
+    const ids = stateIds(l);
+    assert.ok(ids.read.includes('knx.0.Regen') && !ids.write.includes('knx.0.Regen'));
+});

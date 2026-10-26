@@ -94,7 +94,13 @@ const TYPE_FIELDS = {
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
   page: [['target', 'Seite, die geöffnet wird', 'page']],
   multi: [['rows', 'Werte', 'rows']],
-  windows: [['windows', 'Fenster', 'windows']],
+  windows: [
+    ['windows', 'Fenster', 'windows'],
+    ['onlyOpen', 'Nur offene / gekippte anzeigen', 'check', 'Sind alle zu, steht nur die Überschrift mit „alle geschlossen“ da.'],
+    ['warnMin', 'Hervorheben, wenn länger offen als (Minuten, optional)', 'number', 'z. B. 15 – dann wird das Fenster rot mit ⚠. Leer = nie.'],
+    ['warnWhen', 'Warnen, wenn (optional)', 'state-r', 'z. B. Regen, Alarmanlage scharf oder Heizung an: Ist dieser Datenpunkt true und etwas offen, wird es rot markiert und der Warntext erscheint.'],
+    ['warnText', 'Warntext (optional)', 'text', 'z. B. „Regen!“ – Standard „Achtung“'],
+  ],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
   wallbox: [
@@ -557,6 +563,7 @@ const Editor = (() => {
     const read = () =>
       rowInputs.map(x => ({
         label: x.label.value.trim(),
+        group: x.group.value.trim(),
         state: x.state.value.trim(),
         tilt: x.tilt.value.trim(),
         invert: x.invert.input.checked,
@@ -572,7 +579,9 @@ const Editor = (() => {
         b.className = 'rule';
         const x = {};
         x.label = field(b, 'Name', textInput(r.label));
-        x.label.placeholder = 'z. B. Küche';
+        x.label.placeholder = 'z. B. Fenster links';
+        x.group = field(b, 'Bereich (optional)', textInput(r.group), 'Fenster mit gleichem Bereich (z. B. „Küche“) stehen als eine Zeile da: „Küche – Fenster links offen“.');
+        x.group.placeholder = 'z. B. Küche';
         x.logic = field(b, 'Auswertung', select([
           ['tilt', 'Kontakt 1 = offen, Kontakt 2 = gekippt'],
           ['both', 'ein Kontakt offen = gekippt, beide offen = offen'],
@@ -631,7 +640,7 @@ const Editor = (() => {
         const cur = read();
         // a new window takes the wiring of the one before (usually all windows are wired the same)
         const prev = cur[cur.length - 1];
-        cur.push({ label: '', state: '', tilt: '', logic: prev ? prev.logic : 'tilt', map: prev ? prev.map : 'ztoo', invert: prev ? prev.invert : false, invert2: prev ? prev.invert2 : false });
+        cur.push({ label: '', group: prev ? prev.group : '', state: '', tilt: '', logic: prev ? prev.logic : 'tilt', map: prev ? prev.map : 'ztoo', invert: prev ? prev.invert : false, invert2: prev ? prev.invert2 : false });
         list.splice(0, list.length, ...cur);
         draw();
       };

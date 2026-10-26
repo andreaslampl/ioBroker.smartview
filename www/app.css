@@ -374,6 +374,10 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .win .wst { margin-left: auto; text-align: right; font-size: 14px; white-space: nowrap; }
 .win .wst small { display: block; color: var(--muted); font-size: 12px; }
 .winsheet .wlist { grid-template-columns: 1fr; }
+.win .wname small.wdetail { display: block; font-weight: 400; font-size: 13px; color: var(--muted); white-space: normal; }
+.win.long, .win.warnnow { background: rgba(248, 81, 73, .32); border-color: var(--bad); border-width: 2px; }
+.win.long .wst small { color: var(--bad); font-weight: 600; }
+.wwarn { font-size: 13px; font-weight: 700; color: #fff; background: var(--bad); border-radius: 8px; padding: 2px 8px; margin-right: 8px; }
 .win .wic .ic { width: 30px; height: 30px; }
 
 /* edit mode: move tiles / list rows by dragging */

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.26.4",
+    "version": "0.27.0",
     "news": {
+      "0.27.0": {
+        "en": "Window overview: optional areas (several windows as one line, e.g. 'Küche – links offen'), only open/tilted ones, highlight when open longer than N minutes, warning while a data point is true (e.g. rain, alarm armed)",
+        "de": "Fensterübersicht: optionale Bereiche (mehrere Fenster als eine Zeile, z. B. „Küche – links offen“), nur offene/gekippte anzeigen, Hervorheben wenn länger als N Minuten offen, Warnung solange ein Datenpunkt true ist (z. B. Regen, Alarmanlage scharf)"
+      },
       "0.26.4": {
         "en": "Apple Home: blinds with an up/down data point are passed on as such (homekit-easy 0.4.2+), imported up/down blinds work",
         "de": "Apple Home: Jalousien mit Auf/Ab-Datenpunkt werden als solche übergeben (homekit-easy 0.4.2+), importierte Auf/Ab-Jalousien funktionieren"
