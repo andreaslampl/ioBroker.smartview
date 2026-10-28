@@ -30,7 +30,8 @@ const Timers = (() => {
   }
 
   function supports(t) {
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !(SV.me && SV.me.control === false);
+    // a PIN protected tile gets no time switch (it would switch without the PIN)
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !t.pin && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {

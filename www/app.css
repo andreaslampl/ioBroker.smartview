@@ -466,3 +466,17 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 
 /* screen off (touch PC): black above everything, the first touch only wakes */
 .screenoff { position: fixed; inset: 0; z-index: 1000; background: #000; cursor: none; }
+
+/* PIN pad */
+.pinov { z-index: 1100; }
+.pinpad { max-width: 320px; margin: auto; }
+.pindots { text-align: center; font-size: 28px; letter-spacing: 8px; min-height: 40px; margin: 6px 0 12px; }
+.pinkeys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pinkeys button { font-size: 24px; padding: 14px 0; border-radius: 14px; }
+/* alarm system */
+.alarmtxt { color: var(--bad) !important; font-weight: 700; animation: alarmblink 1s steps(2, start) infinite; }
+@keyframes alarmblink { to { visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .alarmtxt { animation: none; } }
+.pinmark { position: absolute; right: 10px; bottom: 10px; display: flex; opacity: .55; pointer-events: none; }
+.pinmark .ic { width: 16px; height: 16px; }
+.tile.alarm .big { font-size: 22px; line-height: 1.15; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

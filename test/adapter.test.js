@@ -784,3 +784,89 @@ test('adapter: awning retracts on wind/rain, stays locked, gate impulse', async 
     await until(() => adapter.writes.filter(w => w[0] === 'knx.0.Tor.Taster').length === 2, 2000);
     assert.deepEqual(adapter.writes.filter(w => w[0] === 'knx.0.Tor.Taster').map(w => w[1]), [true, false]);
 });
+
+test('adapter: PIN protected tiles - hash only on the server, every command checked, wrong PINs locked, no time switch', async t => {
+    const { adapter, port, api } = await startAdapter(t);
+    const layout = {
+        pages: [{ id: 'a', name: 'A', tiles: [
+            { id: 'door', type: 'switch', label: 'Türöffner', state: 'knx.0.EG.Licht.Wohnzimmer', pin: '4711' },
+            { id: 'free', type: 'dimmer', label: 'Essen', state: 'knx.0.EG.Licht.Essen_Dimmer' },
+        ] }],
+    };
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    assert.equal(saved.body.pages[0].tiles[0].pin, true);
+    assert.equal(saved.body.pages[0].tiles[0].pinHash, undefined, 'the hash never leaves the server');
+    assert.match(adapter.store.layout.pages[0].tiles[0].pinHash, /^s1\$/);
+    const got = await api('layout');
+    assert.ok(!JSON.stringify(got.body).includes('pinHash') && !JSON.stringify(got.body).includes('4711'));
+    // saving again with pin: true keeps the PIN
+    await api('layout', { method: 'PUT', body: JSON.stringify(got.body.layout) });
+    assert.match(adapter.store.layout.pages[0].tiles[0].pinHash, /^s1\$/);
+    assert.equal((await api('timers/a/door', { method: 'PUT', body: JSON.stringify({ entries: [{ days: [1], at: 'time', time: '07:00', action: 'on' }] }) })).status, 403);
+
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    assert.deepEqual(c.msgs.find(m => m.type === 'init').pinIds, ['knx.0.EG.Licht.Wohnzimmer']);
+    const n = adapter.writes.length;
+    const pin = () => c.msgs.filter(m => m.type === 'pin');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: true }));
+    await until(() => pin().length === 1);
+    assert.equal(pin()[0].result, 'need');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: true, pin: '1234' }));
+    await until(() => pin().length === 2);
+    assert.equal(pin()[1].result, 'wrong');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Essen_Dimmer', val: 30 }));
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: true, pin: '4711' }));
+    await until(() => adapter.writes.length === n + 2);
+    assert.deepEqual(adapter.writes.slice(n).map(w => w[0]).sort(), ['knx.0.EG.Licht.Essen_Dimmer', 'knx.0.EG.Licht.Wohnzimmer']);
+    // 5 wrong PINs lock the address, then even the right one is refused for a while
+    for (let i = 0; i < 5; i++) {
+        c.ws.send(JSON.stringify({ type: 'pulse', id: 'knx.0.EG.Licht.Wohnzimmer', pin: '0000' }));
+    }
+    await until(() => pin().length === 7);
+    assert.equal(pin()[6].result, 'locked');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: false, pin: '4711' }));
+    await until(() => pin().length === 8);
+    assert.equal(pin()[7].result, 'locked');
+    assert.equal(adapter.writes.length, n + 2);
+});
+
+test('adapter: alarm tile filled from a NOX area; window tile messages (too long open, warning while raining)', async t => {
+    const { adapter, api, pushed } = await startAdapter(t, {}, a => {
+        for (const id of ['test.0.k1', 'test.0.k2', 'test.0.regen']) {
+            a.add(id, { name: id, type: 'boolean', role: 'sensor.window' }, false);
+        }
+    });
+    adapter.push.subscribe({ endpoint: 'https://push.example/1', keys: { p256dh: 'x', auth: 'y' } }, 'iPhone');
+    const layout = { pages: [{ id: 'a', name: 'A', tiles: [
+        { id: 'al', type: 'alarm', area: 'nox_alarmzentrale.0.areas.1' },
+        { id: 'w', type: 'windows', label: 'Fenster', notify: true, warnMin: 1, warnWhen: 'test.0.regen', warnText: 'Regen!',
+            windows: [{ label: 'links', group: 'Küche', state: 'test.0.k1' }, { label: 'Bad', state: 'test.0.k2' }] },
+    ] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    const al = saved.pages[0].tiles[0];
+    assert.deepEqual([al.status, al.command, al.alarm, al.error, al.valueOff, al.valueArm],
+        ['nox_alarmzentrale.0.areas.1.state', 'nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.1.alarm', 'nox_alarmzentrale.0.areas.1.error', '1', '5']);
+    // raining, then a window opens -> one message
+    adapter.change('test.0.regen', true);
+    adapter.change('test.0.k1', true);
+    await until(() => pushed.length === 1);
+    assert.equal(pushed[0].title, 'Fenster: Regen!');
+    assert.equal(pushed[0].body, 'Offen: Küche (links offen)');
+    adapter.change('test.0.k2', true);
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(pushed.length, 1, 'only once while it stays true');
+    // open longer than warnMin: the state's last change lies back
+    adapter.foreign['test.0.k2'].lc = Date.now() - 2 * 60000;
+    adapter.change('test.0.k2', true);
+    adapter.liveStates.get('test.0.k2').lc = Date.now() - 2 * 60000;
+    adapter.checkWindows();
+    await until(() => pushed.length === 2);
+    assert.equal(pushed[1].title, 'Fenster: zu lange offen');
+    assert.equal(pushed[1].body, 'Bad offen seit mehr als 1 Min.');
+    adapter.checkWindows();
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(pushed.length, 2, 'once per opening');
+});

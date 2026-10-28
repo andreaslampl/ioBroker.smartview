@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.27.0",
+    "version": "0.28.0",
     "news": {
+      "0.28.0": {
+        "en": "Alarm system tile (status, armed/disarmed, alarm, error; fills itself from a NOX area); PIN protection for every switching tile (checked by the server, 5 wrong PINs = 5 min locked, no time switch); window tile can send messages (too long open, warning while e.g. raining)",
+        "de": "Alarmanlagen-Kachel (Zustand, scharf/unscharf, Alarm, Fehler; füllt sich aus einem NOX-Bereich); PIN-Schutz für jede schaltende Kachel (vom Server geprüft, 5 falsche PINs = 5 Min. gesperrt, keine Zeitschaltuhr); Fensterübersicht kann Mitteilungen senden (zu lange offen, Warnung z. B. bei Regen)"
+      },
       "0.27.0": {
         "en": "Window overview: optional areas (several windows as one line, e.g. 'Küche – links offen'), only open/tilted ones, highlight when open longer than N minutes, warning while a data point is true (e.g. rain, alarm armed)",
         "de": "Fensterübersicht: optionale Bereiche (mehrere Fenster als eine Zeile, z. B. „Küche – links offen“), nur offene/gekippte anzeigen, Hervorheben wenn länger als N Minuten offen, Warnung solange ein Datenpunkt true ist (z. B. Regen, Alarmanlage scharf)"

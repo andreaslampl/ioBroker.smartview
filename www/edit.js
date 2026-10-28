@@ -20,6 +20,7 @@ const TYPE_LABELS = {
   gate: 'Tor / Garagentor',
   planview: 'Grundriss / Lageplan (Grundriss-Seite als Kachel)',
   wallbox: 'Wallbox (Laden, PV-Überschuss)',
+  alarm: 'Alarmanlage (scharf / unscharf)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -100,6 +101,17 @@ const TYPE_FIELDS = {
     ['warnMin', 'Hervorheben, wenn länger offen als (Minuten, optional)', 'number', 'z. B. 15 – dann wird das Fenster rot mit ⚠. Leer = nie.'],
     ['warnWhen', 'Warnen, wenn (optional)', 'state-r', 'z. B. Regen, Alarmanlage scharf oder Heizung an: Ist dieser Datenpunkt true und etwas offen, wird es rot markiert und der Warntext erscheint.'],
     ['warnText', 'Warntext (optional)', 'text', 'z. B. „Regen!“ – Standard „Achtung“'],
+    ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Wenn ein Fenster länger als die Minuten oben offen ist und wenn „Warnen, wenn“ eintritt, während etwas offen ist – über die Wege, die in den Einstellungen eingerichtet sind.'],
+  ],
+  alarm: [
+    ['area', 'NOX-Bereich (optional)', 'text', 'z. B. nox_alarmzentrale.0.areas.1 – füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, Fehler, Werte 1 / 5).'],
+    ['status', 'Zustand (Datenpunkt)', 'state-r', 'z. B. Bereichszustand als Zahl'],
+    ['command', 'Befehl (optional)', 'state-w', 'Datenpunkt zum Scharf-/Unscharfschalten – leer = nur Anzeige'],
+    ['valueOff', 'Wert für „Unscharf“', 'text', 'NOX: 1'],
+    ['valueArm', 'Wert für „Scharf“', 'text', 'NOX: 5'],
+    ['valueHome', 'Wert für „Intern scharf“ (optional)', 'text'],
+    ['alarm', 'Alarm (optional)', 'state-r', 'true = Alarm – die Kachel blinkt rot'],
+    ['error', 'Fehlertext (optional)', 'state-r', 'z. B. warum das Scharfschalten scheiterte'],
   ],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
@@ -650,6 +662,40 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.tilt) };
   }
 
+  /**
+   * PIN protection of a tile: the server stores only a hash and checks every command (also from other tiles that
+   * write the same data point); the field never shows the PIN. Result: digits = new PIN, true = keep, '' = none.
+   */
+  function pinField(box, t) {
+    const had = t.pin === true;
+    const wrap = document.createElement('div');
+    const inp = textInput('', 'password');
+    inp.inputMode = 'numeric';
+    inp.autocomplete = 'new-password';
+    inp.placeholder = had ? 'PIN gesetzt – leer lassen = bleibt' : 'leer = kein Schutz';
+    field(wrap, 'PIN-Schutz (4–8 Ziffern, optional)', inp, 'Vor jedem Schalten wird die PIN abgefragt und vom ioBroker geprüft (5 Fehlversuche = 5 Minuten gesperrt). Keine Zeitschaltuhr für diese Kachel. Achtung: Apple Home / Alexa fragen diese PIN nicht ab.');
+    let del = null;
+    if (had) {
+      del = check('PIN entfernen', false);
+      wrap.appendChild(del);
+    }
+    box.appendChild(wrap);
+    return {
+      type: 'custom',
+      get: () => {
+        const v = inp.value.trim();
+        if (v) {
+          if (!/^\d{4,8}$/.test(v)) {
+            toast('PIN: 4 bis 8 Ziffern', true);
+            return had ? true : undefined;
+          }
+          return v;
+        }
+        return had && !(del && del.input.checked) ? true : undefined;
+      },
+    };
+  }
+
   /** More heating circuits of a heating tile: same data points as circuit 1, switched with ‹ › on the tile. */
   function circuitsField(box, rows) {
     const wrap = document.createElement('div');
@@ -788,6 +834,7 @@ const Editor = (() => {
         const auto = LAYERS.find(l => l[0] === tileLayer({ ...t, layer: '' }));
         inputs.layer = field(body, 'Ebene im Lageplan', select([['', 'automatisch (' + auto[1] + ')']].concat(LAYERS.map(l => [l[0], l[1]])), t.layer || ''), 'Für die Knöpfe oben am Lageplan, mit denen man z. B. Licht oder Jalousien ein- und ausblendet');
       }
+      if (TYPE_FIELDS[t.type].some(f => f[2] === 'state-w')) inputs.pin = pinField(body, t);
       if (SV.hk && SV.hk.instance && SV.hk.choices[t.type]) inputs.homekit = homekitField(body, t);
       if (page.type === 'tiles' && t.type !== 'heading') {
         // own size: empty = default of the type; the grip ◢ on the tile does the same

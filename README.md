@@ -81,6 +81,25 @@ der Adapter die Markise bzw. den Rollladen selbst in die sichere Position (Auf/E
 (Sekunden oder Minuten) gehen keine Befehle durch, auch keine Zeitschaltuhr. Die Kachel zeigt 🔒 mit Grund
 bzw. Restzeit.
 
+### Alarmanlage
+
+Kachel **„Alarmanlage“**: zeigt den Zustand (Text aus dem Datenpunkt, z. B. „Unscharf – Ausgangsverzögerung“), wird
+bei „scharf“ hervorgehoben und blinkt rot bei **Alarm**. Antippen öffnet die Knöpfe **Unscharf / Scharf** (und
+„Intern scharf“, wenn ein Wert dafür eingetragen ist) und zeigt, warum das letzte Scharfschalten scheiterte.
+
+Mit dem NOX-Adapter reicht das Feld **„NOX-Bereich“**, z. B. `nox_alarmzentrale.0.areas.1` – beim Übernehmen werden
+Zustand, Befehl (`setState`), Alarm, Fehler und die Werte 1 = unscharf / 5 = scharf eingetragen. Für andere Anlagen
+die Datenpunkte und Werte selbst eintragen. Ohne Befehls-Datenpunkt ist die Kachel nur Anzeige.
+
+### PIN-Schutz (Alarmanlage, Türöffner, …)
+
+Jede schaltende Kachel hat das Feld **„PIN-Schutz“** (4–8 Ziffern). Vor jedem Schalten erscheint ein Ziffernblock;
+die PIN wird **vom ioBroker geprüft** (sie steht nur verschlüsselt im Adapter und wird nie an Browser geschickt),
+auch für andere Kacheln, die denselben Datenpunkt schalten. Nach 5 falschen PINs ist das Gerät 5 Minuten gesperrt
+(Warnung im Log). Innerhalb von 20 s nach einer richtigen PIN wird für dieselbe Kachel nicht nochmal gefragt.
+PIN-geschützte Kacheln bekommen keine Zeitschaltuhr. Achtung: Apple Home und Alexa (homekit-easy) fragen diese PIN
+nicht ab – dort eigene Schutzmöglichkeiten nutzen.
+
 ### Tor / Garagentor
 
 - **Getrennte Datenpunkte** für Auf und Zu (optional als Impuls: true, nach 1 s false) oder **ein Datenpunkt**:
@@ -185,7 +204,10 @@ Optionen der Fenster-Kachel (alle freiwillig, ohne sie bleibt alles wie bisher):
 - **Hervorheben, wenn länger offen als … Minuten**: Das Fenster wird rot mit ⚠ markiert.
 - **Warnen, wenn** (Datenpunkt, z. B. Regen, Alarmanlage scharf, Heizung an) + **Warntext**: Ist er true und etwas
   offen oder gekippt, erscheint der Warntext rot in der Überschrift und die offenen Fenster sind rot umrandet.
-  Für eine Mitteilung aufs Handy dazu eine Push-Regel mit „und“ anlegen.
+- **Mitteilung senden**: schickt eine Nachricht (App-Push, Telegram, WhatsApp – was eingerichtet ist), wenn ein Fenster
+  bzw. Bereich länger als die eingestellten Minuten offen ist (einmal pro Öffnen) und wenn „Warnen, wenn“ eintritt,
+  während etwas offen ist („Fenster: Regen! – Offen: Küche (links offen)“). Was beim Start des Adapters schon offen
+  ist, wird nicht nochmal gemeldet.
 
 ### Lageplan: Ebenen und Kameras
 

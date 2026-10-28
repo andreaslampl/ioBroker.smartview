@@ -242,6 +242,16 @@ switches/buttons on them.
   (min, row class `long` + ⚠), `warnWhen` (read state, `windowsWarn()`: true and something open/tilted -> header
   badge `warnText`, rows `warnnow`, tile alert), `warnText`. app.js `windowEntries()` (groups: worst status, detail =
   open/tilted members, ts = since the first one opened). Checked in Playwright.
+- 0.28.0: owner asked for an alarm tile with PIN protection (also for doors, on all tiles) and the suggested window
+  messages. `lib/pin.js`: PIN only as scrypt hash `pinHash` in the layout; browsers get `pin: true` (`publicLayout()`
+  on GET/PUT /api/layout), the editor sends digits (new), true (keep, `resolvePins()` copies the old hash) or nothing;
+  server `_pinOk()` checks every ws set/pulse to a data point of ANY protected tile (`protectedIds()` +
+  `tileWriteIds()`), replies {type:'pin', result need|wrong|locked}; `PinGuard` 5 wrong per address -> 5 min lock.
+  No timers for PIN tiles (API 403, fireTimer skips, Timers.supports). Client `withPin()`/`askPin()` (pad + keyboard,
+  PIN cached 20 s per data point), wrong PIN restores the previous state. Tile type `alarm` {status, command, alarm,
+  error, valueOff/Arm/Home, area -> `fillAlarm()` for NOX}. Window logic moved to `www/winlogic.js` (page + adapter);
+  windows option `notify` -> main `checkWindows()` (on state changes + every 30 s; once per opening / per warning,
+  nothing for what is already open at start) -> `notify()` app push + Telegram + WhatsApp. Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -12,6 +12,9 @@ const SV = {
   icons: [],
   states: {}, // id -> {val, ack, ts, unit, type, states, missing}
   writable: new Set(),
+  pinIds: new Set(), // data points of PIN protected tiles
+  pinCache: {}, // id -> {pin, until}
+  prevStates: {}, // id -> state before the last command (back after a wrong PIN)
   page: null,
   ws: null,
   connected: false,
@@ -118,7 +121,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -131,7 +134,7 @@ function tileIc(t) {
 }
 
 function tileIds(t) {
-  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen'].map(k => t[k])
+  return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen', 'command', 'alarm', 'error'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
@@ -259,7 +262,7 @@ function gateCmd(t, dir) {
 function pulse(id) {
   if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
-  SV.ws.send(JSON.stringify({ type: 'pulse', id, ms: 1000 }));
+  withPin(id, pin => SV.ws.send(JSON.stringify({ type: 'pulse', id, ms: 1000, pin })));
 }
 
 function gateButtons(t, big) {
@@ -554,66 +557,22 @@ function since(ts) {
   return min + ' Min.';
 }
 
-/** Status of each window: closed / tilt / open (tilt contact wins), time since the last change. */
+/** Status of each window (www/winlogic.js, shared with the adapter's window messages). */
 function windowStates(t) {
-  return (t.windows || []).map(w => {
-    const a = w.state ? st(w.state) : null;
-    const b = w.tilt ? st(w.tilt) : null;
-    const has = x => x && !x.missing && x.val !== null && x.val !== undefined;
-    const known = has(a) || has(b);
-    // contact 1 / contact 2 open (true), each optionally inverted
-    const k1 = has(a) ? (w.invert ? !truthy(a.val) : truthy(a.val)) : false;
-    const k2 = has(b) ? (w.invert2 ? !truthy(b.val) : truthy(b.val)) : false;
-    let status;
-    if (!known) status = 'unknown';
-    else if (w.logic === 'both') status = k1 && k2 ? 'open' : k1 || k2 ? 'tilt' : 'closed';
-    else if (w.logic === 'table') status = { z: 'closed', t: 'tilt', o: 'open' }[String(w.map || 'ztoo')[(k1 ? 1 : 0) + (k2 ? 2 : 0)]] || 'closed';
-    else status = k2 ? 'tilt' : k1 ? 'open' : 'closed';
-    const ts = Math.max((a && (a.lc || a.ts)) || 0, (b && (b.lc || b.ts)) || 0);
-    return { label: w.label || (w.state || w.tilt || '').split('.').pop(), group: w.group || '', status, ts };
-  });
+  return WinLogic.states(t, st);
 }
 
-const WIN_RANK = { open: 3, tilt: 2, unknown: 1, closed: 0 };
+const WIN_RANK = WinLogic.RANK;
 
-/**
- * Entries of the window tile: single windows, or one entry per area (`group`) with the worst status, its open/tilted
- * members as detail ("Fenster 1 offen · Tür gekippt") and since when the oldest of them is open.
- */
 function windowEntries(t) {
-  const out = [];
-  const groups = new Map();
-  for (const w of windowStates(t)) {
-    if (!w.group) {
-      out.push({ ...w, members: [w] });
-      continue;
-    }
-    let g = groups.get(w.group);
-    if (!g) {
-      g = { label: w.group, group: true, members: [] };
-      groups.set(w.group, g);
-      out.push(g);
-    }
-    g.members.push(w);
-  }
-  for (const g of groups.values()) {
-    const m = g.members;
-    const worst = m.reduce((a, b) => (WIN_RANK[b.status] > WIN_RANK[a.status] ? b : a));
-    g.status = m.every(x => x.status === 'unknown') ? 'unknown' : worst.status === 'unknown' ? 'closed' : worst.status;
-    const notClosed = m.filter(x => x.status === 'open' || x.status === 'tilt');
-    // open: since when the first one is open; closed: the last change
-    g.ts = notClosed.length ? Math.min(...notClosed.map(x => x.ts || Date.now())) : Math.max(0, ...m.map(x => x.ts || 0));
-    g.detail = notClosed.map(x => x.label + ' ' + WIN_TEXT[x.status]).join(' · ');
-  }
-  return out;
+  return WinLogic.entries(windowStates(t));
 }
 
-const WIN_TEXT = { open: 'offen', tilt: 'gekippt', closed: 'geschlossen', unknown: 'unbekannt' };
+const WIN_TEXT = WinLogic.TEXT;
 
 /** "Warnen, wenn" of the window tile is true (e.g. rain, alarm system armed) and something is open or tilted */
 function windowsWarn(t) {
-  if (!t.warnWhen || !truthy(val(t.warnWhen))) return false;
-  return windowStates(t).some(w => w.status === 'open' || w.status === 'tilt');
+  return WinLogic.warn(t, st, windowStates(t));
 }
 
 function windowsHtml(t) {
@@ -644,6 +603,10 @@ function windowsHtml(t) {
 
 function tileState(t) {
   if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
+  if (t.type === 'alarm') {
+    const a = alarmInfo(t);
+    return a.alarm ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
+  }
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
@@ -672,11 +635,113 @@ function send(id, value) {
   if (!id) return;
   if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
-  SV.ws.send(JSON.stringify({ type: 'set', id, val: value }));
-  // show the new value right away; the confirmed value replaces it
-  const s = SV.states[id] || {};
-  SV.states[id] = { ...s, val: value, ack: false, ts: Date.now(), missing: false };
-  refresh(id);
+  withPin(id, pin => {
+    SV.ws.send(JSON.stringify({ type: 'set', id, val: value, pin }));
+    // show the new value right away; the confirmed value replaces it (or the old one comes back after a wrong PIN)
+    const s = SV.states[id] || {};
+    SV.prevStates[id] = s;
+    SV.states[id] = { ...s, val: value, ack: false, ts: Date.now(), missing: false };
+    refresh(id);
+  });
+}
+
+// ---------------- PIN (checked by the server; the page only asks for it) ----------------
+
+/** a protected data point: ask for the PIN (kept 20 s, so a few taps in a row need it once) */
+function withPin(id, fn) {
+  if (!SV.pinIds || !SV.pinIds.has(id)) return fn(undefined);
+  const c = SV.pinCache[id];
+  if (c && c.until > Date.now()) return fn(c.pin);
+  askPin().then(pin => {
+    if (!pin) return;
+    SV.pinCache[id] = { pin, until: Date.now() + 20000 };
+    fn(pin);
+  });
+}
+
+/** answer of the server for a protected command */
+function pinResult(msg) {
+  delete SV.pinCache[msg.id];
+  if (SV.prevStates[msg.id]) {
+    SV.states[msg.id] = SV.prevStates[msg.id];
+    refresh(msg.id);
+  }
+  toast(msg.result === 'locked' ? 'Zu viele falsche PINs – 5 Minuten gesperrt' : msg.result === 'need' ? 'PIN nötig' : 'PIN falsch', true);
+}
+
+/** PIN pad (touch) - also typed on a keyboard; resolves with the digits or null */
+function askPin() {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'overlay pinov';
+    ov.innerHTML = '<div class="sheet pinpad"><h3>' + icon('lock') + '<span class="grow">PIN eingeben</span><button type="button" class="iconbtn" data-close aria-label="Abbrechen">' + icon('close') + '</button></h3>' +
+      '<div class="pindots" aria-live="polite"></div><div class="pinkeys">' +
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'OK'].map(k => '<button type="button" data-k="' + k + '"' + (k === 'OK' ? ' class="primary"' : '') + '>' + k + '</button>').join('') + '</div></div>';
+    let pin = '';
+    const dots = ov.querySelector('.pindots');
+    const show = () => (dots.textContent = pin ? '●'.repeat(pin.length) : ' ');
+    const done = v => {
+      document.removeEventListener('keydown', key, true);
+      ov.remove();
+      resolve(v);
+    };
+    const press = k => {
+      if (k === 'OK') return pin.length >= 4 ? done(pin) : toast('Mindestens 4 Ziffern', true);
+      if (k === '⌫') pin = pin.slice(0, -1);
+      else if (/^\d$/.test(k) && pin.length < 8) pin += k;
+      show();
+    };
+    const key = e => {
+      if (/^\d$/.test(e.key)) press(e.key);
+      else if (e.key === 'Backspace') press('⌫');
+      else if (e.key === 'Enter') press('OK');
+      else if (e.key === 'Escape') done(null);
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener('keydown', key, true);
+    ov.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (e.target === ov || (b && b.hasAttribute('data-close'))) return done(null);
+      if (b && b.dataset.k) press(b.dataset.k);
+    });
+    show();
+    document.body.appendChild(ov);
+  });
+}
+
+// ---------------- alarm system ----------------
+
+function sameVal(v, want) {
+  if (want === undefined || want === null || want === '') return false;
+  return String(v) === String(want) || (typeof v === 'boolean' && String(Number(v)) === String(want));
+}
+
+/** value text from the alarm tile's settings as the data point wants it */
+function typedVal(text) {
+  if (text === 'true') return true;
+  if (text === 'false') return false;
+  const n = Number(text);
+  return text !== '' && Number.isFinite(n) ? n : text;
+}
+
+/** mode (armed / home / off / other), text (from the data point's states, else the mode), alarm, error text */
+function alarmInfo(t) {
+  const s = st(t.status) || {};
+  const v = s.val;
+  const mode = sameVal(v, t.valueArm) ? 'armed' : sameVal(v, t.valueHome) ? 'home' : sameVal(v, t.valueOff) ? 'off' : 'other';
+  const known = { armed: 'Scharf', home: 'Intern scharf', off: 'Unscharf' }[mode];
+  const text = s.states && v !== null && v !== undefined && s.states[v] !== undefined ? String(s.states[v]) : known || (v === null || v === undefined ? '–' : String(v));
+  return { mode, text, alarm: Boolean(t.alarm && truthy(val(t.alarm))), error: t.error ? String(val(t.error) || '') : '' };
+}
+
+function alarmButtons(t) {
+  if (!t.command) return '';
+  const a = alarmInfo(t);
+  return [['off', 'Unscharf', t.valueOff], ['home', 'Intern scharf', t.valueHome], ['armed', 'Scharf', t.valueArm]]
+    .filter(([, , v]) => v !== undefined && v !== '')
+    .map(([m, txt, v]) => '<button type="button" data-a="alarm" data-v="' + esc(v) + '"' + (a.mode === m ? ' class="primary"' : '') + '>' + txt + '</button>').join('');
 }
 
 // ---------------- rendering ----------------
@@ -1069,7 +1134,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1164,6 +1229,11 @@ function fillRow(el, t) {
     case 'gate':
       ctl = gateButtons(t) + '<span class="lval">' + gateText(t) + '</span>';
       break;
+    case 'alarm': {
+      const a = alarmInfo(t);
+      ctl = (a.alarm ? '<span class="lsub alarmtxt">ALARM</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
+      break;
+    }
     case 'wallbox':
       ctl = '<span class="lsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
       break;
@@ -1241,7 +1311,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1277,6 +1347,12 @@ function fillTile(el, t) {
     case 'gate':
       html = '<div class="row1">' + ic + '<span class="tval">' + gateText(t) + '</span></div>' + label + '<div class="ctl">' + gateButtons(t) + '</div>';
       break;
+    case 'alarm': {
+      const a = alarmInfo(t);
+      html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
+        (a.alarm ? '<div class="tsub alarmtxt">ALARM</div>' : a.error ? '<div class="tsub wblim">' + esc(a.error) + '</div>' : '') + label;
+      break;
+    }
     case 'wallbox': {
       const kwh = t.energy ? fmt({ decimals: 1, unit: 'kWh' }, t.energy) : null;
       html = '<div class="row1">' + ic + '<span class="tval">' + esc(kwh && kwh.text !== '–' ? kwh.text + ' kWh' : '') + '</span></div>' +
@@ -1334,6 +1410,7 @@ function fillTile(el, t) {
     }
   }
   if (missing(t)) html += '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>';
+  if (t.pin) html += '<span class="pinmark" title="mit PIN geschützt">' + icon('lock') + '</span>';
   el.innerHTML = html;
   if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));
   bindControls(el, t);
@@ -1384,6 +1461,7 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
+      else if (a === 'alarm') send(t.command, typedVal(b.dataset.v));
       else if (a === 'open') openCam(t.camera, t.label);
     };
   }
@@ -1570,7 +1648,7 @@ const LAYERS = [
   ['energie', 'Energie', 'bolt'],
   ['sonstiges', 'Sonstiges', 'info'],
 ];
-const LAYER_TYPE = { camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
+const LAYER_TYPE = { alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
 const LAYER_ICON = {
   bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
   blind: 'beschattung', awning: 'beschattung',
@@ -1709,6 +1787,7 @@ function fillMarker(el, t) {
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
+  else if (t.type === 'alarm') v = alarmInfo(t).text;
   else if (t.type === 'wallbox') v = wbBig(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
@@ -1865,6 +1944,11 @@ function fillSheet(sh, t) {
       '<button type="button" data-a="down">' + icon('down') + w[1] + '</button></div>';
   } else if (t.type === 'gate') {
     body = '<div class="bigval">' + (gateText(t) || '–') + '</div><div class="row">' + gateButtons(t, true) + '</div>';
+  } else if (t.type === 'alarm') {
+    const a = alarmInfo(t);
+    body = '<div class="bigval' + (a.alarm ? ' alarmtxt' : '') + '">' + esc(a.alarm ? 'ALARM – ' + a.text : a.text) + '</div>' +
+      (a.error ? '<p class="muted" style="text-align:center">Letztes Schalten fehlgeschlagen: ' + esc(a.error) + '</p>' : '') +
+      (t.command ? '<div class="row modes">' + alarmButtons(t) + '</div>' : '<p class="muted" style="text-align:center">Kein Befehls-Datenpunkt – nur Anzeige</p>');
   } else if (t.type === 'wallbox') {
     const info = [];
     const p = wbPower(t);
@@ -2156,6 +2240,8 @@ function connect() {
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
+      SV.pinIds = new Set(msg.pinIds || []);
+      SV.pinCache = {};
       render();
       Timers.load();
       checkRing();
@@ -2168,6 +2254,8 @@ function connect() {
       if (SV.saving) return; // our own save, handled in Editor.save
       if (SV.editing) toast('Die Ansicht wurde auf einem anderen Gerät geändert.');
       else loadLayout().then(() => ws.close(), () => location.reload());
+    } else if (msg.type === 'pin') {
+      pinResult(msg);
     } else if (msg.type === 'error') {
       toast(msg.text, true);
     }

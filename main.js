@@ -11,6 +11,7 @@ const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
+const WinLogic = require('./www/winlogic');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
@@ -156,6 +157,7 @@ class SmartView extends utils.Adapter {
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
+                tileByKey: key => this.tileByKey(key),
                 telegramInstances: () => this.telegramInstances(),
                 whatsappInstances: () => this.instancesOf('whatsapp-cmb'),
                 whatsappTest: () => this.whatsapp({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – WhatsApp funktioniert.' }),
@@ -190,7 +192,11 @@ class SmartView extends utils.Adapter {
         await this.setState('info.connection', ok, true);
         this.log.info(`SmartView at ${this.urlList.http}${this.urlList.https ? ` and ${this.urlList.https}` : ''}`);
         this.subscribeStates('push.message');
-        this.pingTimer = setInterval(() => this.server.ping(), 30000);
+        this.pingTimer = setInterval(() => {
+            this.server.ping();
+            // window tiles with messages: "longer open than" is a matter of time, not of a state change
+            this.checkWindows();
+        }, 30000);
     }
 
     /** Certificate collection (acme adapter) from system.certificates; null if missing/expired. */
@@ -266,6 +272,9 @@ class SmartView extends utils.Adapter {
         }
         this.log.debug(`${ids.size} data point(s) subscribed`);
         this.resetRules();
+        // what is already open (too long) when starting is not reported again
+        this.winMem = new Map();
+        this.checkWindows(true);
         this.checkProtection();
     }
 
@@ -338,6 +347,9 @@ class SmartView extends utils.Adapter {
         const val = state ? state.val : null;
         this.pushPrev.set(id, val);
         this.checkRules(id, val, prev);
+        if (this.winIds && this.winIds.has(id)) {
+            this.checkWindows();
+        }
         if (this.protectIds && this.protectIds.has(id)) {
             this.checkProtection();
         }
@@ -627,6 +639,61 @@ class SmartView extends utils.Adapter {
         }
     }
 
+    /**
+     * Window tiles with "Mitteilung senden": a message (app push, Telegram, WhatsApp - as configured) when a window or
+     * area is open longer than `warnMin`, and when "Warnen, wenn" becomes true while something is open.
+     */
+    checkWindows(initial = false) {
+        this.winMem = this.winMem || new Map();
+        this.winIds = new Set();
+        const st = id => this.stateInfo(id);
+        for (const page of this.store.layout.pages) {
+            for (const t of page.tiles) {
+                if (t.type !== 'windows' || !t.notify) {
+                    continue;
+                }
+                for (const w of t.windows || []) {
+                    [w.state, w.tilt].filter(Boolean).forEach(id => this.winIds.add(id));
+                }
+                if (t.warnWhen) {
+                    this.winIds.add(t.warnWhen);
+                }
+                const key = `${page.id}/${t.id}`;
+                const mem = this.winMem.get(key) || { long: new Set(), warn: false };
+                this.winMem.set(key, mem);
+                const list = WinLogic.states(t, st);
+                const entries = WinLogic.entries(list);
+                const what = e => (e.group ? `${e.label} (${e.detail})` : `${e.label} ${WinLogic.TEXT[e.status]}`);
+                const title = t.label || 'Fenster';
+                if (t.warnMin > 0) {
+                    for (const e of entries) {
+                        if (!WinLogic.active(e)) {
+                            mem.long.delete(e.label);
+                        } else if (e.ts && Date.now() - e.ts >= t.warnMin * 60000 && !mem.long.has(e.label)) {
+                            mem.long.add(e.label);
+                            if (!initial) {
+                                this.notify(`${title}: zu lange offen`, `${what(e)} seit mehr als ${t.warnMin} Min.`, page.id);
+                            }
+                        }
+                    }
+                }
+                const warn = WinLogic.warn(t, st, list);
+                if (warn && !mem.warn && !initial) {
+                    this.notify(`${title}: ${t.warnText || 'Achtung'}`, `Offen: ${entries.filter(WinLogic.active).map(what).join(', ')}`, page.id);
+                }
+                mem.warn = warn;
+            }
+        }
+    }
+
+    /** message on all configured ways (app push, Telegram, WhatsApp) */
+    notify(title, body, page = '') {
+        this.log.info(`Mitteilung: ${title} - ${body}`);
+        this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
+        this.telegram({ title, body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+        this.whatsapp({ title, body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+    }
+
     async sendMessage(val) {
         let msg = { title: this.store.layout.title || 'SmartView', body: String(val), url: './' };
         try {
@@ -696,6 +763,10 @@ class SmartView extends utils.Adapter {
 
     /** A time switch is due: write like the buttons in the app do. */
     async fireTimer(tile, action, value, entry) {
+        if (tile.pinHash) {
+            this.log.warn(`Timer "${tile.label || tile.id}" nicht ausgeführt: die Kachel ist mit PIN geschützt`);
+            return;
+        }
         const when = entry.at === 'time' ? entry.time : `${entry.at === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang'}${entry.offset ? ` ${entry.offset > 0 ? '+' : ''}${entry.offset} min` : ''}`;
         this.log.info(`Timer "${tile.label || tile.id}" (${when}): ${action}${value !== undefined ? ` ${value} %` : ''}`);
         if (tile.type === 'switch') {
