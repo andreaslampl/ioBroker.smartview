@@ -137,6 +137,8 @@ function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen', 'command', 'alarm', 'error'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
+    .concat((t.areas || []).flatMap(a => ALARM_KEYS.map(k => a[k])))
+    .concat(['ready', 'openText', 'alarmText'].map(k => t[k]))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
 }
@@ -431,7 +433,7 @@ function thermoCur(t) {
 }
 
 function circSwitch(t, i) {
-  const list = thermoCircuits(t);
+  const list = t.type === 'alarm' ? alarmAreas(t) : thermoCircuits(t);
   if (!list) return;
   const n = ((i % list.length) + list.length) % list.length;
   try {
@@ -604,8 +606,8 @@ function windowsHtml(t) {
 function tileState(t) {
   if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'alarm') {
-    const a = alarmInfo(t);
-    return a.alarm ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
+    const a = alarmInfo(alarmCur(t));
+    return a.alarm || alarmElsewhere(t).length ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
   }
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
@@ -726,14 +728,65 @@ function typedVal(text) {
   return text !== '' && Number.isFinite(n) ? n : text;
 }
 
-/** mode (armed / home / off / other), text (from the data point's states, else the mode), alarm, error text */
+const ALARM_KEYS = ['status', 'command', 'alarm', 'error', 'ready', 'openText', 'alarmText', 'valueOff', 'valueArm', 'valueHome'];
+
+/** [{label, status, …}] - the tile's own fields are area 1; null without more areas */
+function alarmAreas(t) {
+  if (!Array.isArray(t.areas) || !t.areas.length) return null;
+  const pick = (a, label) => Object.assign({ label }, ...ALARM_KEYS.map(k => ({ [k]: a[k] || '' })));
+  return [pick(t, t.areaLabel || 'Bereich 1')].concat(t.areas.map((a, i) => pick(a, a.label || 'Bereich ' + (i + 2))));
+}
+
+/** the tile as seen with its chosen area (index per device, like the heating circuits) */
+function alarmCur(t) {
+  const list = alarmAreas(t);
+  if (!list) return t;
+  const i = circIndex(t, list.length);
+  const out = { ...t, _circ: i, _circs: list };
+  for (const k of ALARM_KEYS) out[k] = list[i][k];
+  return out;
+}
+
+/**
+ * mode (armed / home / off / other), text (from the data point's states, else the mode), alarm, error text,
+ * ready to arm (undefined = unknown), open detectors, detectors in alarm
+ */
 function alarmInfo(t) {
   const s = st(t.status) || {};
   const v = s.val;
   const mode = sameVal(v, t.valueArm) ? 'armed' : sameVal(v, t.valueHome) ? 'home' : sameVal(v, t.valueOff) ? 'off' : 'other';
   const known = { armed: 'Scharf', home: 'Intern scharf', off: 'Unscharf' }[mode];
   const text = s.states && v !== null && v !== undefined && s.states[v] !== undefined ? String(s.states[v]) : known || (v === null || v === undefined ? '–' : String(v));
-  return { mode, text, alarm: Boolean(t.alarm && truthy(val(t.alarm))), error: t.error ? String(val(t.error) || '') : '' };
+  const r = t.ready ? st(t.ready) : null;
+  const ready = r && !r.missing && r.val !== null && r.val !== undefined ? truthy(r.val) : undefined;
+  return {
+    mode,
+    text,
+    alarm: Boolean(t.alarm && truthy(val(t.alarm))),
+    error: t.error ? String(val(t.error) || '') : '',
+    ready,
+    open: t.openText ? String(val(t.openText) || '') : '',
+    triggered: t.alarmText ? String(val(t.alarmText) || '') : '',
+  };
+}
+
+/** other areas of the tile with an alarm (shown while another area is chosen) */
+function alarmElsewhere(t) {
+  const list = alarmAreas(t);
+  if (!list) return [];
+  const c = alarmCur(t);
+  return list.filter((a, i) => i !== c._circ && a.alarm && truthy(val(a.alarm))).map(a => a.label);
+}
+
+/** line under the state: ALARM (+ which detectors), not ready (+ which are open), ready, error */
+function alarmLine(t, c, a) {
+  if (a.alarm) return ['alarmtxt', 'ALARM' + (a.triggered ? ': ' + a.triggered : '')];
+  const other = alarmElsewhere(t);
+  if (other.length) return ['alarmtxt', 'ALARM in ' + other.join(', ')];
+  if (a.mode !== 'armed' && a.mode !== 'home' && a.ready === false) return ['wblim', 'nicht bereit' + (a.open ? ': ' + a.open + ' offen' : '')];
+  if (a.mode !== 'armed' && a.mode !== 'home' && a.ready === true) return ['okline', 'scharfschaltbereit'];
+  if (a.error) return ['wblim', a.error];
+  return null;
 }
 
 function alarmButtons(t) {
@@ -1230,8 +1283,11 @@ function fillRow(el, t) {
       ctl = gateButtons(t) + '<span class="lval">' + gateText(t) + '</span>';
       break;
     case 'alarm': {
-      const a = alarmInfo(t);
-      ctl = (a.alarm ? '<span class="lsub alarmtxt">ALARM</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
+      const c = alarmCur(t);
+      const a = alarmInfo(c);
+      const line = alarmLine(t, c, a);
+      ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Bereich">⇄</button><span class="lsub">' + esc(c._circs[c._circ].label) + '</span>' : '') +
+        (line ? '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
       break;
     }
     case 'wallbox':
@@ -1348,9 +1404,12 @@ function fillTile(el, t) {
       html = '<div class="row1">' + ic + '<span class="tval">' + gateText(t) + '</span></div>' + label + '<div class="ctl">' + gateButtons(t) + '</div>';
       break;
     case 'alarm': {
-      const a = alarmInfo(t);
+      // several areas: ‹ area › instead of the label line, like the heating circuits
+      const c = alarmCur(t);
+      const a = alarmInfo(c);
+      const line = alarmLine(t, c, a);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
-        (a.alarm ? '<div class="tsub alarmtxt">ALARM</div>' : a.error ? '<div class="tsub wblim">' + esc(a.error) + '</div>' : '') + label;
+        (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
       break;
     }
     case 'wallbox': {
@@ -1452,7 +1511,7 @@ function bindControls(el, t) {
       else if (a === 'minus') thermoStep(thermoCur(t), -1);
       else if (a === 'mode') sendMode(thermoCur(t), b.dataset.v);
       else if (a === 'circ') {
-        const c = thermoCur(t);
+        const c = t.type === 'alarm' ? alarmCur(t) : thermoCur(t);
         circSwitch(t, (c._circ || 0) + Number(b.dataset.v));
       } else if (a === 'circsel') circSwitch(t, Number(b.dataset.v));
       else if (a === 'wbmode') send(t.mode, b.dataset.v);
@@ -1461,7 +1520,13 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
-      else if (a === 'alarm') send(t.command, typedVal(b.dataset.v));
+      else if (a === 'alarm') {
+        const c = alarmCur(t);
+        const info = alarmInfo(c);
+        const arming = b.dataset.v !== String(c.valueOff);
+        if (arming && info.ready === false && !confirm('Nicht scharfschaltbereit' + (info.open ? ' – offen: ' + info.open : '') + '.\nTrotzdem scharf schalten?')) return;
+        send(c.command, typedVal(b.dataset.v));
+      }
       else if (a === 'open') openCam(t.camera, t.label);
     };
   }
@@ -1787,7 +1852,7 @@ function fillMarker(el, t) {
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
-  else if (t.type === 'alarm') v = alarmInfo(t).text;
+  else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
   else if (t.type === 'wallbox') v = wbBig(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
@@ -1945,10 +2010,18 @@ function fillSheet(sh, t) {
   } else if (t.type === 'gate') {
     body = '<div class="bigval">' + (gateText(t) || '–') + '</div><div class="row">' + gateButtons(t, true) + '</div>';
   } else if (t.type === 'alarm') {
-    const a = alarmInfo(t);
-    body = '<div class="bigval' + (a.alarm ? ' alarmtxt' : '') + '">' + esc(a.alarm ? 'ALARM – ' + a.text : a.text) + '</div>' +
-      (a.error ? '<p class="muted" style="text-align:center">Letztes Schalten fehlgeschlagen: ' + esc(a.error) + '</p>' : '') +
-      (t.command ? '<div class="row modes">' + alarmButtons(t) + '</div>' : '<p class="muted" style="text-align:center">Kein Befehls-Datenpunkt – nur Anzeige</p>');
+    const c = alarmCur(t);
+    const a = alarmInfo(c);
+    const info = [];
+    if (a.ready !== undefined) info.push(['Scharfschaltbereit', a.ready ? '<span class="ok">ja</span>' : '<span class="bad">nein</span>']);
+    if (a.open) info.push(['Offen', esc(a.open)]);
+    if (a.triggered) info.push(['Ausgelöst', '<span class="bad">' + esc(a.triggered) + '</span>']);
+    if (a.error) info.push(['Letztes Schalten fehlgeschlagen', esc(a.error)]);
+    const other = alarmElsewhere(t);
+    if (other.length) info.push(['Alarm auch in', '<span class="bad">' + esc(other.join(', ')) + '</span>']);
+    body = circSwitcher(c, true) + '<div class="bigval' + (a.alarm ? ' alarmtxt' : '') + '">' + esc(a.alarm ? 'ALARM – ' + a.text : a.text) + '</div>' +
+      (c.command ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '<p class="muted" style="text-align:center">Kein Befehls-Datenpunkt – nur Anzeige</p>') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'wallbox') {
     const info = [];
     const p = wbPower(t);

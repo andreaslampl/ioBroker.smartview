@@ -91,6 +91,15 @@ Mit dem NOX-Adapter reicht das Feld **„NOX-Bereich“**, z. B. `nox_alarmzentr
 Zustand, Befehl (`setState`), Alarm, Fehler und die Werte 1 = unscharf / 5 = scharf eingetragen. Für andere Anlagen
 die Datenpunkte und Werte selbst eintragen. Ohne Befehls-Datenpunkt ist die Kachel nur Anzeige.
 
+**Scharfschaltbereit:** Ist der Bereich unscharf, steht unter dem Zustand „scharfschaltbereit“ (grün) oder „nicht
+bereit: MK Küche 1, MK Bad offen“ (orange). Bei Alarm steht da, **welche Melder ausgelöst** haben. Beim Scharfschalten
+eines nicht bereiten Bereichs fragt SmartView nach. Dafür braucht der NOX-Adapter ab 0.1.7 die eingefügte
+Exportliste (er weiß dann, welcher Melder zu welchem Bereich gehört).
+
+**Mehrere Bereiche in einer Kachel:** Unter „Weitere Bereiche“ beliebig viele anlegen (z. B. Wohnhaus + Garage, je mit
+NOX-Bereich). Auf der Kachel wird mit ‹ › umgeschaltet, im Bedienfenster mit Knöpfen – wie bei den Heizkreisen. Ein
+Alarm in einem anderen Bereich wird trotzdem angezeigt („ALARM in Garage“). Die PIN gilt für alle Bereiche der Kachel.
+
 ### PIN-Schutz (Alarmanlage, Türöffner, …)
 
 Jede schaltende Kachel hat das Feld **„PIN-Schutz“** (4–8 Ziffern). Vor jedem Schalten erscheint ein Ziffernblock;

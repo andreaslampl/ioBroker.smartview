@@ -394,3 +394,16 @@ test('layout: window tile with areas, only open ones, warning', () => {
     const ids = stateIds(l);
     assert.ok(ids.read.includes('knx.0.Regen') && !ids.write.includes('knx.0.Regen'));
 });
+
+test('layout: alarm tile with several areas, filled from NOX areas, all commands PIN protected', () => {
+    const { cleanLayout, stateIds, tileWriteIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'x', type: 'alarm', area: 'nox_alarmzentrale.0.areas.1', areaLabel: 'Wohnhaus',
+        areas: [{ label: 'Garage', area: 'nox_alarmzentrale.0.areas.2' }, { label: 'leer' }] }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.ready, 'nox_alarmzentrale.0.areas.1.ready');
+    assert.equal(t.areas.length, 1, 'areas without data points are dropped');
+    assert.deepEqual([t.areas[0].openText, t.areas[0].alarmText, t.areas[0].valueArm], ['nox_alarmzentrale.0.areas.2.openInputs', 'nox_alarmzentrale.0.areas.2.alarmInputs', '5']);
+    assert.deepEqual(tileWriteIds(t), ['nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.2.setState']);
+    const ids = stateIds(l);
+    assert.ok(ids.read.includes('nox_alarmzentrale.0.areas.2.ready') && ids.write.includes('nox_alarmzentrale.0.areas.2.setState'));
+});

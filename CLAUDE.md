@@ -252,6 +252,12 @@ switches/buttons on them.
   error, valueOff/Arm/Home, area -> `fillAlarm()` for NOX}. Window logic moved to `www/winlogic.js` (page + adapter);
   windows option `notify` -> main `checkWindows()` (on state changes + every 30 s; once per opening / per warning,
   nothing for what is already open at start) -> `notify()` app push + Telegram + WhatsApp. Checked in Playwright.
+- 0.29.0: owner asked for several areas per alarm tile (like heating circuits) and, as a must, "scharfschaltbereit" and
+  which detectors are open / triggered -> alarm states `ready`, `openText`, `alarmText` (NOX 0.1.7: areas.N.ready /
+  openInputs / alarmInputs, filled by `fillAlarm()`), options `areaLabel` + `areas` [{label, area, status, command, …,
+  values}] (each filled; stateIds/tileWriteIds include them). app.js `ALARM_KEYS`, `alarmAreas()`, `alarmCur()` (reuses
+  circIndex/circSwitch/circSwitcher), `alarmLine(t, c, a)` (ALARM + detectors / ALARM in other area / not ready + open /
+  ready / error), `alarmElsewhere(t)`; arming a not-ready area asks (confirm). Editor `alarmAreasField()`. Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

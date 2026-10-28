@@ -112,6 +112,11 @@ const TYPE_FIELDS = {
     ['valueHome', 'Wert für „Intern scharf“ (optional)', 'text'],
     ['alarm', 'Alarm (optional)', 'state-r', 'true = Alarm – die Kachel blinkt rot'],
     ['error', 'Fehlertext (optional)', 'state-r', 'z. B. warum das Scharfschalten scheiterte'],
+    ['ready', 'Scharfschaltbereit (optional)', 'state-r', 'true = bereit; NOX: areas.N.ready (braucht dort die Exportliste)'],
+    ['openText', 'Offene Melder (optional)', 'state-r', 'Text, z. B. „MK Küche 1, MK Bad“; NOX: areas.N.openInputs'],
+    ['alarmText', 'Ausgelöste Melder (optional)', 'state-r', 'NOX: areas.N.alarmInputs'],
+    ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
+    ['areas', 'Weitere Bereiche (optional)', 'areas'],
   ],
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
@@ -760,6 +765,67 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.status || r.mode || r.modeStatus) };
   }
 
+  /** More areas of an alarm tile: same fields as area 1, switched with ‹ › on the tile. */
+  function alarmAreasField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Weitere Bereiche', wrap, 'Jeder Bereich mit eigenem Zustand und Befehl. Auf der Kachel wird mit ‹ › umgeschaltet, im Bedienfenster mit Knöpfen. Ein Alarm in einem anderen Bereich wird immer angezeigt.');
+    const states = [
+      ['status', 'Zustand', false],
+      ['command', 'Befehl (optional)', true],
+      ['alarm', 'Alarm (optional)', false],
+      ['error', 'Fehlertext (optional)', false],
+      ['ready', 'Scharfschaltbereit (optional)', false],
+      ['openText', 'Offene Melder (optional)', false],
+      ['alarmText', 'Ausgelöste Melder (optional)', false],
+    ];
+    const texts = [['area', 'NOX-Bereich (optional)', 'z. B. nox_alarmzentrale.0.areas.2 – füllt die leeren Felder beim Übernehmen'], ['valueOff', 'Wert für „Unscharf“', 'NOX: 1'], ['valueArm', 'Wert für „Scharf“', 'NOX: 5'], ['valueHome', 'Wert für „Intern scharf“ (optional)', '']];
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => Object.assign({ label: x.label.value.trim() }, ...texts.map(([k]) => ({ [k]: x[k].value.trim() })), ...states.map(([k]) => ({ [k]: x[k].value.trim() }))));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name des Bereichs', textInput(r.label));
+        x.label.placeholder = 'z. B. Garage';
+        for (const [k, label, help] of texts) x[k] = field(b, label, textInput(r[k]), help || undefined);
+        for (const [k, label, w] of states) x[k] = stateField(b, label, r[k], w);
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Bereich entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Bereich';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.status || r.command || r.area) };
+  }
+
   // ---------------- tiles ----------------
 
   function addTile(page, pos) {
@@ -818,6 +884,7 @@ const Editor = (() => {
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
         else if (kind === 'circuits') inputs[key] = circuitsField(body, t[key] || []);
+        else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') {

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.28.0",
+    "version": "0.29.0",
     "news": {
+      "0.29.0": {
+        "en": "Alarm tile: several areas in one tile (‹ › like the heating circuits; an alarm in another area is always shown), ready to arm with the open detectors, which detectors triggered the alarm, question before arming when not ready (NOX adapter 0.1.7+)",
+        "de": "Alarmanlagen-Kachel: mehrere Bereiche in einer Kachel (‹ › wie bei den Heizkreisen; ein Alarm in einem anderen Bereich wird immer angezeigt), scharfschaltbereit mit den offenen Meldern, welche Melder ausgelöst haben, Nachfrage beim Scharfschalten wenn nicht bereit (NOX-Adapter ab 0.1.7)"
+      },
       "0.28.0": {
         "en": "Alarm system tile (status, armed/disarmed, alarm, error; fills itself from a NOX area); PIN protection for every switching tile (checked by the server, 5 wrong PINs = 5 min locked, no time switch); window tile can send messages (too long open, warning while e.g. raining)",
         "de": "Alarmanlagen-Kachel (Zustand, scharf/unscharf, Alarm, Fehler; füllt sich aus einem NOX-Bereich); PIN-Schutz für jede schaltende Kachel (vom Server geprüft, 5 falsche PINs = 5 Min. gesperrt, keine Zeitschaltuhr); Fensterübersicht kann Mitteilungen senden (zu lange offen, Warnung z. B. bei Regen)"
