@@ -104,15 +104,15 @@ const TYPE_FIELDS = {
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Wenn ein Fenster länger als die Minuten oben offen ist und wenn „Warnen, wenn“ eintritt, während etwas offen ist – über die Wege, die in den Einstellungen eingerichtet sind.'],
   ],
   alarm: [
-    ['area', 'NOX-Bereich (optional)', 'text', 'z. B. nox_alarmzentrale.0.areas.1 – füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, Fehler, Werte 1 / 5).'],
+    ['area', 'Bereich aus NOX- oder SPC-Adapter (optional)', 'text', 'z. B. nox_alarmzentrale.0.areas.1 oder spc-edp.0.areas.1 – füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, bereit, Werte).'],
     ['status', 'Zustand (Datenpunkt)', 'state-r', 'z. B. Bereichszustand als Zahl'],
     ['command', 'Befehl (optional)', 'state-w', 'Datenpunkt zum Scharf-/Unscharfschalten – leer = nur Anzeige'],
-    ['valueOff', 'Wert für „Unscharf“', 'text', 'NOX: 1'],
-    ['valueArm', 'Wert für „Scharf“', 'text', 'NOX: 5'],
-    ['valueHome', 'Wert für „Intern scharf“ (optional)', 'text'],
+    ['valueOff', 'Wert für „Unscharf“', 'text', 'NOX: 1, SPC: 0'],
+    ['valueArm', 'Wert für „Scharf“', 'text', 'NOX: 5, SPC: 3'],
+    ['valueHome', 'Wert für „Intern scharf“ (optional)', 'text', 'SPC: 1 (Teilscharf A)'],
     ['alarm', 'Alarm (optional)', 'state-r', 'true = Alarm – die Kachel blinkt rot'],
     ['error', 'Fehlertext (optional)', 'state-r', 'z. B. warum das Scharfschalten scheiterte'],
-    ['ready', 'Scharfschaltbereit (optional)', 'state-r', 'true = bereit; NOX: areas.N.ready (braucht dort die Exportliste)'],
+    ['ready', 'Scharfschaltbereit (optional)', 'state-r', 'true = bereit; NOX / SPC: areas.N.ready (NOX braucht dort die Exportliste)'],
     ['openText', 'Offene Melder (optional)', 'state-r', 'Text, z. B. „MK Küche 1, MK Bad“; NOX: areas.N.openInputs'],
     ['alarmText', 'Ausgelöste Melder (optional)', 'state-r', 'NOX: areas.N.alarmInputs'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
@@ -779,7 +779,7 @@ const Editor = (() => {
       ['openText', 'Offene Melder (optional)', false],
       ['alarmText', 'Ausgelöste Melder (optional)', false],
     ];
-    const texts = [['area', 'NOX-Bereich (optional)', 'z. B. nox_alarmzentrale.0.areas.2 – füllt die leeren Felder beim Übernehmen'], ['valueOff', 'Wert für „Unscharf“', 'NOX: 1'], ['valueArm', 'Wert für „Scharf“', 'NOX: 5'], ['valueHome', 'Wert für „Intern scharf“ (optional)', '']];
+    const texts = [['area', 'Bereich aus NOX- oder SPC-Adapter (optional)', 'z. B. nox_alarmzentrale.0.areas.2 oder spc-edp.0.areas.2 – füllt die leeren Felder beim Übernehmen'], ['valueOff', 'Wert für „Unscharf“', 'NOX: 1'], ['valueArm', 'Wert für „Scharf“', 'NOX: 5'], ['valueHome', 'Wert für „Intern scharf“ (optional)', '']];
     const list = rows.map(r => ({ ...r }));
     let rowInputs = [];
     const read = () => rowInputs.map(x => Object.assign({ label: x.label.value.trim() }, ...texts.map(([k]) => ({ [k]: x[k].value.trim() })), ...states.map(([k]) => ({ [k]: x[k].value.trim() }))));

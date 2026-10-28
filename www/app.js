@@ -756,6 +756,7 @@ function alarmInfo(t) {
   const v = s.val;
   const mode = sameVal(v, t.valueArm) ? 'armed' : sameVal(v, t.valueHome) ? 'home' : sameVal(v, t.valueOff) ? 'off' : 'other';
   const known = { armed: 'Scharf', home: 'Intern scharf', off: 'Unscharf' }[mode];
+  // the data point's own text first (e.g. NOX "Unscharf – Ausgangsverzögerung", SPC "Teilscharf A"), else the mode
   const text = s.states && v !== null && v !== undefined && s.states[v] !== undefined ? String(s.states[v]) : known || (v === null || v === undefined ? '–' : String(v));
   const r = t.ready ? st(t.ready) : null;
   const ready = r && !r.missing && r.val !== null && r.val !== undefined ? truthy(r.val) : undefined;

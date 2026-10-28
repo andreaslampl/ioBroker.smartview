@@ -87,7 +87,8 @@ Kachel **„Alarmanlage“**: zeigt den Zustand (Text aus dem Datenpunkt, z. B. 
 bei „scharf“ hervorgehoben und blinkt rot bei **Alarm**. Antippen öffnet die Knöpfe **Unscharf / Scharf** (und
 „Intern scharf“, wenn ein Wert dafür eingetragen ist) und zeigt, warum das letzte Scharfschalten scheiterte.
 
-Mit dem NOX-Adapter reicht das Feld **„NOX-Bereich“**, z. B. `nox_alarmzentrale.0.areas.1` – beim Übernehmen werden
+Mit dem SPC-Adapter (ab 0.2.0) genauso mit z. B. `spc-edp.0.areas.1` (Unscharf 0, Teilscharf A 1 als „Intern scharf“,
+Scharf 3). Mit dem NOX-Adapter reicht das Feld **„Bereich“**, z. B. `nox_alarmzentrale.0.areas.1` – beim Übernehmen werden
 Zustand, Befehl (`setState`), Alarm, Fehler und die Werte 1 = unscharf / 5 = scharf eingetragen. Für andere Anlagen
 die Datenpunkte und Werte selbst eintragen. Ohne Befehls-Datenpunkt ist die Kachel nur Anzeige.
 

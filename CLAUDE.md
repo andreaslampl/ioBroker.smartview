@@ -258,6 +258,8 @@ switches/buttons on them.
   values}] (each filled; stateIds/tileWriteIds include them). app.js `ALARM_KEYS`, `alarmAreas()`, `alarmCur()` (reuses
   circIndex/circSwitch/circSwitcher), `alarmLine(t, c, a)` (ALARM + detectors / ALARM in other area / not ready + open /
   ready / error), `alarmElsewhere(t)`; arming a not-ready area asks (confirm). Editor `alarmAreasField()`. Playwright.
+- 0.29.1: owner: "bei der SPC auch" -> spc-edp 0.2.0 has areas.N.ready/openInputs/openCount/alarmInputs; `fillAlarm()`
+  maps an spc-edp area (mode/setMode/triggered, no error state, values 0/3 and home 1 = part set A).
 - Ideas not done yet: charts/history.
 
 ## Conventions

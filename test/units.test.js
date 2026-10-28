@@ -407,3 +407,10 @@ test('layout: alarm tile with several areas, filled from NOX areas, all commands
     const ids = stateIds(l);
     assert.ok(ids.read.includes('nox_alarmzentrale.0.areas.2.ready') && ids.write.includes('nox_alarmzentrale.0.areas.2.setState'));
 });
+
+test('layout: alarm tile filled from an SPC area', () => {
+    const { cleanLayout } = require('../lib/layout');
+    const t = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'x', type: 'alarm', area: 'spc-edp.0.areas.2' }] }] }).pages[0].tiles[0];
+    assert.deepEqual([t.status, t.command, t.alarm, t.error, t.ready, t.openText, t.alarmText, t.valueOff, t.valueArm, t.valueHome],
+        ['spc-edp.0.areas.2.mode', 'spc-edp.0.areas.2.setMode', 'spc-edp.0.areas.2.triggered', undefined, 'spc-edp.0.areas.2.ready', 'spc-edp.0.areas.2.openInputs', 'spc-edp.0.areas.2.alarmInputs', '0', '3', '1']);
+});
