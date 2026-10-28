@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.29.1",
+    "version": "0.30.0",
     "news": {
+      "0.30.0": {
+        "en": "Alarm tile: 'Schalten erlauben' tick (without it display only - the server refuses commands too); 'Melder anzeigen': the detectors of each area from the NOX/SPC adapter (open / closed / switched off), with switching allowed switch NOX detectors off and on again",
+        "de": "Alarmanlagen-Kachel: Haken „Schalten erlauben“ (ohne nur Anzeige – auch der Server nimmt dann keine Befehle an); „Melder anzeigen“: die Melder jedes Bereichs aus dem NOX-/SPC-Adapter (offen / zu / abgeschaltet), mit Schalten erlauben NOX-Melder ab- und wieder einschalten"
+      },
       "0.29.1": {
         "en": "Alarm tile: an area of the SPC adapter (spc-edp.N.areas.M, 0.2.0+) fills the tile too (Unscharf 0 / Teilscharf A 1 / Scharf 3, ready, open and triggered zones)",
         "de": "Alarmanlagen-Kachel: auch ein Bereich des SPC-Adapters (spc-edp.N.areas.M, ab 0.2.0) füllt die Kachel aus (Unscharf 0 / Teilscharf A 1 / Scharf 3, bereit, offene und auslösende Zonen)"

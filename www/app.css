@@ -483,3 +483,10 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.alarm .big { font-size: 22px; line-height: 1.15; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .okline { color: var(--ok) !important; }
 .tile.alarm .tsub { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 12px; }
+.dethead { margin: 14px 0 4px; font-size: 14px; color: var(--muted); font-weight: 600; }
+.detlist { max-height: 42vh; overflow: auto; }
+.mrow.det { align-items: center; gap: 10px; }
+.mrow.det > span { flex: 1; }
+.mrow.det button { padding: 6px 10px; font-size: 13px; }
+.mrow.det.off > span { opacity: .7; }
+.warnc, .mrow b .warnc { color: var(--warn); }

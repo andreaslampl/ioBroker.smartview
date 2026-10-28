@@ -158,6 +158,7 @@ class SmartView extends utils.Adapter {
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
                 tileByKey: key => this.tileByKey(key),
+                fillDetectors: layout => this.fillDetectors(layout),
                 telegramInstances: () => this.telegramInstances(),
                 whatsappInstances: () => this.instancesOf('whatsapp-cmb'),
                 whatsappTest: () => this.whatsapp({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – WhatsApp funktioniert.' }),
@@ -684,6 +685,52 @@ class SmartView extends utils.Adapter {
                 mem.warn = warn;
             }
         }
+    }
+
+    /**
+     * Alarm tiles with "Melder anzeigen": the detectors of each area from the adapter of that area - NOX (inputs.N.area
+     * from its export list, switch off/on via inputs.N.deactivated) or SPC (zones.N.area, no switching). Done on
+     * saving the layout, so the data points are known (and writable) like any other.
+     */
+    async fillDetectors(layout) {
+        for (const p of (layout && Array.isArray(layout.pages) ? layout.pages : [])) {
+            for (const t of (p && Array.isArray(p.tiles) ? p.tiles : [])) {
+                if (!t || t.type !== 'alarm') {
+                    continue;
+                }
+                for (const a of [t, ...(Array.isArray(t.areas) ? t.areas : [])]) {
+                    a.detectors = t.showDetectors ? await this.detectorsOf(String(a.area || '')) : [];
+                }
+            }
+        }
+    }
+
+    async detectorsOf(area) {
+        const m = /^([a-z][\w-]*\.\d+)\.areas\.(\d+)$/.exec(area);
+        if (!m) {
+            return [];
+        }
+        const [, inst, nr] = m;
+        const spc = inst.startsWith('spc-edp.');
+        const folder = spc ? 'zones' : 'inputs';
+        const states = await this.getForeignStatesAsync(`${inst}.${folder}.*.area`).catch(() => ({}));
+        const out = [];
+        for (const [id, st] of Object.entries(states || {})) {
+            if (!st || Number(st.val) !== Number(nr)) {
+                continue;
+            }
+            const base = id.replace(/\.area$/, '');
+            const obj = await this.getForeignObjectAsync(base).catch(() => null);
+            const name = obj && obj.common && obj.common.name;
+            out.push({
+                label: (typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
+                open: `${base}.open`,
+                deact: spc ? '' : `${base}.deactivated`,
+                nr: Number(base.split('.').pop()) || 0,
+            });
+        }
+        out.sort((x, y) => x.nr - y.nr);
+        return out.map(({ nr: _nr, ...d }) => d);
     }
 
     /** message on all configured ways (app push, Telegram, WhatsApp) */

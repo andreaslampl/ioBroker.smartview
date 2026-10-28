@@ -92,6 +92,15 @@ Scharf 3). Mit dem NOX-Adapter reicht das Feld **„Bereich“**, z. B. `nox_ala
 Zustand, Befehl (`setState`), Alarm, Fehler und die Werte 1 = unscharf / 5 = scharf eingetragen. Für andere Anlagen
 die Datenpunkte und Werte selbst eintragen. Ohne Befehls-Datenpunkt ist die Kachel nur Anzeige.
 
+**Schalten erlauben** (Haken): Ohne Haken ist die Kachel **nur Anzeige** – keine Knöpfe, und der ioBroker nimmt von
+ihr auch keine Befehle an. Mit Haken: Scharf / Unscharf und Melder ab- und einschalten (am besten mit PIN).
+
+**Melder anzeigen** (Haken): Beim Speichern holt SmartView die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter
+(NOX: braucht die Exportliste). Im Bedienfenster steht jeder Melder mit **offen / zu / abgeschaltet**; mit „Schalten
+erlauben“ gibt es **Abschalten / Einschalten** (NOX; die SPC kann das über EDP nicht). Abgeschaltete Melder stehen
+zusätzlich oben in der Liste „Abgeschaltet“. Kommen Melder dazu: Kachel einfach nochmal speichern. Die PIN wird
+innerhalb von 20 s nur einmal abgefragt, auch wenn man mehrere Melder schaltet.
+
 **Scharfschaltbereit:** Ist der Bereich unscharf, steht unter dem Zustand „scharfschaltbereit“ (grün) oder „nicht
 bereit: MK Küche 1, MK Bad offen“ (orange). Bei Alarm steht da, **welche Melder ausgelöst** haben. Beim Scharfschalten
 eines nicht bereiten Bereichs fragt SmartView nach. Dafür braucht der NOX-Adapter ab 0.1.7 die eingefügte

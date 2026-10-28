@@ -115,6 +115,8 @@ const TYPE_FIELDS = {
     ['ready', 'Scharfschaltbereit (optional)', 'state-r', 'true = bereit; NOX / SPC: areas.N.ready (NOX braucht dort die Exportliste)'],
     ['openText', 'Offene Melder (optional)', 'state-r', 'Text, z. B. „MK Küche 1, MK Bad“; NOX: areas.N.openInputs'],
     ['alarmText', 'Ausgelöste Melder (optional)', 'state-r', 'NOX: areas.N.alarmInputs'],
+    ['control', 'Schalten erlauben (scharf / unscharf, Melder ab- und einschalten)', 'check', 'Ohne Haken ist die Kachel nur Anzeige – auch der ioBroker nimmt dann keine Befehle von ihr an. Mit Haken am besten zusätzlich eine PIN setzen.'],
+    ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
   ],

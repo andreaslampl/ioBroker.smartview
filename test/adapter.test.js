@@ -870,3 +870,29 @@ test('adapter: alarm tile filled from a NOX area; window tile messages (too long
     await new Promise(r => setTimeout(r, 100));
     assert.equal(pushed.length, 2, 'once per opening');
 });
+
+test('adapter: alarm tile detectors are taken from the NOX / SPC adapter when saving', async t => {
+    const { api } = await startAdapter(t, {}, a => {
+        const add = (id, name, area) => {
+            a.objects[id] = { type: 'channel', common: { name } };
+            a.add(`${id}.area`, { name: 'Bereich', type: 'number', role: 'value' }, area);
+            a.add(`${id}.open`, { name: 'offen', type: 'boolean', role: 'sensor' }, false);
+        };
+        add('nox_alarmzentrale.0.inputs.10021', 'MK Wohnzimmer 1', 1);
+        add('nox_alarmzentrale.0.inputs.10020', 'MK Haustüre', 1);
+        add('nox_alarmzentrale.0.inputs.10059', 'MK Tor', 2);
+        add('spc-edp.0.zones.3', 'Büro', 1);
+    });
+    const layout = { pages: [{ id: 'a', name: 'A', tiles: [
+        { id: 'al', type: 'alarm', area: 'nox_alarmzentrale.0.areas.1', control: true, showDetectors: true, areas: [{ label: 'Büro', area: 'spc-edp.0.areas.1' }] },
+        { id: 'al2', type: 'alarm', area: 'nox_alarmzentrale.0.areas.2' },
+    ] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body;
+    const [al, al2] = saved.pages[0].tiles;
+    assert.deepEqual(al.detectors.map(d => [d.label, d.deact]), [
+        ['MK Haustüre', 'nox_alarmzentrale.0.inputs.10020.deactivated'],
+        ['MK Wohnzimmer 1', 'nox_alarmzentrale.0.inputs.10021.deactivated'],
+    ]);
+    assert.deepEqual(al.areas[0].detectors, [{ label: 'Büro', open: 'spc-edp.0.zones.3.open', deact: '' }], 'SPC: display only');
+    assert.equal(al2.detectors, undefined, 'only with "Melder anzeigen"');
+});

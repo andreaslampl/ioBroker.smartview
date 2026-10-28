@@ -13,7 +13,7 @@ const SV = {
   states: {}, // id -> {val, ack, ts, unit, type, states, missing}
   writable: new Set(),
   pinIds: new Set(), // data points of PIN protected tiles
-  pinCache: {}, // id -> {pin, until}
+  pinCache: null, // {pin, until}
   prevStates: {}, // id -> state before the last command (back after a wrong PIN)
   page: null,
   ws: null,
@@ -137,7 +137,8 @@ function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen', 'command', 'alarm', 'error'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
-    .concat((t.areas || []).flatMap(a => ALARM_KEYS.map(k => a[k])))
+    .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
+    .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
     .concat(['ready', 'openText', 'alarmText'].map(k => t[k]))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
@@ -649,21 +650,24 @@ function send(id, value) {
 
 // ---------------- PIN (checked by the server; the page only asks for it) ----------------
 
-/** a protected data point: ask for the PIN (kept 20 s, so a few taps in a row need it once) */
+/**
+ * a protected data point: ask for the PIN. It is kept 20 s, so a few taps in a row (e.g. several detectors) need it
+ * once; another tile with another PIN gets "PIN falsch" and asks again.
+ */
 function withPin(id, fn) {
   if (!SV.pinIds || !SV.pinIds.has(id)) return fn(undefined);
-  const c = SV.pinCache[id];
+  const c = SV.pinCache;
   if (c && c.until > Date.now()) return fn(c.pin);
   askPin().then(pin => {
     if (!pin) return;
-    SV.pinCache[id] = { pin, until: Date.now() + 20000 };
+    SV.pinCache = { pin, until: Date.now() + 20000 };
     fn(pin);
   });
 }
 
 /** answer of the server for a protected command */
 function pinResult(msg) {
-  delete SV.pinCache[msg.id];
+  SV.pinCache = null;
   if (SV.prevStates[msg.id]) {
     SV.states[msg.id] = SV.prevStates[msg.id];
     refresh(msg.id);
@@ -728,7 +732,7 @@ function typedVal(text) {
   return text !== '' && Number.isFinite(n) ? n : text;
 }
 
-const ALARM_KEYS = ['status', 'command', 'alarm', 'error', 'ready', 'openText', 'alarmText', 'valueOff', 'valueArm', 'valueHome'];
+const ALARM_KEYS = ['status', 'command', 'alarm', 'error', 'ready', 'openText', 'alarmText', 'valueOff', 'valueArm', 'valueHome', 'detectors'];
 
 /** [{label, status, …}] - the tile's own fields are area 1; null without more areas */
 function alarmAreas(t) {
@@ -790,8 +794,22 @@ function alarmLine(t, c, a) {
   return null;
 }
 
+/** detectors of the chosen area: open / closed / switched off, with off/on buttons when switching is allowed */
+function alarmDetectors(c) {
+  const list = Array.isArray(c.detectors) ? c.detectors : [];
+  if (!list.length) return '';
+  const rows = list.map((d, i) => {
+    const off = Boolean(d.deact && truthy(val(d.deact)));
+    const open = Boolean(d.open && truthy(val(d.open)));
+    const stx = off ? '<span class="warnc">abgeschaltet</span>' : open ? '<span class="bad">offen</span>' : '<span class="ok">zu</span>';
+    const btn = c.control && d.deact ? '<button type="button" data-a="deact" data-v="' + i + '">' + (off ? 'Einschalten' : 'Abschalten') + '</button>' : '';
+    return '<div class="mrow det' + (off ? ' off' : '') + '"><span>' + esc(d.label) + '</span><b>' + stx + '</b>' + btn + '</div>';
+  });
+  return '<h4 class="dethead">Melder</h4><div class="mrows sheetrows detlist">' + rows.join('') + '</div>';
+}
+
 function alarmButtons(t) {
-  if (!t.command) return '';
+  if (!t.command || !t.control) return '';
   const a = alarmInfo(t);
   return [['off', 'Unscharf', t.valueOff], ['home', 'Intern scharf', t.valueHome], ['armed', 'Scharf', t.valueArm]]
     .filter(([, , v]) => v !== undefined && v !== '')
@@ -1527,6 +1545,10 @@ function bindControls(el, t) {
         const arming = b.dataset.v !== String(c.valueOff);
         if (arming && info.ready === false && !confirm('Nicht scharfschaltbereit' + (info.open ? ' – offen: ' + info.open : '') + '.\nTrotzdem scharf schalten?')) return;
         send(c.command, typedVal(b.dataset.v));
+      } else if (a === 'deact') {
+        // switch a detector off or on again (NOX: inputs.N.deactivated)
+        const d = (alarmCur(t).detectors || [])[Number(b.dataset.v)];
+        if (d && d.deact) send(d.deact, !truthy(val(d.deact)));
       }
       else if (a === 'open') openCam(t.camera, t.label);
     };
@@ -2020,9 +2042,12 @@ function fillSheet(sh, t) {
     if (a.error) info.push(['Letztes Schalten fehlgeschlagen', esc(a.error)]);
     const other = alarmElsewhere(t);
     if (other.length) info.push(['Alarm auch in', '<span class="bad">' + esc(other.join(', ')) + '</span>']);
+    const offList = (Array.isArray(c.detectors) ? c.detectors : []).filter(d => d.deact && truthy(val(d.deact))).map(d => d.label);
+    if (offList.length) info.push(['Abgeschaltet', '<span class="warnc">' + esc(offList.join(', ')) + '</span>']);
     body = circSwitcher(c, true) + '<div class="bigval' + (a.alarm ? ' alarmtxt' : '') + '">' + esc(a.alarm ? 'ALARM – ' + a.text : a.text) + '</div>' +
-      (c.command ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '<p class="muted" style="text-align:center">Kein Befehls-Datenpunkt – nur Anzeige</p>') +
-      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
+      (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
+      alarmDetectors(c);
   } else if (t.type === 'wallbox') {
     const info = [];
     const p = wbPower(t);
@@ -2315,7 +2340,7 @@ function connect() {
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
       SV.pinIds = new Set(msg.pinIds || []);
-      SV.pinCache = {};
+      SV.pinCache = null;
       render();
       Timers.load();
       checkRing();

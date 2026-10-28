@@ -397,13 +397,19 @@ test('layout: window tile with areas, only open ones, warning', () => {
 
 test('layout: alarm tile with several areas, filled from NOX areas, all commands PIN protected', () => {
     const { cleanLayout, stateIds, tileWriteIds } = require('../lib/layout');
-    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'x', type: 'alarm', area: 'nox_alarmzentrale.0.areas.1', areaLabel: 'Wohnhaus',
-        areas: [{ label: 'Garage', area: 'nox_alarmzentrale.0.areas.2' }, { label: 'leer' }] }] }] });
+    const tile = { id: 'x', type: 'alarm', area: 'nox_alarmzentrale.0.areas.1', areaLabel: 'Wohnhaus',
+        areas: [{ label: 'Garage', area: 'nox_alarmzentrale.0.areas.2', detectors: [{ label: 'MK Tor', open: 'n.0.inputs.10059.open', deact: 'n.0.inputs.10059.deactivated' }] }, { label: 'leer' }] };
+    // without "Schalten erlauben" the tile is display only
+    const view = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [tile] }] });
+    assert.deepEqual(tileWriteIds(view.pages[0].tiles[0]), []);
+    assert.deepEqual(stateIds(view).write, []);
+    assert.ok(stateIds(view).read.includes('n.0.inputs.10059.deactivated'));
+    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ ...tile, control: true }] }] });
     const t = l.pages[0].tiles[0];
     assert.equal(t.ready, 'nox_alarmzentrale.0.areas.1.ready');
     assert.equal(t.areas.length, 1, 'areas without data points are dropped');
     assert.deepEqual([t.areas[0].openText, t.areas[0].alarmText, t.areas[0].valueArm], ['nox_alarmzentrale.0.areas.2.openInputs', 'nox_alarmzentrale.0.areas.2.alarmInputs', '5']);
-    assert.deepEqual(tileWriteIds(t), ['nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.2.setState']);
+    assert.deepEqual(tileWriteIds(t), ['nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.2.setState', 'n.0.inputs.10059.deactivated']);
     const ids = stateIds(l);
     assert.ok(ids.read.includes('nox_alarmzentrale.0.areas.2.ready') && ids.write.includes('nox_alarmzentrale.0.areas.2.setState'));
 });

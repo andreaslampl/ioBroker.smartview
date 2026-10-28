@@ -260,6 +260,13 @@ switches/buttons on them.
   ready / error), `alarmElsewhere(t)`; arming a not-ready area asks (confirm). Editor `alarmAreasField()`. Playwright.
 - 0.29.1: owner: "bei der SPC auch" -> spc-edp 0.2.0 has areas.N.ready/openInputs/openCount/alarmInputs; `fillAlarm()`
   maps an spc-edp area (mode/setMode/triggered, no error state, values 0/3 and home 1 = part set A).
+- 0.30.0: owner asked for a tick to make the alarm tile display only / switchable and to switch detectors off and on.
+  Alarm options `control` (without: no buttons AND stateIds/tileWriteIds give no write ids for alarm tiles -
+  `alarmWrites()`), `showDetectors` -> on PUT /api/layout server calls main `fillDetectors()` (async, before
+  resolvePins/save): per area `detectors` [{label, open, deact}] from `<inst>.inputs.*.area` (NOX, deact =
+  inputs.N.deactivated) or `<inst>.zones.*.area` (SPC, no deact); read always, deact writable with control (PIN
+  protected via tileWriteIds). Sheet `alarmDetectors()` (offen/zu/abgeschaltet + Abschalten/Einschalten), info row
+  "Abgeschaltet". PIN cache is now one {pin, until} for 20 s (several detectors = one PIN). Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions
