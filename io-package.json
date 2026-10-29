@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.3",
+    "version": "0.31.4",
     "news": {
+      "0.31.4": {
+        "en": "Heating + / −: the setpoint stays within the data point's own min/max too (a hot water circuit with min 35 in a tile whose min is 10 for the rooms)",
+        "de": "Heizung + / −: der Sollwert bleibt auch in Min/Max des Datenpunkts (z. B. Warmwasser mit Min 35 in einer Kachel, deren Min 10 für die Räume gilt)"
+      },
       "0.31.3": {
         "en": "Heating: + / − with an unknown setpoint no longer jumps to the minimum (it counted as 0); the other setpoint data point is used, else nothing is sent",
         "de": "Heizung: + / − bei unbekanntem Sollwert springt nicht mehr auf das Minimum (er zählte als 0); es wird der andere Sollwert-Datenpunkt genommen, sonst nichts gesendet"

@@ -470,11 +470,18 @@ function thermoStep(t, dir) {
     return;
   }
   const s = st(t.state) || {};
-  const min = t.min !== undefined ? t.min : s.min;
-  const max = t.max !== undefined ? t.max : s.max;
+  // the tile's limits and the data point's own (e.g. hot water min 35 in a tile whose rooms allow 10) - the narrower wins
+  const lim = (a, b, pick) => [a, b].filter(x => x !== undefined && x !== null && x !== '' && Number.isFinite(Number(x))).map(Number).reduce((x, y) => (x === undefined ? y : pick(x, y)), undefined);
+  let min = lim(t.min, s.min, Math.max);
+  let max = lim(t.max, s.max, Math.min);
+  if (min !== undefined && max !== undefined && min > max) {
+    // the tile's range is meant for other circuits (rooms 10-30, hot water 35-60): the data point's own range counts
+    min = lim(s.min, undefined, Math.max);
+    max = lim(s.max, undefined, Math.min);
+  }
   let next = Math.round((cur + dir * step) * 100) / 100;
-  if (min !== undefined && min !== null) next = Math.max(min, next);
-  if (max !== undefined && max !== null) next = Math.min(max, next);
+  if (min !== undefined) next = Math.max(min, next);
+  if (max !== undefined) next = Math.min(max, next);
   send(t.state, next);
 }
 

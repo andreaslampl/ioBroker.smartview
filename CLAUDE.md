@@ -280,6 +280,9 @@ switches/buttons on them.
   (checked in Playwright); but `thermoStep()` took an unknown/empty setpoint as 0 -> +0.5 clamped to min 10. Now it uses
   shown setpoint, else command, else feedback (comma strings parsed), else toast and no write. Cause in the field
   (which data point was empty) not confirmed.
+- 0.31.4 field: log "warmwasser_soll ... value 10 less than min 35" (owner's own Ochsner data point, likely in a heating tile
+  with min 10 for the rooms). `thermoStep()` clamps to the narrower of tile and data point limits; if they contradict
+  (tile 10-30, data point 35-60) the data point's own range wins.
 - Ideas not done yet: charts/history.
 
 ## Conventions
