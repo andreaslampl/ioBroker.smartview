@@ -13,7 +13,6 @@ const SV = {
   states: {}, // id -> {val, ack, ts, unit, type, states, missing}
   writable: new Set(),
   pinIds: new Set(), // data points of PIN protected tiles
-  pinCache: null, // {pin, until}
   prevStates: {}, // id -> state before the last command (back after a wrong PIN)
   page: null,
   ws: null,
@@ -652,24 +651,16 @@ function send(id, value) {
 
 // ---------------- PIN (checked by the server; the page only asks for it) ----------------
 
-/**
- * a protected data point: ask for the PIN. It is kept 20 s, so a few taps in a row (e.g. several detectors) need it
- * once; another tile with another PIN gets "PIN falsch" and asks again.
- */
+/** a protected data point: ask for the PIN before every command (the owner wants no remembered PIN) */
 function withPin(id, fn) {
   if (!SV.pinIds || !SV.pinIds.has(id)) return fn(undefined);
-  const c = SV.pinCache;
-  if (c && c.until > Date.now()) return fn(c.pin);
   askPin().then(pin => {
-    if (!pin) return;
-    SV.pinCache = { pin, until: Date.now() + 20000 };
-    fn(pin);
+    if (pin) fn(pin);
   });
 }
 
 /** answer of the server for a protected command */
 function pinResult(msg) {
-  SV.pinCache = null;
   if (SV.prevStates[msg.id]) {
     SV.states[msg.id] = SV.prevStates[msg.id];
     refresh(msg.id);
@@ -2418,7 +2409,6 @@ function connect() {
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
       SV.pinIds = new Set(msg.pinIds || []);
-      SV.pinCache = null;
       render();
       Timers.load();
       checkRing();

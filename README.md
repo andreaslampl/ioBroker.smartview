@@ -99,8 +99,7 @@ ihr auch keine Befehle an. Mit Haken: Scharf / Unscharf und Melder ab- und einsc
 **Melder anzeigen** (Haken): Beim Speichern holt SmartView die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter
 (NOX: braucht die Exportliste). Im Bedienfenster steht jeder Melder mit **offen / zu / abgeschaltet**; mit „Schalten
 erlauben“ gibt es **Abschalten / Einschalten** (NOX; die SPC kann das über EDP nicht). Abgeschaltete Melder stehen
-zusätzlich oben in der Liste „Abgeschaltet“. Kommen Melder dazu: Kachel einfach nochmal speichern. Die PIN wird
-innerhalb von 20 s nur einmal abgefragt, auch wenn man mehrere Melder schaltet.
+zusätzlich oben in der Liste „Abgeschaltet“. Kommen Melder dazu: Kachel einfach nochmal speichern.
 
 **Scharfschaltbereit:** Ist der Bereich unscharf, steht unter dem Zustand „scharfschaltbereit“ (grün) oder „nicht
 bereit: MK Küche 1, MK Bad offen“ (orange). Bei Alarm steht da, **welche Melder ausgelöst** haben. Beim Scharfschalten
@@ -116,7 +115,7 @@ Alarm in einem anderen Bereich wird trotzdem angezeigt („ALARM in Garage“). 
 Jede schaltende Kachel hat das Feld **„PIN-Schutz“** (4–8 Ziffern). Vor jedem Schalten erscheint ein Ziffernblock;
 die PIN wird **vom ioBroker geprüft** (sie steht nur verschlüsselt im Adapter und wird nie an Browser geschickt),
 auch für andere Kacheln, die denselben Datenpunkt schalten. Nach 5 falschen PINs ist das Gerät 5 Minuten gesperrt
-(Warnung im Log). Innerhalb von 20 s nach einer richtigen PIN wird für dieselbe Kachel nicht nochmal gefragt.
+(Warnung im Log). Die PIN wird **bei jedem Schalten** neu abgefragt, sie wird nirgends gemerkt.
 PIN-geschützte Kacheln bekommen keine Zeitschaltuhr. Achtung: Apple Home und Alexa (homekit-easy) fragen diese PIN
 nicht ab – dort eigene Schutzmöglichkeiten nutzen.
 

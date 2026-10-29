@@ -274,6 +274,8 @@ switches/buttons on them.
   Grouping stays on the sonos-radio page. Checked in Playwright with fake states; not with real Sonos.
 - 0.31.1: owner wanted a surveillance camera symbol for the site plan (the photo camera looked like a camera) -> icons
   `cctv` (default for camera tiles) and `dome`, both in layer kamera.
+- 0.31.2: owner: PIN was not asked the second time ("eigentlich nicht gut") -> no PIN cache at all, `withPin()` asks
+  before every protected command (also each detector).
 - Ideas not done yet: charts/history.
 
 ## Conventions

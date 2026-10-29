@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.1",
+    "version": "0.31.2",
     "news": {
+      "0.31.2": {
+        "en": "PIN is asked before every command again (it was remembered for 20 s)",
+        "de": "Die PIN wird wieder vor jedem Schalten abgefragt (sie wurde 20 s gemerkt)"
+      },
       "0.31.1": {
         "en": "New symbols 'Überwachungskamera' (CCTV camera on a wall arm, now the default for camera tiles on plans and lists) and 'Dome-Kamera'",
         "de": "Neue Symbole „Überwachungskamera“ (am Wandarm, jetzt Standard für Kamera-Kacheln im Lageplan und in Listen) und „Dome-Kamera“"
