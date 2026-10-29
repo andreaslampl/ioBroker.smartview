@@ -272,6 +272,8 @@ switches/buttons on them.
   fills the rest from `<inst>.rooms.<id>.station`. app.js `RADIO_KEYS`, `radioRooms()`/`radioCur()` (circIndex/circSwitch
   like alarm areas), sheet: station buttons from the station state's common.states, Stopp (playing false), volume ±5.
   Grouping stays on the sonos-radio page. Checked in Playwright with fake states; not with real Sonos.
+- 0.31.1: owner wanted a surveillance camera symbol for the site plan (the photo camera looked like a camera) -> icons
+  `cctv` (default for camera tiles) and `dome`, both in layer kamera.
 - Ideas not done yet: charts/history.
 
 ## Conventions

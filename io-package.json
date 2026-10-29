@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.0",
+    "version": "0.31.1",
     "news": {
+      "0.31.1": {
+        "en": "New symbols 'Überwachungskamera' (CCTV camera on a wall arm, now the default for camera tiles on plans and lists) and 'Dome-Kamera'",
+        "de": "Neue Symbole „Überwachungskamera“ (am Wandarm, jetzt Standard für Kamera-Kacheln im Lageplan und in Listen) und „Dome-Kamera“"
+      },
       "0.31.0": {
         "en": "Radio tile for the sonos-radio adapter: station, title and volume on the tile, tap = station buttons, stop, volume - no extra page; several rooms in one tile (‹ › like the heating circuits). Only the room's station data point has to be chosen",
         "de": "Radio-Kachel für den Adapter sonos-radio: Sender, Titel und Lautstärke auf der Kachel, antippen = Senderknöpfe, Stopp, Lautstärke – ohne extra Seite; mehrere Räume in einer Kachel (‹ › wie bei den Heizkreisen). Nur den Sender-Datenpunkt des Raums wählen"

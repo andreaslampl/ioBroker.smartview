@@ -121,7 +121,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -1807,7 +1807,7 @@ const LAYER_ICON = {
   heat: 'klima', thermometer: 'klima', fan: 'klima', drop: 'klima',
   window: 'fenster', door: 'fenster', garage: 'fenster', gate: 'fenster',
   alarm: 'sicherheit', shield: 'sicherheit', lock: 'sicherheit', motion: 'sicherheit',
-  fire: 'brand', camera: 'kamera',
+  fire: 'brand', camera: 'kamera', cctv: 'kamera', dome: 'kamera',
   socket: 'energie', power: 'energie', bolt: 'energie', energy: 'energie', charger: 'energie', car: 'energie',
 };
 
