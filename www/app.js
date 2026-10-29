@@ -458,7 +458,17 @@ function circSwitcher(c, chips) {
 
 function thermoStep(t, dir) {
   const step = t.step || 0.5;
-  const cur = toNum(val(thermoSetId(t)));
+  // an unknown setpoint used to count as 0 and jumped to the minimum (10 °C) - now the other data point, else nothing
+  const num = id => {
+    const v = id ? val(id) : null;
+    if (v === null || v === undefined || v === '' || typeof v === 'boolean') return NaN;
+    return typeof v === 'number' ? v : Number(String(v).trim().replace(',', '.'));
+  };
+  const cur = [thermoSetId(t), t.state, t.setStatus].map(num).find(Number.isFinite);
+  if (cur === undefined) {
+    toast('Sollwert unbekannt – nichts gesendet', true);
+    return;
+  }
   const s = st(t.state) || {};
   const min = t.min !== undefined ? t.min : s.min;
   const max = t.max !== undefined ? t.max : s.max;

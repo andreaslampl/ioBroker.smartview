@@ -276,6 +276,10 @@ switches/buttons on them.
   `cctv` (default for camera tiles) and `dome`, both in layer kamera.
 - 0.31.2: owner: PIN was not asked the second time ("eigentlich nicht gut") -> no PIN cache at all, `withPin()` asks
   before every protected command (also each detector).
+- 0.31.3 field: owner saw setpoint 10 after "only hovering" over + (heating + floor heating). Hover writes nothing
+  (checked in Playwright); but `thermoStep()` took an unknown/empty setpoint as 0 -> +0.5 clamped to min 10. Now it uses
+  shown setpoint, else command, else feedback (comma strings parsed), else toast and no write. Cause in the field
+  (which data point was empty) not confirmed.
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.2",
+    "version": "0.31.3",
     "news": {
+      "0.31.3": {
+        "en": "Heating: + / − with an unknown setpoint no longer jumps to the minimum (it counted as 0); the other setpoint data point is used, else nothing is sent",
+        "de": "Heizung: + / − bei unbekanntem Sollwert springt nicht mehr auf das Minimum (er zählte als 0); es wird der andere Sollwert-Datenpunkt genommen, sonst nichts gesendet"
+      },
       "0.31.2": {
         "en": "PIN is asked before every command again (it was remembered for 20 s)",
         "de": "Die PIN wird wieder vor jedem Schalten abgefragt (sie wurde 20 s gemerkt)"
