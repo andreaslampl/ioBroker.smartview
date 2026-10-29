@@ -329,6 +329,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile .tsub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet .row.modes { flex-wrap: wrap; }
 .sheet .row.modes button { flex: 1 1 40%; padding: 11px 0; font-size: 15px; }
+.sheet .bigval.sm { font-size: 24px; margin: 0; align-self: center; min-width: 90px; }
 .bad, .mrow b .bad { color: var(--bad); }
 .mrow b .ok { color: var(--ok); }
 /* users */

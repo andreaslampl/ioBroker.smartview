@@ -121,7 +121,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'camera', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   return t.icon || DEFAULT_ICON[t.type] || 'info';
@@ -139,7 +139,8 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['ready', 'openText', 'alarmText'].map(k => t[k]))
+    .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online'].map(k => t[k]))
+    .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
 }
@@ -434,7 +435,7 @@ function thermoCur(t) {
 }
 
 function circSwitch(t, i) {
-  const list = t.type === 'alarm' ? alarmAreas(t) : thermoCircuits(t);
+  const list = t.type === 'alarm' ? alarmAreas(t) : t.type === 'radio' ? radioRooms(t) : thermoCircuits(t);
   if (!list) return;
   const n = ((i % list.length) + list.length) % list.length;
   try {
@@ -606,6 +607,7 @@ function windowsHtml(t) {
 
 function tileState(t) {
   if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
+  if (t.type === 'radio') return radioPlaying(radioCur(t)) ? 'on' : '';
   if (t.type === 'alarm') {
     const a = alarmInfo(alarmCur(t));
     return a.alarm || alarmElsewhere(t).length ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
@@ -749,6 +751,50 @@ function alarmCur(t) {
   const out = { ...t, _circ: i, _circs: list };
   for (const k of ALARM_KEYS) out[k] = list[i][k];
   return out;
+}
+
+const RADIO_KEYS = ['station', 'playing', 'volume', 'title', 'group', 'online'];
+
+/** [{label, station, …}] - the tile's own fields are room 1; null without more rooms */
+function radioRooms(t) {
+  if (!Array.isArray(t.rooms) || !t.rooms.length) return null;
+  const pick = (r, label) => Object.assign({ label }, ...RADIO_KEYS.map(k => ({ [k]: r[k] || '' })));
+  return [pick(t, t.roomLabel || 'Raum 1')].concat(t.rooms.map((r, i) => pick(r, r.label || 'Raum ' + (i + 2))));
+}
+
+/** the tile as seen with its chosen room (index per device, like the heating circuits) */
+function radioCur(t) {
+  const list = radioRooms(t);
+  if (!list) return t;
+  const i = circIndex(t, list.length);
+  const out = { ...t, _circ: i, _circs: list };
+  for (const k of RADIO_KEYS) out[k] = list[i][k];
+  return out;
+}
+
+function radioPlaying(c) {
+  return Boolean(c.playing && truthy(val(c.playing)));
+}
+
+/** "Ö3" while playing, else "Aus" ("–" without a value) */
+function radioText(c) {
+  const s = st(c.station);
+  if (c.online && val(c.online) === false) return 'offline';
+  if (radioPlaying(c)) return String(val(c.station) || 'Spielt');
+  return s && !s.missing && s.val !== undefined ? 'Aus' : '–';
+}
+
+/** station names from the station data point (sonos-radio: common.states = the station table) */
+function radioStations(c) {
+  const s = st(c.station) || {};
+  if (Array.isArray(s.states)) return s.states.map(String);
+  return s.states && typeof s.states === 'object' ? Object.keys(s.states) : [];
+}
+
+function radioVolStep(c, dir) {
+  const v = Number(val(c.volume)) || 0;
+  // next step of 5 (23 -> 25 / 20)
+  send(c.volume, Math.max(0, Math.min(100, dir > 0 ? Math.floor(v / 5) * 5 + 5 : Math.ceil(v / 5) * 5 - 5)));
 }
 
 /**
@@ -1309,6 +1355,13 @@ function fillRow(el, t) {
         (line ? '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
       break;
     }
+    case 'radio': {
+      const c = radioCur(t);
+      const sub = (c._circs ? [c._circs[c._circ].label] : []).concat(radioPlaying(c) && c.title && val(c.title) ? [String(val(c.title))] : []).join(' · ');
+      ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Raum">⇄</button>' : '') + (sub ? '<span class="lsub">' + esc(sub) + '</span>' : '') +
+        (radioPlaying(c) ? '<button type="button" data-a="rstop" aria-label="Stopp">' + icon('stop') + '</button>' : '') + '<span class="lval">' + esc(radioText(c)) + '</span>';
+      break;
+    }
     case 'wallbox':
       ctl = '<span class="lsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</span><span class="lval">' + esc(wbBig(t)) + '</span>';
       break;
@@ -1386,7 +1439,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1429,6 +1482,14 @@ function fillTile(el, t) {
       const line = alarmLine(t, c, a);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
         (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
+      break;
+    }
+    case 'radio': {
+      const c = radioCur(t);
+      const title = radioPlaying(c) && c.title ? String(val(c.title) || '') : '';
+      const vol = c.volume ? fmt({ decimals: 0, unit: '%' }, c.volume) : null;
+      html = '<div class="row1">' + ic + '<span class="tval">' + esc(vol && vol.text !== '–' && radioPlaying(c) ? vol.text + ' %' : '') + '</span></div>' +
+        '<div class="big">' + esc(radioText(c)) + '</div>' + (title ? '<div class="tsub">' + esc(title) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
       break;
     }
     case 'wallbox': {
@@ -1530,7 +1591,7 @@ function bindControls(el, t) {
       else if (a === 'minus') thermoStep(thermoCur(t), -1);
       else if (a === 'mode') sendMode(thermoCur(t), b.dataset.v);
       else if (a === 'circ') {
-        const c = t.type === 'alarm' ? alarmCur(t) : thermoCur(t);
+        const c = t.type === 'alarm' ? alarmCur(t) : t.type === 'radio' ? radioCur(t) : thermoCur(t);
         circSwitch(t, (c._circ || 0) + Number(b.dataset.v));
       } else if (a === 'circsel') circSwitch(t, Number(b.dataset.v));
       else if (a === 'wbmode') send(t.mode, b.dataset.v);
@@ -1539,6 +1600,9 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
+      else if (a === 'rplay') send(radioCur(t).station, b.dataset.v);
+      else if (a === 'rstop') send(radioCur(t).playing, false);
+      else if (a === 'rvol') radioVolStep(radioCur(t), Number(b.dataset.v));
       else if (a === 'alarm') {
         const c = alarmCur(t);
         const info = alarmInfo(c);
@@ -1876,6 +1940,7 @@ function fillMarker(el, t) {
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
+  else if (t.type === 'radio') v = radioPlaying(radioCur(t)) ? radioText(radioCur(t)) : '';
   else if (t.type === 'wallbox') v = wbBig(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
@@ -2048,6 +2113,19 @@ function fillSheet(sh, t) {
       (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
+  } else if (t.type === 'radio') {
+    const c = radioCur(t);
+    const cur = radioPlaying(c) ? String(val(c.station) || '') : '';
+    const info = [];
+    if (cur && c.title && val(c.title)) info.push(['Titel', esc(String(val(c.title)))]);
+    if (c.group && val(c.group)) info.push(['Zusammen mit', esc(String(val(c.group)))]);
+    if (c.online && val(c.online) === false) info.push(['Lautsprecher', '<span class="bad">nicht erreichbar</span>']);
+    const vol = Math.round(Number(val(c.volume)) || 0);
+    body = circSwitcher(c, true) + '<div class="bigval">' + esc(radioText(c)) + '</div>' +
+      '<div class="row modes radiost">' + radioStations(c).map(n => '<button type="button" data-a="rplay" data-v="' + esc(n) + '"' + (n === cur ? ' class="primary"' : '') + '>' + esc(n) + '</button>').join('') + '</div>' +
+      (c.playing ? '<div class="row"><button type="button" data-a="rstop"' + (cur ? '' : ' disabled') + '>' + icon('stop') + 'Stopp</button></div>' : '') +
+      (c.volume ? '<div class="row"><button type="button" data-a="rvol" data-v="-1" aria-label="leiser">' + icon('minus') + '</button><span class="bigval sm">' + vol + ' %</span><button type="button" data-a="rvol" data-v="1" aria-label="lauter">' + icon('plus') + '</button></div>' : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'wallbox') {
     const info = [];
     const p = wbPower(t);

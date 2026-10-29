@@ -59,6 +59,7 @@ ausschalten.
 | Mehrere Werte | bis zu 8 Datenpunkte mit Bezeichnung (z. B. Helligkeit Ost/West, 3 Temperaturfühler) | antippen = groß anzeigen |
 | Fensterübersicht | pro Fenster Name, Magnetkontakt (true = offen), optional Kipp-Kontakt und „umgekehrt“ | geschlossen (grün) / gekippt (orange) / offen (rot) mit „seit …“; oben die Anzahl offener Fenster |
 | HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“; dort steht er als `{datenpunkt}`) | aktualisiert sich live; Bilder des web-Adapters (VIS-Symbole) werden über SmartView geladen; Größe „groß“ = volle Breite |
+| Webradio | Sender-Datenpunkt eines Raums aus sonos-radio (Rest ergänzt sich), optional weitere Räume | antippen = Senderknöpfe, Stopp, Lautstärke (siehe unten) |
 | Wallbox | Wallbox-Instanz (versicharge) und Energie-Instanz, oder Datenpunkte selbst | antippen = Lademodus, Details (siehe unten) |
 | Überschrift | – | – |
 
@@ -284,6 +285,21 @@ Kachel (Größe „groß“ oder 2 Zeilen hoch) liegen die Modus-Tasten direkt a
 
 Schränkt energie das Laden ein (Wärmepumpe läuft, Bezugsgrenze), steht der Grund **orange** auf der Kachel, z. B.
 „Pause – Wärmepumpe läuft“ oder „6 A – Wärmepumpe läuft“.
+
+### Webradio (Sonos)
+
+Kachel **„Webradio“** für den Adapter [sonos-radio](https://github.com/andreaslampl/ioBroker.sonos-radio) – damit
+muss die Radio-Seite nicht extra geöffnet werden. Nur den **Sender-Datenpunkt des Raums** wählen
+(`sonos-radio.0.rooms.<Raum>.station`); Spielt, Lautstärke, Titel, Gruppe und Erreichbar ergänzt SmartView beim
+Übernehmen selbst.
+
+- Kachel: laufender Sender (oder „Aus“), Titel, Lautstärke.
+- Antippen: ein Knopf pro Sender (die Senderliste aus den Einstellungen von sonos-radio), **Stopp**, Lautstärke − / +
+  in 5er-Schritten, Titel und mit welchen Räumen gerade zusammen gespielt wird.
+- **Weitere Räume**: wie bei den Heizkreisen – pro Raum Name + Sender-Datenpunkt, auf der Kachel ‹ › zum Umschalten,
+  im Bedienfenster Knöpfe. Welcher Raum gewählt ist, merkt sich jedes Gerät selbst.
+
+Gruppen (mehrere Räume gleichzeitig) stellt man weiter auf der Radio-Seite von sonos-radio zusammen (Link-Kachel).
 
 ### Kameras
 

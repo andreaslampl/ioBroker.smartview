@@ -420,3 +420,18 @@ test('layout: alarm tile filled from an SPC area', () => {
     assert.deepEqual([t.status, t.command, t.alarm, t.error, t.ready, t.openText, t.alarmText, t.valueOff, t.valueArm, t.valueHome],
         ['spc-edp.0.areas.2.mode', 'spc-edp.0.areas.2.setMode', 'spc-edp.0.areas.2.triggered', undefined, 'spc-edp.0.areas.2.ready', 'spc-edp.0.areas.2.openInputs', 'spc-edp.0.areas.2.alarmInputs', '0', '3', '1']);
 });
+
+test('layout: radio tile filled from the station data point, rooms switched like circuits', () => {
+    const { cleanLayout, stateIds, tileWriteIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 'r', type: 'radio', station: 'sonos-radio.0.rooms.kueche.station', roomLabel: 'Küche',
+        rooms: [{ label: 'Terrasse', station: 'sonos-radio.0.rooms.terrasse.station' }, { label: 'leer' }] }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.deepEqual([t.playing, t.volume, t.title, t.group, t.online], ['playing', 'volume', 'title', 'group', 'online'].map(k => 'sonos-radio.0.rooms.kueche.' + k));
+    assert.equal(t.roomLabel, 'Küche');
+    assert.equal(t.rooms.length, 1, 'rooms without a station are dropped');
+    assert.equal(t.rooms[0].volume, 'sonos-radio.0.rooms.terrasse.volume');
+    assert.deepEqual(tileWriteIds(t).sort(), ['kueche', 'terrasse'].flatMap(r => ['station', 'playing', 'volume'].map(k => `sonos-radio.0.rooms.${r}.${k}`)).sort());
+    const ids = stateIds(l);
+    assert.ok(ids.read.includes('sonos-radio.0.rooms.terrasse.title'));
+    assert.ok(!ids.write.includes('sonos-radio.0.rooms.terrasse.title'), 'title stays read only');
+});

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.30.0",
+    "version": "0.31.0",
     "news": {
+      "0.31.0": {
+        "en": "Radio tile for the sonos-radio adapter: station, title and volume on the tile, tap = station buttons, stop, volume - no extra page; several rooms in one tile (‹ › like the heating circuits). Only the room's station data point has to be chosen",
+        "de": "Radio-Kachel für den Adapter sonos-radio: Sender, Titel und Lautstärke auf der Kachel, antippen = Senderknöpfe, Stopp, Lautstärke – ohne extra Seite; mehrere Räume in einer Kachel (‹ › wie bei den Heizkreisen). Nur den Sender-Datenpunkt des Raums wählen"
+      },
       "0.30.0": {
         "en": "Alarm tile: 'Schalten erlauben' tick (without it display only - the server refuses commands too); 'Melder anzeigen': the detectors of each area from the NOX/SPC adapter (open / closed / switched off), with switching allowed switch NOX detectors off and on again",
         "de": "Alarmanlagen-Kachel: Haken „Schalten erlauben“ (ohne nur Anzeige – auch der Server nimmt dann keine Befehle an); „Melder anzeigen“: die Melder jedes Bereichs aus dem NOX-/SPC-Adapter (offen / zu / abgeschaltet), mit Schalten erlauben NOX-Melder ab- und wieder einschalten"
