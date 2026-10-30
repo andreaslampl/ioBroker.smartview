@@ -451,3 +451,10 @@ test('layout: window contact (read only, hidden when closed) and dehumidifier / 
     assert.ok(ids.read.includes('knx.0.mk2') && ids.read.includes('x.0.err'));
     assert.ok(!ids.write.includes('knx.0.mk1') && !ids.write.includes('x.0.t'));
 });
+
+test('layout: values in the header are read only and need a data point', () => {
+    const { cleanLayout, stateIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [], header: [{ label: 'Nord', state: 'w.0.t', decimals: '1' }, { label: 'leer' }] });
+    assert.deepEqual(l.header, [{ label: 'Nord', state: 'w.0.t', unit: '', decimals: 1 }]);
+    assert.ok(stateIds(l).read.includes('w.0.t') && !stateIds(l).write.includes('w.0.t'));
+});

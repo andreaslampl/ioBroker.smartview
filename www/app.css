@@ -36,6 +36,9 @@ button:disabled { opacity: .5; }
 #title { font-size: 20px; font-weight: 700; white-space: nowrap; }
 #pageTitle { color: var(--muted); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #clock { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--muted); }
+#hvals { display: flex; gap: 14px; align-items: baseline; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+#hvals .hv { font-size: 18px; font-weight: 600; }
+#hvals .hv small { font-size: 12px; font-weight: 400; color: var(--muted); margin-right: 4px; }
 #conn { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); }
 #conn.ok { background: var(--ok); }
 #editBar { grid-area: edit; display: flex; gap: 8px; align-items: center; padding: 8px 16px; background: #3a2f12; color: #ffe2a3; flex-wrap: wrap; }
@@ -124,7 +127,7 @@ html[data-theme="light"] #editBar { background: #fff1c7; color: #6b4e00; }
 @media (max-width: 699px) {
   #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; grid-template-areas: "top" "edit" "main" "nav"; }
   #backBtn:not([hidden]) ~ #titleBox #title { display: none; }
-  #clock { display: none; }
+  #clock, #hvals { display: none; }
   #title { font-size: 18px; }
   #nav { flex-direction: row; border-right: none; border-top: 1px solid var(--line); padding: 4px 4px calc(4px + var(--safeB)); overflow-x: auto; overflow-y: hidden; gap: 0; }
   #nav .navitem { flex-direction: column; gap: 2px; padding: 6px 8px; min-width: 68px; font-size: 11px; text-align: center; }

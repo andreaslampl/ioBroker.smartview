@@ -805,6 +805,63 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.status || r.mode || r.modeStatus) };
   }
 
+  /** Values next to the clock (e.g. outside temperatures and humidity): name, data point, unit, decimals. */
+  function headerField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Werte in der Kopfzeile neben der Uhr (Touch-PC)', wrap, 'z. B. mehrere Außentemperaturen und Außenfeuchten. Name optional (z. B. „Nord“), Einheit leer = vom Datenpunkt.');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => {
+      const o = { label: x.label.value.trim(), state: x.state.value.trim(), unit: x.unit.value.trim() };
+      if (x.dec.value !== '') o.decimals = Number(x.dec.value);
+      return o;
+    });
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name (optional)', textInput(r.label));
+        x.label.placeholder = 'z. B. Außen Nord';
+        x.state = stateField(b, 'Datenpunkt', r.state, false);
+        x.unit = field(b, 'Einheit (optional)', textInput(r.unit));
+        x.unit.placeholder = 'z. B. °C oder %';
+        x.dec = field(b, 'Nachkommastellen', select([['', 'automatisch'], ['0', '0'], ['1', '1'], ['2', '2']], r.decimals === undefined ? '' : String(r.decimals)));
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Wert entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Wert';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { get: () => read().filter(r => r.state) };
+  }
+
   /** Rooms of a dehumidifier / air conditioner tile: name, humidity, temperature (read only, mean for the automatic). */
   function sensorsField(box, rows) {
     const wrap = document.createElement('div');
@@ -1673,6 +1730,7 @@ const Editor = (() => {
     body.appendChild(h0);
     const showDate = check('Datum in der Kopfzeile anzeigen (Touch-PC)', l.showDate);
     body.appendChild(showDate);
+    const header = headerField(body, l.header || []);
     const hideNav = check('Seitenleiste ausblenden – Navigation nur über „Seite öffnen“-Kacheln und „zurück“', l.hideNav);
     body.appendChild(hideNav);
     const hn = document.createElement('div');
@@ -1931,6 +1989,7 @@ const Editor = (() => {
       l.title = title.value.trim() || 'SmartView';
       l.theme = theme.value;
       l.showDate = showDate.input.checked;
+      l.header = header.get();
       l.hideNav = hideNav.input.checked;
       l.side = {
         enabled: sideOn.input.checked,

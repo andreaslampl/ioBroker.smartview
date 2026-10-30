@@ -180,6 +180,8 @@ vielen Lichtern am Touch-PC. Kacheln und Liste lassen sich jederzeit umschalten 
 Unter ⚙ **Allgemein & Mitteilungen → Darstellung** – alles standardmäßig aus:
 
 - **Datum in der Kopfzeile** (Touch-PC).
+- **Werte in der Kopfzeile** neben der Uhr (Touch-PC), z. B. mehrere Außentemperaturen und Außenfeuchten: unter
+  ⚙ Allgemein mit „+ Wert“ – Name (z. B. „Nord“), Datenpunkt, optional Einheit und Nachkommastellen.
 - **Seitenleiste ausblenden** – Navigation wie ein Menü: die erste Seite bekommt „Seite öffnen“-Kacheln
   für die Bereiche, oben erscheint **zurück**.
 - **Geteilter Bildschirm am Touch-PC** – rechts oben und rechts unten feste Bereiche mit Reitern,

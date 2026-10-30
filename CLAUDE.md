@@ -297,6 +297,9 @@ switches/buttons on them.
   `climIds`): mean of the rooms' humidity (else the tile's own), zone high/mid/low per tile (`climZone`), acts only when the
   zone changes (also once after start), only if the device is not already in that state -> manual switching in between
   stays. app.js `climMean()`, tile shows "Ø 64 %", sheet rows per room + Mittelwert + Automatik. Checked in Playwright.
+- 0.34.0: owner asked for several outside temperatures / humidities next to the clock -> layout `header` [{label, state,
+  unit, decimals}] (max 8, read only, in stateIds), `#hvals` before `#clock` (hidden on the phone like the clock),
+  app.js `renderHeader()` (in render() and refresh()), editor `headerField()` in the settings dialog. Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.33.0",
+    "version": "0.34.0",
     "news": {
+      "0.34.0": {
+        "en": "Values next to the clock in the header (e.g. several outside temperatures and humidity), set in 'Allgemein'",
+        "de": "Werte neben der Uhr in der Kopfzeile (z. B. mehrere Außentemperaturen und -feuchten), einzustellen unter „Allgemein“"
+      },
       "0.33.0": {
         "en": "Dehumidifier tile: humidity and temperature of several rooms (each and the mean) and an automatic: on when the mean humidity reaches 'Ein ab', off when it falls to 'Aus bei' - runs in the adapter, switching by hand in between stays",
         "de": "Luftentfeuchter-Kachel: Luftfeuchte und Temperatur mehrerer Räume (einzeln und als Mittelwert) und eine Automatik: ein, wenn der Mittelwert „Ein ab“ erreicht, aus, wenn er auf „Aus bei“ fällt – läuft im Adapter, von Hand schalten dazwischen bleibt"

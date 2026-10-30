@@ -1017,6 +1017,7 @@ function render() {
   // without page bar: "zurück" leads to the first page (the menu)
   $('backBtn').hidden = !(l.hideNav && !SV.editing && page && l.pages[0] && page.id !== l.pages[0].id);
   tickClock();
+  renderHeader();
   renderNav();
   renderPage();
   renderSide();
@@ -1794,6 +1795,7 @@ function refresh(id) {
     else fillTile(el, t);
   }
   if (layout() && id === layout().ring.state) checkRing();
+  if (layout() && (layout().header || []).some(h => h.state === id)) renderHeader();
 }
 
 function findTile(pageId, id) {
@@ -2633,6 +2635,20 @@ async function loadLayout() {
   SV.allowEdit = r.allowEdit;
   SV.icons = r.icons;
   SV.types = r.types;
+}
+
+/** values next to the clock (Allgemein -> Werte in der Kopfzeile), e.g. outside temperatures and humidity */
+function renderHeader() {
+  const box = $('hvals');
+  const list = (layout() && layout().header) || [];
+  box.dataset.ids = ' ' + list.map(h => h.state).join(' ') + ' ';
+  box.innerHTML = list.map(h => {
+    const f = fmt({ unit: h.unit, decimals: h.decimals }, h.state);
+    const s = st(h.state) || {};
+    const isNum = typeof s.val === 'number';
+    const text = isNum && h.decimals === undefined ? Number(s.val).toLocaleString('de-DE', { maximumFractionDigits: 1 }) : f.text;
+    return '<span class="hv">' + (h.label ? '<small>' + esc(h.label) + '</small>' : '') + esc(text) + (f.unit ? ' ' + esc(f.unit) : '') + '</span>';
+  }).join('');
 }
 
 function tickClock() {
