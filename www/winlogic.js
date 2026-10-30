@@ -35,11 +35,18 @@
 
   const active = w => w.status === 'open' || w.status === 'tilt';
 
+  /** the tile's own words (e.g. an / aus for lights), else offen / gekippt / geschlossen */
+  function words(t) {
+    t = t || {};
+    return { open: t.wordOpen || TEXT.open, tilt: t.wordTilt || TEXT.tilt, closed: t.wordClosed || TEXT.closed, unknown: TEXT.unknown, all: t.wordAll || 'alle ' + (t.wordClosed || TEXT.closed) };
+  }
+
   /**
    * Entries: single windows, or one entry per area (`group`) with the worst status, its open/tilted members as
    * detail ("links offen · Tür gekippt") and since when the first of them is open.
    */
-  function entries(list) {
+  function entries(list, w) {
+    const text = w || TEXT;
     const out = [];
     const groups = new Map();
     for (const w of list) {
@@ -61,7 +68,7 @@
       g.status = m.every(x => x.status === 'unknown') ? 'unknown' : worst.status === 'unknown' ? 'closed' : worst.status;
       const notClosed = m.filter(active);
       g.ts = notClosed.length ? Math.min(...notClosed.map(x => x.ts || Date.now())) : Math.max(0, ...m.map(x => x.ts || 0));
-      g.detail = notClosed.map(x => x.label + ' ' + TEXT[x.status]).join(' · ');
+      g.detail = notClosed.map(x => x.label + ' ' + text[x.status]).join(' · ');
     }
     return out;
   }
@@ -72,7 +79,7 @@
     return Boolean(s && truthy(s.val)) && list.some(active);
   }
 
-  const api = { TEXT, RANK, truthy, states, entries, active, warn };
+  const api = { TEXT, RANK, truthy, states, entries, active, warn, words };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.WinLogic = api;
 })(this);

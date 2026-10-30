@@ -206,6 +206,14 @@ Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt �
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
+### Fensterübersicht für alles (z. B. „alle Lichter sind aus“)
+
+Die Fensterübersicht geht auch für andere Dinge, die an/aus sind: im Kachel-Dialog eigene **Wörter** für
+offen / gekippt / geschlossen (z. B. „an“ / „aus“) und für **„wenn nichts offen ist“** (z. B. „alle Lichter sind
+aus“), ein **Symbol je Zustand** (z. B. Glühbirne) und **„Farbe, wenn offen“: gelb wie eingeschaltet** statt rot.
+Zusammen mit **„Nur offene anzeigen“** stehen dann nur die eingeschalteten Lichter mit ihrem Symbol da – sind alle aus,
+nur die Überschrift „alle Lichter sind aus“. Auch die Mitteilungen nehmen die eigenen Wörter.
+
 ### Fensterübersicht: Magnetkontakte auswerten
 
 Pro Fenster bis zu zwei Kontakte (true = offen, jeder einzeln „umgekehrt“) und die **Auswertung** passend zur

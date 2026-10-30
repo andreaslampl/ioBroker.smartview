@@ -384,6 +384,9 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .win .wic { color: var(--ok); display: flex; }
 .win.open .wic { color: var(--bad); }
 .win.tilt .wic { color: var(--warn); }
+.wsum.onc { color: var(--on); }
+.win.open.calm { background: var(--tileOn); border-color: var(--on); }
+.win.open.calm .wic { color: var(--on); }
 .win .wname { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .win .wst { margin-left: auto; text-align: right; font-size: 14px; white-space: nowrap; }
 .win .wst small { display: block; color: var(--muted); font-size: 12px; }

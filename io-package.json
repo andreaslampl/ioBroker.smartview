@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.38.1",
+    "version": "0.39.0",
     "news": {
+      "0.39.0": {
+        "en": "Window overview usable for anything: own words for open / tilted / closed and for 'nothing open' (e.g. 'alle Lichter sind aus'), own symbol per state, yellow instead of red",
+        "de": "Fensterübersicht für alles nutzbar: eigene Wörter für offen / gekippt / geschlossen und für „nichts offen“ (z. B. „alle Lichter sind aus“), eigenes Symbol je Zustand, gelb statt rot"
+      },
       "0.38.1": {
         "en": "'Haus verlassen' / 'Ankommen': lights and blinds either from the page's tiles and the extra data points, or only from the extra data points",
         "de": "„Haus verlassen“ / „Ankommen“: Lichter und Rollläden entweder aus den Kacheln der Seite und den zusätzlichen Datenpunkten oder nur aus den zusätzlichen Datenpunkten"

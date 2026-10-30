@@ -588,7 +588,14 @@ function windowStates(t) {
 const WIN_RANK = WinLogic.RANK;
 
 function windowEntries(t) {
-  return WinLogic.entries(windowStates(t));
+  return WinLogic.entries(windowStates(t), WinLogic.words(t));
+}
+
+/** symbol of a window row: the tile's own per state, else the window symbols */
+function winIcon(t, status) {
+  if (status === 'open') return t.iconOpen || 'win-open';
+  if (status === 'tilt') return t.iconTilt || 'win-tilt';
+  return t.iconClosed || 'win-closed';
 }
 
 const WIN_TEXT = WinLogic.TEXT;
@@ -602,7 +609,10 @@ function windowsHtml(t) {
   const list = windowStates(t);
   const open = list.filter(w => w.status === 'open').length;
   const tilt = list.filter(w => w.status === 'tilt').length;
-  const sum = open || tilt ? [open ? open + ' offen' : '', tilt ? tilt + ' gekippt' : ''].filter(Boolean).join(' · ') : 'alle geschlossen';
+  const w = WinLogic.words(t);
+  const sum = open || tilt ? [open ? open + ' ' + w.open : '', tilt ? tilt + ' ' + w.tilt : ''].filter(Boolean).join(' · ') : w.all;
+  // "gelb wie eingeschaltet" instead of red (e.g. lights that are on are no alarm)
+  const calm = t.openColor === 'on';
   const warn = windowsWarn(t);
   const longMs = t.warnMin > 0 ? t.warnMin * 60000 : 0;
   let entries = windowEntries(t);
@@ -611,21 +621,25 @@ function windowsHtml(t) {
   const row = e => {
     const active = e.status === 'open' || e.status === 'tilt';
     const long = active && longMs && e.ts && Date.now() - e.ts >= longMs;
-    const cls = 'win ' + e.status + (long ? ' long' : '') + (warn && active ? ' warnnow' : '') + (e.group ? ' wgroup' : '');
+    const cls = 'win ' + e.status + (calm ? ' calm' : '') + (long ? ' long' : '') + (warn && active ? ' warnnow' : '') + (e.group ? ' wgroup' : '');
     const n = e.group ? e.members.filter(x => x.status === 'open' || x.status === 'tilt').length : 0;
-    const st = e.group && n > 1 ? n + ' ' + (e.members.some(x => x.status === 'open') ? 'offen' : 'gekippt') : WIN_TEXT[e.status];
-    return '<div class="' + cls + '"><span class="wic">' + icon(e.status === 'open' ? 'win-open' : e.status === 'tilt' ? 'win-tilt' : 'win-closed') + '</span>' +
+    const st = e.group && n > 1 ? n + ' ' + (e.members.some(x => x.status === 'open') ? w.open : w.tilt) : w[e.status];
+    return '<div class="' + cls + '"><span class="wic">' + icon(winIcon(t, e.status)) + '</span>' +
       '<span class="wname">' + esc(e.label) + (e.detail ? '<small class="wdetail">' + esc(e.detail) + '</small>' : '') + '</span>' +
       '<span class="wst">' + esc(st) + (e.ts && e.status !== 'unknown' ? ' <small>' + (long ? '⚠ ' : '') + 'seit ' + since(e.ts) + '</small>' : '') + '</span></div>';
   };
   return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Fenster') + '</span>' +
     (warn ? '<span class="wwarn">' + esc(t.warnText || 'Achtung') + '</span>' : '') +
-    '<span class="wsum' + (open ? ' bad' : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
+    '<span class="wsum' + (open ? (calm ? ' onc' : ' bad') : tilt ? ' warn' : '') + '">' + esc(sum) + '</span></div>' +
     (entries.length ? '<div class="wlist">' + entries.map(row).join('') + '</div>' : '');
 }
 
 function tileState(t) {
-  if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
+  if (t.type === 'windows') {
+    if (windowsWarn(t)) return 'alert';
+    if (!windowStates(t).some(w => w.status === 'open')) return '';
+    return t.openColor === 'on' ? 'on' : 'alert';
+  }
   if (t.type === 'radio') return radioPlaying(radioCur(t)) ? 'on' : '';
   if (t.type === 'fire') {
     const f = fireInfo(t);
@@ -2198,7 +2212,7 @@ function fillMarker(el, t) {
   }
   else if (t.type === 'windows') {
     const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
-    v = n ? n + ' offen' : '';
+    v = n ? n + ' ' + WinLogic.words(t).open : '';
   } else if (t.type === 'thermostat') {
     const c = thermoCur(t);
     const f = fmt({ decimals: 1, unit: c.unit }, c.status || c.state);

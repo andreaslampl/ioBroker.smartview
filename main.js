@@ -834,8 +834,8 @@ class SmartView extends utils.Adapter {
                 const mem = this.winMem.get(key) || { long: new Set(), warn: false };
                 this.winMem.set(key, mem);
                 const list = WinLogic.states(t, st);
-                const entries = WinLogic.entries(list);
-                const what = e => (e.group ? `${e.label} (${e.detail})` : `${e.label} ${WinLogic.TEXT[e.status]}`);
+                const entries = WinLogic.entries(list, WinLogic.words(t));
+                const what = e => (e.group ? `${e.label} (${e.detail})` : `${e.label} ${WinLogic.words(t)[e.status]}`);
                 const title = t.label || 'Fenster';
                 if (t.warnMin > 0) {
                     for (const e of entries) {
@@ -844,7 +844,7 @@ class SmartView extends utils.Adapter {
                         } else if (e.ts && Date.now() - e.ts >= t.warnMin * 60000 && !mem.long.has(e.label)) {
                             mem.long.add(e.label);
                             if (!initial) {
-                                this.notify(`${title}: zu lange offen`, `${what(e)} seit mehr als ${t.warnMin} Min.`, page.id);
+                                this.notify(`${title}: zu lange ${WinLogic.words(t).open}`, `${what(e)} seit mehr als ${t.warnMin} Min.`, page.id);
                             }
                         }
                     }

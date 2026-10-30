@@ -328,6 +328,10 @@ switches/buttons on them.
   go with their tick, blind ones delayed; empty value: light false/true, blind true/false for leave/arrive; other only with
   a value). Extras are not in stateIds (page cannot write them); server `_scene` adds them to `allowed` for that button.
 - 0.38.1: owner asked "und oder" -> `lightsFrom` / `blindsFrom` both (tiles + extra, default) | points (only extra).
+- 0.39.0: owner asked to rename the window overview's texts ("alle Lichter sind aus"), own symbols, symbols only when on ->
+  windows options `wordOpen/Tilt/Closed/All`, `iconOpen/Tilt/Closed` (ICONS or win-*), `openColor` bad|on (on = yellow, tile
+  state 'on' instead of 'alert'). `WinLogic.words(t)`, `entries(list, words)`; app.js `winIcon()`; main window messages
+  use the words. Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

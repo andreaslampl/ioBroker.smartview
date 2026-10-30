@@ -108,6 +108,14 @@ const TYPE_FIELDS = {
     ['warnWhen', 'Warnen, wenn (optional)', 'state-r', 'z. B. Regen, Alarmanlage scharf oder Heizung an: Ist dieser Datenpunkt true und etwas offen, wird es rot markiert und der Warntext erscheint.'],
     ['warnText', 'Warntext (optional)', 'text', 'z. B. „Regen!“ – Standard „Achtung“'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Wenn ein Fenster länger als die Minuten oben offen ist und wenn „Warnen, wenn“ eintritt, während etwas offen ist – über die Wege, die in den Einstellungen eingerichtet sind.'],
+    ['wordOpen', 'Wort für „offen“ (optional)', 'text', 'Die Übersicht geht auch für anderes, z. B. Lichter: „an“ / „aus“ und „alle Lichter sind aus“. Leer = Fenster-Wörter.'],
+    ['wordTilt', 'Wort für „gekippt“ (optional)', 'text'],
+    ['wordClosed', 'Wort für „geschlossen“ (optional)', 'text'],
+    ['wordAll', 'Text, wenn nichts offen ist (optional)', 'text', 'z. B. „alle Lichter sind aus“ – Standard „alle“ + Wort für geschlossen'],
+    ['iconOpen', 'Symbol für „offen“', 'iconsel'],
+    ['iconTilt', 'Symbol für „gekippt“', 'iconsel'],
+    ['iconClosed', 'Symbol für „geschlossen“', 'iconsel'],
+    ['openColor', 'Farbe, wenn offen', 'select:bad=rot (Warnung);on=gelb wie eingeschaltet'],
   ],
   alarm: [
     ['area', 'Bereich aus NOX- oder SPC-Adapter (optional)', 'text', 'z. B. nox_alarmzentrale.0.areas.1 oder spc-edp.0.areas.1 – füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, bereit, Werte).'],
@@ -1186,6 +1194,10 @@ const Editor = (() => {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
         else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'extra') inputs[key] = extraField(body, t[key] || [], t.type);
+        else if (kind === 'iconsel') {
+          const opts = [['', 'Fenster-Symbol (Standard)']].concat(Object.keys(ICON_LABELS).map(n => [n, ICON_LABELS[n]]));
+          inputs[key] = field(body, label, select(opts, t[key] || ''), help);
+        }
         else if (kind === 'lighttiles' || kind === 'blindtiles') {
           const box = document.createElement('div');
           box.className = 'checks';
