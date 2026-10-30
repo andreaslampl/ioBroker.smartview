@@ -24,6 +24,7 @@ const TYPE_LABELS = {
   radio: 'Webradio (Adapter sonos-radio)',
   contact: 'Fensterkontakt / Magnetkontakt (z. B. im Lageplan)',
   climate: 'Luftentfeuchter / Klimagerät',
+  leave: 'Haus verlassen (alles aus mit einem Knopf)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -122,6 +123,14 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
+  ],
+  leave: [
+    ['lightsOff', 'Alle Lichter aus', 'check', 'Schalter und Dimmer auf der Ebene „Licht“ (nach Symbol oder Ebene im Kachel-Dialog) – Steckdosen bleiben an.'],
+    ['blindsDown', 'Rollläden zu, Markisen ein', 'check'],
+    ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'Wert für alle Heizungs-Kacheln mit Betriebsart, z. B. KNX 2 = Standby. Leer = Heizung bleibt.'],
+    ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel (braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt).'],
+    ['radioOff', 'Radio aus', 'check'],
+    ['climateOff', 'Luftentfeuchter / Klimageräte aus', 'check'],
   ],
   contact: [
     ['state', 'Kontakt (true = offen)', 'state-r', 'Magnetkontakt des Fensters bzw. der Tür'],
@@ -1060,8 +1069,12 @@ const Editor = (() => {
       inputs.label = field(body, 'Beschriftung', textInput(t.label));
       for (const [key, label, kind, help] of TYPE_FIELDS[t.type]) {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
-        else if (kind === 'check') {
-          const c = check(label, t[key]);
+        else if (kind === 'alarmtile') {
+          const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
+          inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
+        } else if (kind === 'check') {
+          // a new "Haus verlassen" tile starts with the lights ticked
+          const c = check(label, t[key] === undefined && t.type === 'leave' && key === 'lightsOff' ? true : t[key]);
           body.appendChild(c);
           inputs[key] = c.input;
           if (help) {

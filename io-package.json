@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.34.0",
+    "version": "0.35.0",
     "news": {
+      "0.35.0": {
+        "en": "New tile 'Haus verlassen': one button for all lights off (layer light), blinds down / awnings in, heating mode, arming the alarm (its PIN asked once), radio and dehumidifiers off - shows what it will do and which windows are open first",
+        "de": "Neue Kachel „Haus verlassen“: ein Knopf für alle Lichter aus (Ebene Licht), Rollläden zu / Markisen ein, Heizung auf eine Betriebsart, Alarmanlage scharf (deren PIN einmal), Radio und Entfeuchter aus – zeigt vorher, was passiert und welche Fenster offen sind"
+      },
       "0.34.0": {
         "en": "Values next to the clock in the header (e.g. several outside temperatures and humidity), set in 'Allgemein'",
         "de": "Werte neben der Uhr in der Kopfzeile (z. B. mehrere Außentemperaturen und -feuchten), einzustellen unter „Allgemein“"

@@ -458,3 +458,12 @@ test('layout: values in the header are read only and need a data point', () => {
     assert.deepEqual(l.header, [{ label: 'Nord', state: 'w.0.t', unit: '', decimals: 1 }]);
     assert.ok(stateIds(l).read.includes('w.0.t') && !stateIds(l).write.includes('w.0.t'));
 });
+
+test('layout: "Haus verlassen" has no data points of its own, only options', () => {
+    const { cleanLayout, stateIds, tileWriteIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'u', name: 'U', tiles: [{ id: 'go', type: 'leave', lightsOff: 1, blindsDown: '', heatMode: ' 2 ', alarmArm: 'al', radioOff: true, state: 'x.0.y' }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.deepEqual([t.lightsOff, t.blindsDown, t.heatMode, t.alarmArm, t.radioOff, t.state], [true, undefined, '2', 'al', true, undefined]);
+    assert.deepEqual(tileWriteIds(t), []);
+    assert.deepEqual(stateIds(l), { read: [], write: [] });
+});

@@ -62,6 +62,7 @@ ausschalten.
 | Webradio | Sender-Datenpunkt eines Raums aus sonos-radio (Rest ergänzt sich), optional weitere Räume | antippen = Senderknöpfe, Stopp, Lautstärke (siehe unten) |
 | Fensterkontakt | Kontakt (true = offen), optional zweiter / Kipp-Kontakt | rot = offen, orange = gekippt; im Lageplan optional nur sichtbar, wenn nicht zu |
 | Luftentfeuchter / Klimagerät | Ein/Aus, optional Sollwert, Ist-Feuchte / -Temperatur, Betriebsart, Lüfter, Störung / Tank voll | antippen = Ein/Aus, Soll − / +, Betriebsart, Lüfter, Zeitschaltuhr |
+| Haus verlassen | – (nutzt die anderen Kacheln) | antippen = Übersicht + offene Fenster, „Haus verlassen“ schaltet (siehe unten) |
 | Wallbox | Wallbox-Instanz (versicharge) und Energie-Instanz, oder Datenpunkte selbst | antippen = Lademodus, Details (siehe unten) |
 | Überschrift | – | – |
 
@@ -324,6 +325,22 @@ in °C, Schritt 0,5), Betriebsart und Lüfterstufe als Knöpfe (Texte aus dem Da
   der Mittelwert der Räume 65 %, schaltet SmartView ein; fällt er auf 55 %, wieder aus. Das läuft im Adapter, auch wenn
   keine Seite offen ist. Geschaltet wird nur beim Überschreiten der Grenzen – wer dazwischen von Hand ein- oder
   ausschaltet, wird nicht überstimmt. Ohne Räume zählt die Luftfeuchte der Kachel selbst.
+
+### Haus verlassen
+
+Kachel **„Haus verlassen (alles aus mit einem Knopf)“**. Sie braucht keine eigenen Datenpunkte, sondern nimmt die
+Kacheln, die es schon gibt:
+
+- **Alle Lichter aus:** Schalter und Dimmer auf der Ebene „Licht“ (Glühbirne, Lampe, Wand-/Deckenlampe … oder Ebene
+  im Kachel-Dialog). Steckdosen und andere Schalter bleiben an.
+- **Rollläden zu, Markisen ein** (gesperrte Rollläden – Wind/Regen – werden ausgelassen und angezeigt).
+- **Heizung auf Betriebsart:** z. B. `2` (KNX Standby) für alle Heizungs-Kacheln mit Betriebsart, auch alle Kreise.
+- **Alarmanlage scharf:** alle Bereiche der gewählten Alarm-Kachel (die braucht „Schalten erlauben“). Hat sie eine
+  PIN, wird sie **einmal** abgefragt. Nicht scharfschaltbereite Bereiche werden vorher angezeigt.
+- **Radio aus**, **Luftentfeuchter / Klimageräte aus**.
+
+Antippen öffnet erst eine Übersicht: was geschaltet wird (mit Anzahl) und welche **Fenster noch offen** sind. Erst der
+Knopf „Haus verlassen“ darin schaltet. Was schon aus ist, bekommt keinen Befehl.
 
 ### Kameras
 

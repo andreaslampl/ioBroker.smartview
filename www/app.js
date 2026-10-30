@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
@@ -663,14 +663,16 @@ function send(id, value) {
   if (!id) return;
   if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
-  withPin(id, pin => {
-    SV.ws.send(JSON.stringify({ type: 'set', id, val: value, pin }));
-    // show the new value right away; the confirmed value replaces it (or the old one comes back after a wrong PIN)
-    const s = SV.states[id] || {};
-    SV.prevStates[id] = s;
-    SV.states[id] = { ...s, val: value, ack: false, ts: Date.now(), missing: false };
-    refresh(id);
-  });
+  withPin(id, pin => sendNow(id, value, pin));
+}
+
+function sendNow(id, value, pin) {
+  SV.ws.send(JSON.stringify({ type: 'set', id, val: value, pin }));
+  // show the new value right away; the confirmed value replaces it (or the old one comes back after a wrong PIN)
+  const s = SV.states[id] || {};
+  SV.prevStates[id] = s;
+  SV.states[id] = { ...s, val: value, ack: false, ts: Date.now(), missing: false };
+  refresh(id);
 }
 
 // ---------------- PIN (checked by the server; the page only asks for it) ----------------
@@ -810,6 +812,111 @@ function radioVolStep(c, dir) {
   const v = Number(val(c.volume)) || 0;
   // next step of 2 (23 -> 24 / 22)
   send(c.volume, Math.max(0, Math.min(100, dir > 0 ? Math.floor(v / 2) * 2 + 2 : Math.ceil(v / 2) * 2 - 2)));
+}
+
+// ---------------- "Haus verlassen" ----------------
+
+/** every tile of the layout once (plan markers and tiles may repeat data points; commands are deduplicated by id) */
+function allTiles() {
+  return (layout() ? layout().pages : []).flatMap(p => p.tiles);
+}
+
+/** what the button would do: {groups: [[text, n]], cmds: Map(id -> value), warn: [texts]} */
+function leavePlan(t) {
+  const cmds = new Map();
+  const groups = [];
+  const warn = [];
+  const add = (id, v) => id && !cmds.has(id) && cmds.set(id, v);
+  const tiles = allTiles();
+  const count = (label, fn) => {
+    const before = cmds.size;
+    fn();
+    if (cmds.size > before) groups.push([label, cmds.size - before]);
+  };
+  if (t.lightsOff) {
+    count('Lichter aus', () => {
+      for (const x of tiles) {
+        if ((x.type !== 'switch' && x.type !== 'dimmer') || tileLayer(x) !== 'licht') continue;
+        if (x.type === 'switch' && (switchOn(x) || val(x.status || x.state) === undefined)) add(x.state, Boolean(x.invert));
+        if (x.type === 'dimmer' && dimOn(x)) x.switchState ? add(x.switchState, false) : add(x.state, 0);
+      }
+    });
+  }
+  if (t.blindsDown) {
+    count('Rollläden zu / Markisen ein', () => {
+      for (const x of tiles) {
+        if (x.type !== 'blind' || !x.state) continue;
+        if (blindLock(x)) {
+          warn.push((x.label || 'Rollladen') + ' gesperrt (' + blindLock(x).reason + ')');
+          continue;
+        }
+        // awnings retract (= open 100), blinds close (0)
+        const open = x.kind === 'awning' ? 100 : 0;
+        const s = st(x.state);
+        if (s && s.type === 'boolean') add(x.state, x.closed100 ? open > 0 : open === 0);
+        else add(x.state, pctClosed100(x) ? 100 - open : open);
+      }
+    });
+  }
+  if (t.heatMode) {
+    count('Heizung auf „' + t.heatMode + '“', () => {
+      for (const x of tiles.filter(y => y.type === 'thermostat')) {
+        for (const c of thermoCircuits(x) || [x]) {
+          if (!c.mode) continue;
+          const s = st(c.mode) || {};
+          add(c.mode, s.type !== 'string' && Number.isFinite(Number(t.heatMode)) ? Number(t.heatMode) : t.heatMode);
+        }
+      }
+    });
+  }
+  if (t.alarmArm) {
+    const a = tiles.find(x => x.type === 'alarm' && x.id === t.alarmArm);
+    if (!a || !a.control) warn.push('Alarmanlage: Kachel fehlt oder „Schalten erlauben“ ist nicht gesetzt');
+    else {
+      count('Alarmanlage scharf', () => {
+        for (const area of alarmAreas(a) || [a]) {
+          if (!area.command || area.valueArm === '' || area.valueArm === undefined) continue;
+          const info = alarmInfo(area);
+          if (info.mode === 'armed') continue;
+          if (info.ready === false) warn.push((area.label || a.label || 'Alarm') + ': nicht scharfschaltbereit' + (info.open ? ' – offen: ' + info.open : ''));
+          add(area.command, typedVal(String(area.valueArm)));
+        }
+      });
+    }
+  }
+  if (t.radioOff) {
+    count('Radio aus', () => {
+      for (const x of tiles.filter(y => y.type === 'radio')) for (const r of radioRooms(x) || [x]) if (radioPlaying(r)) add(r.playing, false);
+    });
+  }
+  if (t.climateOff) {
+    count('Entfeuchter / Klima aus', () => {
+      for (const x of tiles) if (x.type === 'climate' && x.state && climOn(x)) add(x.state, Boolean(x.invert));
+    });
+  }
+  // open windows: from window overviews and contact tiles
+  const open = new Set();
+  for (const x of tiles) {
+    const list = x.type === 'windows' ? windowStates(x) : x.type === 'contact' ? [{ ...contactStatus(x), label: x.label }] : [];
+    for (const w of list) if (w.status === 'open' || w.status === 'tilt') open.add((w.label || 'Fenster') + ' ' + WinLogic.TEXT[w.status]);
+  }
+  if (open.size) warn.unshift('Offen: ' + [...open].join(', '));
+  return { groups, cmds, warn };
+}
+
+function leaveRun(t) {
+  const plan = leavePlan(t);
+  if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
+  if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
+  if (!plan.cmds.size) return toast('Es ist schon alles aus');
+  const go = pin => {
+    for (const [id, v] of plan.cmds) sendNow(id, v, SV.pinIds && SV.pinIds.has(id) ? pin : undefined);
+    closeSheet();
+    toast((t.label || 'Haus verlassen') + ': ' + plan.groups.map(g => g[0]).join(', '));
+  };
+  // one PIN for all protected data points (e.g. the alarm system)
+  if ([...plan.cmds.keys()].some(id => SV.pinIds && SV.pinIds.has(id))) askPin().then(pin => pin && go(pin));
+  else go(undefined);
 }
 
 // ---------------- window contact, dehumidifier / air conditioner ----------------
@@ -1361,7 +1468,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1561,7 +1668,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1607,6 +1714,9 @@ function fillTile(el, t) {
         (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
       break;
     }
+    case 'leave':
+      html = '<div class="row1">' + ic + '</div>' + label;
+      break;
     case 'contact': {
       const c = contactStatus(t);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(contactText(t)) + '</div>' +
@@ -1736,6 +1846,7 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
+      else if (a === 'leave') leaveRun(t);
       else if (a === 'clon') climSwitch(t, true);
       else if (a === 'cloff') climSwitch(t, false);
       else if (a === 'clplus') climStep(t, 1);
@@ -2262,6 +2373,11 @@ function fillSheet(sh, t) {
       (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
+  } else if (t.type === 'leave') {
+    const plan = leavePlan(t);
+    body = (plan.warn.length ? '<div class="mrows sheetrows">' + plan.warn.map(w => '<div class="mrow"><span class="warnc">⚠ ' + esc(w) + '</span></div>').join('') + '</div>' : '') +
+      '<div class="mrows sheetrows">' + (plan.groups.length ? plan.groups.map(([g, n]) => '<div class="mrow"><span>' + esc(g) + '</span><b>' + n + '</b></div>').join('') : '<div class="mrow"><span class="muted">Es ist schon alles aus.</span></div>') + '</div>' +
+      '<div class="row"><button type="button" data-a="leave" class="primary"' + (plan.cmds.size ? '' : ' disabled') + '>' + icon('leave') + (t.label || 'Haus verlassen') + '</button></div>';
   } else if (t.type === 'contact') {
     const c = contactStatus(t);
     body = '<div class="bigval">' + esc(contactText(t)) + '</div>' + (c.ts && c.status !== 'unknown' ? '<p class="muted" style="text-align:center;margin:0">seit ' + since(c.ts) + '</p>' : '');

@@ -31,6 +31,7 @@ const ICON_PATHS = {
   moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   energy: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4"/><path d="M11 9l-2 3h4l-2 3"/>',
+  leave: '<path d="M13 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5"/><path d="M9 16l-4-4 4-4M5 12h11"/>',
   contact: '<rect x="2.5" y="9" width="12" height="6" rx="1.5"/><rect x="16.5" y="9" width="5" height="6" rx="1.5"/><path d="M5.5 12h6M19 5v2M19 17v2"/>',
   dehum: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M8 6h8"/><path d="M12 10c-1.7 2.1-2.6 3.5-2.6 4.8a2.6 2.6 0 0 0 5.2 0c0-1.3-.9-2.7-2.6-4.8z"/>',
   aircon: '<rect x="2" y="4" width="20" height="8" rx="2"/><path d="M6 9h12"/><path d="M7.5 15c0 1.5-1 2.5-1 4.5M12 15v5M16.5 15c0 1.5 1 2.5 1 4.5"/>',
@@ -71,7 +72,7 @@ const ICON_LABELS = {
   bulb: 'Licht', lamp: 'Lampe', walllamp: 'Wandlampe', awning: 'Markise', ceiling: 'Deckenlampe', lantern: 'Außenleuchte', power: 'Ein/Aus', socket: 'Steckdose', blind: 'Rollladen', window: 'Fenster',
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
-  moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
+  moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', leave: 'Verlassen', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
   scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', tree: 'Garten', info: 'Info',
   star: 'Favorit', gauge: 'Anzeige',
 };

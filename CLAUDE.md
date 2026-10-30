@@ -300,7 +300,14 @@ switches/buttons on them.
 - 0.34.0: owner asked for several outside temperatures / humidities next to the clock -> layout `header` [{label, state,
   unit, decimals}] (max 8, read only, in stateIds), `#hvals` before `#clock` (hidden on the phone like the clock),
   app.js `renderHeader()` (in render() and refresh()), editor `headerField()` in the settings dialog. Checked in Playwright.
-- Ideas not done yet: charts/history.
+- 0.35.0: owner asked for a "leave home" button (all lights off, optionally blinds down, heating lower, alarm armed) and
+  more ideas -> tile `leave` {lightsOff, blindsDown, heatMode, alarmArm (alarm tile id), radioOff, climateOff}, no own
+  data points (commands go to other tiles' ids, already writable; their PINs apply). app.js `leavePlan()` (lights =
+  switch/dimmer with `tileLayer()` licht and on; blinds 0 / awnings 100 via closed100/pctClosed100, locked ones skipped;
+  thermostat modes incl. circuits; alarm areas with valueArm when control; radio/climate on -> off; open windows from
+  windows/contact tiles as warning), sheet = summary + button, `leaveRun()` asks one PIN for all protected ids
+  (`sendNow()` split from `send()`). Icon `leave`. Checked in Playwright.
+- Ideas not done yet: charts/history; "Ankommen" counterpart; leave from ioBroker/Alexa (server-side scene).
 
 ## Conventions
 
