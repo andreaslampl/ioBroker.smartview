@@ -144,8 +144,10 @@ const TYPE_FIELDS = {
   ],
   leave: [
     ['lightsOff', 'Lichter aus', 'check', 'Ohne Auswahl unten: alle Schalter und Dimmer auf der Ebene „Licht“ (nach Symbol oder Ebene im Kachel-Dialog) – Steckdosen bleiben an.'],
+    ['lightsFrom', 'Lichter aus', 'select:both=Kacheln der Seite und zusätzliche Datenpunkte;points=nur die zusätzlichen Datenpunkte (unten)'],
     ['lightTiles', 'Nur diese Lichter (nichts angehakt = alle Lichter)', 'lighttiles'],
     ['blindsDown', 'Rollläden zu, Markisen ein', 'check'],
+    ['blindsFrom', 'Rollläden aus', 'select:both=Kacheln der Seite und zusätzliche Datenpunkte;points=nur die zusätzlichen Datenpunkte (unten)'],
     ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
     ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'Wert für alle Heizungs-Kacheln mit Betriebsart, z. B. KNX 2 = Standby. Leer = Heizung bleibt.'],
     ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel (braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt).'],
@@ -162,6 +164,7 @@ const TYPE_FIELDS = {
     ['lights', 'Diese Lichter einschalten', 'lighttiles'],
     ['onlyDark', 'Lichter nur, wenn es dunkel ist', 'check', 'Nach Sonnenauf- und -untergang (Standort aus den ioBroker-Systemeinstellungen).'],
     ['blindsUp', 'Rollläden auf (Markisen bleiben ein)', 'check'],
+    ['blindsFrom', 'Rollläden aus', 'select:both=Kacheln der Seite und zusätzliche Datenpunkte;points=nur die zusätzlichen Datenpunkte (unten)'],
     ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
     ['extra', 'Zusätzliche Datenpunkte aus dem ioBroker', 'extra'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check'],

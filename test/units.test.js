@@ -467,3 +467,15 @@ test('layout: "Haus verlassen" has no data points of its own, only options', () 
     assert.deepEqual(tileWriteIds(t), []);
     assert.deepEqual(stateIds(l), { read: [], write: [] });
 });
+
+test('scene logic: lights / blinds from the tiles and the extra data points, or only the data points', () => {
+    const SceneLogic = require('../www/scenelogic');
+    const states = { 'k.l1': { val: true, type: 'boolean' }, 'k.r1': { val: 50, type: 'number' }, 'g.licht': { val: true, type: 'boolean' }, 'g.rollo': { val: false, type: 'boolean' } };
+    const st = id => states[id] || null;
+    const tiles = [{ id: 'l1', type: 'switch', state: 'k.l1' }, { id: 'r1', type: 'blind', state: 'k.r1' }];
+    const extra = [{ state: 'g.licht', group: 'light', value: '' }, { state: 'g.rollo', group: 'blind', value: '' }];
+    const both = SceneLogic.plan({ type: 'leave', lightsOff: true, blindsDown: true, extra }, tiles, st);
+    assert.deepEqual([...both.now.keys()].sort(), ['g.licht', 'g.rollo', 'k.l1', 'k.r1']);
+    const only = SceneLogic.plan({ type: 'leave', lightsOff: true, blindsDown: true, lightsFrom: 'points', blindsFrom: 'points', extra }, tiles, st);
+    assert.deepEqual([...only.now.entries()].sort(), [['g.licht', false], ['g.rollo', true]]);
+});

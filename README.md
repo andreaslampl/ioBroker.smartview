@@ -353,6 +353,8 @@ Kacheln, die es schon gibt:
   PIN, wird sie **einmal** abgefragt. Nicht scharfschaltbereite Bereiche werden vorher angezeigt.
 - **Radio aus**, **Luftentfeuchter / Klimageräte aus**.
 
+- **Lichter aus / Rollläden aus:** „Kacheln der Seite und zusätzliche Datenpunkte“ (Standard) oder „nur die
+  zusätzlichen Datenpunkte“.
 - **Nur diese Lichter / Nur diese Rollläden:** Häkchen-Liste der Kacheln – nichts angehakt = alle wie oben.
 - **Zusätzliche Datenpunkte aus dem ioBroker:** auch Geräte ohne Kachel – Name, Datenpunkt, Gruppe und Wert.
   „Licht“ gehört zum Haken „Lichter aus“ (Wert leer = `false`), „Rollladen“ zum Rollladen-Haken (mit der

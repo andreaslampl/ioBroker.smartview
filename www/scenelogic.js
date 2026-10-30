@@ -95,6 +95,7 @@
       step('Lichter aus', now, add => {
         for (const x of tiles) {
           // "nur diese Lichter": every ticked switch / dimmer; else all lights
+          if (t.lightsFrom === 'points') break; // only the extra data points
           const sel = Array.isArray(t.lightTiles) && t.lightTiles.length;
           if (sel ? !t.lightTiles.includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') : !isLight(x)) continue;
           if (isOn(st, x) === false) continue;
@@ -123,6 +124,7 @@
     if ((leave && t.blindsDown) || (!leave && t.blindsUp)) {
       step(leave ? 'Rollläden zu / Markisen ein' : 'Rollläden auf', delayed ? later : now, add => {
         for (const x of tiles) {
+          if (t.blindsFrom === 'points') break; // only the extra data points
           if (x.type !== 'blind' || !x.state || !chosen(t.blindTiles, x)) continue;
           if (!leave && x.kind === 'awning') continue; // awnings stay in when coming home
           const reason = o.locked ? o.locked(x) : '';

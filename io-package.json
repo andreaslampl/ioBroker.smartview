@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.38.0",
+    "version": "0.38.1",
     "news": {
+      "0.38.1": {
+        "en": "'Haus verlassen' / 'Ankommen': lights and blinds either from the page's tiles and the extra data points, or only from the extra data points",
+        "de": "„Haus verlassen“ / „Ankommen“: Lichter und Rollläden entweder aus den Kacheln der Seite und den zusätzlichen Datenpunkten oder nur aus den zusätzlichen Datenpunkten"
+      },
       "0.38.0": {
         "en": "'Haus verlassen' / 'Ankommen': choose which lights and blinds (nothing ticked = all) and add any data points of ioBroker (group light / blind / other, own value)",
         "de": "„Haus verlassen“ / „Ankommen“: auswählbar, welche Lichter und Rollläden (nichts angehakt = alle), dazu beliebige ioBroker-Datenpunkte (Gruppe Licht / Rollladen / Sonstiges, eigener Wert)"
