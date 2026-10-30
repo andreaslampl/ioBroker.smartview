@@ -13,6 +13,7 @@ const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
 const WinLogic = require('./www/winlogic');
 const SceneLogic = require('./www/scenelogic');
+const RefLogic = require('./www/reflogic');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
@@ -255,7 +256,7 @@ class SmartView extends utils.Adapter {
     /** Subscribe the data points of the layout and of the push rules. */
     async resubscribe() {
         const layout = this.store.layout;
-        const { read } = stateIds(layout);
+        const { read } = stateIds(RefLogic.resolveAll(layout));
         const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).flatMap(r => [r.state, r.and && r.and.state].filter(Boolean))]);
         if (layout.telegram.instance && layout.telegram.ring && this.ringStateId()) {
             ids.add(this.ringStateId());

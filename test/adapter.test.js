@@ -1093,3 +1093,21 @@ test('adapter: gate closes automatically after the time open - only with the saf
     await new Promise(r => setTimeout(r, 400));
     assert.equal(closes(), 1);
 });
+
+test('adapter: a link on another page writes the original\'s data points and needs its PIN', async t => {
+    const { api, port } = await startAdapter(t);
+    const layout = { pages: [
+        { id: 'u', name: 'Übersicht', tiles: [{ id: 'd', type: 'switch', label: 'Tür', state: 'knx.0.EG.Licht.Kueche', pin: '4711' }] },
+        { id: 'p', name: 'Plan', tiles: [{ id: 'r', type: 'ref', ref: 'u/d' }] },
+    ] };
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    const init = c.msgs.find(m => m.type === 'init');
+    assert.ok(init.writable.includes('knx.0.EG.Licht.Kueche'));
+    assert.ok(init.pinIds.includes('knx.0.EG.Licht.Kueche'), 'the PIN of the original applies');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Kueche', val: false }));
+    await until(() => c.msgs.some(m => m.type === 'pin' && m.result === 'need'));
+});

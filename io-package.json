@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.40.0",
+    "version": "0.41.0",
     "news": {
+      "0.41.0": {
+        "en": "New tile 'Verknüpfung': shows another tile (e.g. of the overview on the floor plan) with exactly its data points, settings, PIN, time switch and locks - only position, size, label and layer are its own",
+        "de": "Neue Kachel „Verknüpfung“: zeigt eine andere Kachel (z. B. aus der Übersicht im Lageplan) mit genau deren Datenpunkten, Einstellungen, PIN, Zeitschaltuhr und Sperren – nur Position, Größe, Beschriftung und Ebene sind eigene"
+      },
       "0.40.0": {
         "en": "Gate tile: close automatically after X minutes open (in the adapter) - only with the tick 'drive has a light barrier / safety edge', waits while the light barrier data point is interrupted, optional message and warning when it does not close",
         "de": "Tor-Kachel: automatisch schließen nach X Minuten offen (im Adapter) – nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“, wartet, solange der Lichtschranken-Datenpunkt unterbrochen ist, optional Mitteilung und Warnung, wenn es nicht zugeht"

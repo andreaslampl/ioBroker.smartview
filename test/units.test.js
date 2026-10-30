@@ -479,3 +479,22 @@ test('scene logic: lights / blinds from the tiles and the extra data points, or 
     const only = SceneLogic.plan({ type: 'leave', lightsOff: true, blindsDown: true, lightsFrom: 'points', blindsFrom: 'points', extra }, tiles, st);
     assert.deepEqual([...only.now.entries()].sort(), [['g.licht', false], ['g.rollo', true]]);
 });
+
+test('links ("Verknüpfung"): resolved to the original with own position / label; missing original stays a link', () => {
+    const RefLogic = require('../www/reflogic');
+    const { cleanLayout } = require('../lib/layout');
+    const l = cleanLayout({ pages: [
+        { id: 'u', name: 'Übersicht', tiles: [{ id: 'd', type: 'dimmer', label: 'Essen', state: 'k.dim', switchState: 'k.sw', homekit: 'light' }] },
+        { id: 'p', name: 'Plan', type: 'plan', tiles: [
+            { id: 'r', type: 'ref', ref: 'u/d', x: 30, y: 40, label: '' },
+            { id: 'r2', type: 'ref', ref: 'u/gone', x: 1, y: 1 },
+            { id: 'bad', type: 'ref', ref: 'no slash' },
+        ] },
+    ] });
+    assert.equal(l.pages[1].tiles[2].ref, '', 'invalid key removed');
+    const v = RefLogic.resolveAll(l);
+    const r = v.pages[1].tiles[0];
+    assert.deepEqual([r.id, r.type, r.state, r.switchState, r.label, r.x, r.y, r._ref, r.homekit], ['r', 'dimmer', 'k.dim', 'k.sw', 'Essen', 30, 40, 'u/d', undefined]);
+    assert.equal(r.size, '1', 'own size');
+    assert.equal(v.pages[1].tiles[1].type, 'ref', 'original missing');
+});

@@ -26,6 +26,8 @@ const Timers = (() => {
 
   /** "page/tile" of a tile of the saved layout. */
   function keyOf(t) {
+    // a link uses the time switch of its original
+    if (t._ref) return t._ref;
     const page = SV.layout.pages.find(p => p.tiles.some(x => x.id === t.id && x.state === t.state && x.type === t.type));
     return page ? page.id + '/' + t.id : null;
   }

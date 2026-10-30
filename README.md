@@ -395,6 +395,14 @@ gewählten Alarm-Kachel, PIN einmal), Heizung auf eine Betriebsart (z. B. `1` = 
 immer an), **Rollläden auf** (Markisen bleiben ein). Ein noch wartendes „Haus verlassen“ (Verzögerung) wird
 abgebrochen. Mitteilung und Auslösen von außen wie oben.
 
+### Verknüpfung (dieselbe Kachel an zwei Stellen)
+
+Soll eine Kachel z. B. in der Übersicht **und** im Lageplan stehen, nicht zweimal anlegen, sondern im Lageplan eine
+**„Verknüpfung zu einer anderen Kachel“** setzen und das Original auswählen. Sie zeigt genau das Original: gleiche
+Datenpunkte und Einstellungen (Rückmeldung, „Prozent umdrehen“ …), gleiche PIN, gleiche **Zeitschaltuhr** und
+Wind-/Regensperre – ändern muss man nur noch das Original. Eigen sind nur Position, Größe, Beschriftung (leer = vom
+Original) und die Ebene im Lageplan. Wird das Original gelöscht, zeigt die Verknüpfung „Original fehlt“.
+
 ### Kameras
 
 Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht sie weiter – so

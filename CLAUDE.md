@@ -337,6 +337,12 @@ switches/buttons on them.
   `autoNotify`. main `checkGates()` (timer from the moment status = open, cleared when not; one close via `gateClose()` like
   the Zu button; barrier interrupted -> `due`, closes when free; 2 min later warn/notify if not closed). `gateMinute` /
   `gateCheckMs` for tests. Adapter test.
+- 0.41.0: owner had the same tile twice (overview + plan) with diverging values / settings -> tile type `ref` {ref
+  'page/tile'}; `www/reflogic.js` (UMD) `resolve()` = original's fields + own id/x/y/gx/gy/sw/sh/size/device/layer/rotate/
+  label, `_ref` = original key, no homekit; `resolveAll()`. Client: `SV.raw` (editor draft, links stay links) vs `SV.layout`
+  (resolved view); timers (`keyOf`), blind locks and scene runs use `_ref`; edit mode / missing original = placeholder.
+  Server/main: stateIds of `RefLogic.resolveAll(view)` (only originals the user can see), PIN via the original's pinHash;
+  server automations iterate the raw layout, so links never act twice. Tests + Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

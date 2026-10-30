@@ -123,6 +123,11 @@ function boolTexts(role) {
 const DEFAULT_ICON = { fire: 'fire', arrive: 'home', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
+  // a link in edit mode (raw layout) shows the symbol of its original
+  if (t.type === 'ref') {
+    const o = RefLogic.find(layout(), t.ref);
+    return t.icon || (o && o.type !== 'ref' ? tileIcon(o) : 'link');
+  }
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
@@ -202,7 +207,7 @@ function tileKey(t) {
 }
 
 function blindLock(t) {
-  return t.type === 'blind' && SV.locks ? SV.locks[tileKey(t)] || null : null;
+  return t.type === 'blind' && SV.locks ? SV.locks[t._ref || tileKey(t)] || null : null;
 }
 
 function lockText(l) {
@@ -849,7 +854,7 @@ function scenePlan(t) {
 function sceneRun(t, pin) {
   if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
-  const [page, tile] = tileKey(t).split('/');
+  const [page, tile] = (t._ref || tileKey(t)).split('/');
   SV.ws.send(JSON.stringify({ type: 'scene', page, tile, pin }));
 }
 
@@ -1703,6 +1708,13 @@ function fillTile(el, t) {
         (f.line && f.line[1] ? '<div class="tsub ' + f.line[0] + '">' + esc(f.line[1]) + '</div>' : '') + label;
       break;
     }
+    case 'ref': {
+      // edit mode (or the original is gone): a placeholder with the original's name
+      const o = RefLogic.find(layout(), t.ref);
+      html = '<div class="row1">' + ic + '<span class="tval">↪</span></div><div class="lbl">' + esc(t.label || (o ? o.label || o.type : '')) + '</div>' +
+        '<div class="tsub">' + (o ? 'Verknüpfung' : 'Original fehlt') + '</div>';
+      break;
+    }
     case 'leave':
     case 'arrive':
       html = '<div class="row1">' + ic + '</div>' + label;
@@ -2218,7 +2230,8 @@ function fillMarker(el, t) {
     const f = fmt({ decimals: 1, unit: c.unit }, c.status || c.state);
     v = f.text + (f.unit ? ' ' + f.unit : ' °C');
   }
-  el.title = t.label || '';
+  const orig = t.type === 'ref' ? RefLogic.find(layout(), t.ref) : null;
+  el.title = t.label || (orig ? '↪ ' + (orig.label || '') : '');
   el.innerHTML = '<div class="dot">' + tileIc(t) + '</div>' + (v ? '<div class="mval">' + esc(v) + '</div>' : '');
   Timers.mark(el, t);
 }
@@ -2771,7 +2784,9 @@ async function loadLayout() {
   }
   if (!res.ok) throw new Error(r.error || 'HTTP ' + res.status);
   SV.me = r.me || null;
-  SV.layout = r.layout;
+  // links ("Verknüpfung") are shown as their original; the editor works on the raw layout
+  SV.raw = r.layout;
+  SV.layout = RefLogic.resolveAll(r.layout);
   SV.allowEdit = r.allowEdit;
   SV.icons = r.icons;
   SV.types = r.types;

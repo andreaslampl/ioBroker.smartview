@@ -27,6 +27,7 @@ const TYPE_LABELS = {
   leave: 'Haus verlassen (alles aus mit einem Knopf)',
   arrive: 'Ankommen (Alarm aus, Heizung, Licht)',
   fire: 'Brandmeldeanlage (FC20 / Cerberus PRO)',
+  ref: 'Verknüpfung zu einer anderen Kachel (z. B. im Lageplan)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -138,6 +139,9 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
+  ],
+  ref: [
+    ['ref', 'Original-Kachel', 'reftile', 'Zeigt genau diese Kachel: gleiche Datenpunkte, Einstellungen, PIN und Zeitschaltuhr. Ändern nur beim Original – die Verknüpfung zieht mit. Eigene Position, Größe, Beschriftung (leer = vom Original) und Ebene.'],
   ],
   fire: [
     ['panel', 'FC20-Instanz', 'fc20panel', 'Füllt die Datenpunkte unten (Adapter fc20-cerberus-bacnet).'],
@@ -252,7 +256,7 @@ const Editor = (() => {
   }
 
   function start() {
-    SV.draft = clone(SV.layout);
+    SV.draft = clone(SV.raw || SV.layout); // raw: links stay links
     // homekit-easy installed? then tiles get "auch in Apple Home"
     api('homekit').then(h => (SV.hk = h)).catch(() => (SV.hk = null));
     SV.editing = true;
@@ -279,7 +283,8 @@ const Editor = (() => {
     try {
       const hk = SV.hk && SV.hk.instance && (hasHomekit(SV.layout) || hasHomekit(SV.draft));
       const saved = await api('layout', { method: 'PUT', body: JSON.stringify(SV.draft) });
-      SV.layout = saved;
+      SV.raw = saved;
+      SV.layout = RefLogic.resolveAll(saved);
       SV.editing = false;
       SV.draft = null;
       render();
@@ -1197,7 +1202,16 @@ const Editor = (() => {
       inputs.label = field(body, 'Beschriftung', textInput(t.label));
       for (const [key, label, kind, help] of TYPE_FIELDS[t.type]) {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
-        else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
+        else if (kind === 'reftile') {
+          const opts = [['', '(Kachel wählen)']];
+          for (const p of SV.draft.pages) {
+            for (const x of p.tiles) {
+              if (x.type === 'ref' || x.type === 'heading' || x === t) continue;
+              opts.push([p.id + '/' + x.id, (x.label || TYPE_LABELS[x.type] || x.type) + ' – ' + p.name]);
+            }
+          }
+          inputs[key] = field(body, label, select(opts, t[key] || ''), help);
+        } else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'extra') inputs[key] = extraField(body, t[key] || [], t.type);
         else if (kind === 'iconsel') {
           const opts = [['', 'Fenster-Symbol (Standard)']].concat(Object.keys(ICON_LABELS).map(n => [n, ICON_LABELS[n]]));
