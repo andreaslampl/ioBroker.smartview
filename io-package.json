@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.32.0",
+    "version": "0.33.0",
     "news": {
+      "0.33.0": {
+        "en": "Dehumidifier tile: humidity and temperature of several rooms (each and the mean) and an automatic: on when the mean humidity reaches 'Ein ab', off when it falls to 'Aus bei' - runs in the adapter, switching by hand in between stays",
+        "de": "Luftentfeuchter-Kachel: Luftfeuchte und Temperatur mehrerer Räume (einzeln und als Mittelwert) und eine Automatik: ein, wenn der Mittelwert „Ein ab“ erreicht, aus, wenn er auf „Aus bei“ fällt – läuft im Adapter, von Hand schalten dazwischen bleibt"
+      },
       "0.32.0": {
         "en": "New tiles: window contact (e.g. on the floor plan: red when open, orange when tilted, option hidden when closed; same evaluation as the window overview) and dehumidifier / air conditioner (on/off, setpoint − / +, mode, fan, humidity / temperature, tank full / fault, time switch); symbols magnet contact, dehumidifier, air conditioner",
         "de": "Neue Kacheln: Fensterkontakt (z. B. im Lageplan: rot bei offen, orange bei gekippt, Option „wenn zu ausblenden“; gleiche Auswertung wie die Fensterübersicht) und Luftentfeuchter / Klimagerät (Ein/Aus, Sollwert − / +, Betriebsart, Lüfter, Feuchte / Temperatur, Tank voll / Störung, Zeitschaltuhr); Symbole Magnetkontakt, Luftentfeuchter, Klimagerät"

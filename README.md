@@ -316,6 +316,13 @@ in °C, Schritt 0,5), Betriebsart und Lüfterstufe als Knöpfe (Texte aus dem Da
 `1=Leise;2=Mittel;3=Stark`), Ist-Feuchte / -Temperatur und **Störung / Wassertank voll** (Kachel rot). Lange drücken
 = Zeitschaltuhr (Ein/Aus).
 
+- **Räume:** beliebig viele Räume mit Luftfeuchte und Temperatur. Im Bedienfenster stehen alle einzeln und der
+  Mittelwert, auf der Kachel der Mittelwert („Ø 64 %“).
+- **Automatik nach Luftfeuchte:** Haken setzen, „Ein ab“ (z. B. 65 %) und „Aus bei“ (z. B. 55 %) eintragen. Erreicht
+  der Mittelwert der Räume 65 %, schaltet SmartView ein; fällt er auf 55 %, wieder aus. Das läuft im Adapter, auch wenn
+  keine Seite offen ist. Geschaltet wird nur beim Überschreiten der Grenzen – wer dazwischen von Hand ein- oder
+  ausschaltet, wird nicht überstimmt. Ohne Räume zählt die Luftfeuchte der Kachel selbst.
+
 ### Kameras
 
 Kommen aus dem **livecam-Adapter**. SmartView holt die Bilder selbst und reicht sie weiter – so

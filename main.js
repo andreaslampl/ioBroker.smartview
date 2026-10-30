@@ -277,6 +277,59 @@ class SmartView extends utils.Adapter {
         this.winMem = new Map();
         this.checkWindows(true);
         this.checkProtection();
+        this.checkClimate();
+    }
+
+    /** dehumidifier automatic: mean humidity of the tile's rooms (else its own humidity) */
+    climateTiles() {
+        const out = [];
+        for (const p of this.store.layout.pages) {
+            for (const t of p.tiles) {
+                if (t.type === 'climate' && t.auto && t.state && Number.isFinite(t.autoOn) && Number.isFinite(t.autoOff) && t.autoOff < t.autoOn) {
+                    const ids = (t.sensors || []).map(r => r.humidity).filter(Boolean);
+                    out.push({ key: `${p.id}/${t.id}`, tile: t, ids: ids.length ? ids : [t.humidity].filter(Boolean) });
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * On when the mean humidity reaches `autoOn`, off when it falls to `autoOff`. Only when the band is crossed (and once
+     * after the start), so switching by hand in between stays as it is.
+     */
+    checkClimate() {
+        this.climZone = this.climZone || new Map();
+        const list = this.climateTiles();
+        this.climIds = new Set(list.flatMap(c => c.ids));
+        for (const { key, tile, ids } of list) {
+            const vals = ids
+                .map(id => {
+                    const raw = (this.liveStates.get(id) || {}).val;
+                    return raw === null || raw === undefined || raw === '' ? NaN : Number(String(raw).replace(',', '.'));
+                })
+                .filter(Number.isFinite);
+            if (!vals.length) {
+                continue;
+            }
+            const mean = Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
+            const zone = mean >= tile.autoOn ? 'high' : mean <= tile.autoOff ? 'low' : 'mid';
+            if (zone === this.climZone.get(key)) {
+                continue;
+            }
+            this.climZone.set(key, zone);
+            if (zone === 'mid') {
+                continue;
+            }
+            const fb = (this.liveStates.get(tile.status || tile.state) || {}).val;
+            const on = fb === null || fb === undefined ? null : Boolean(tile.invert) !== (fb === true || fb === 1 || fb === 'true' || fb === 'on');
+            const want = zone === 'high';
+            if (on === want) {
+                continue;
+            }
+            this.log.info(`${tile.label || key}: Luftfeuchte ${String(mean).replace('.', ',')} % (${want ? `ab ${tile.autoOn}` : `bis ${tile.autoOff}`} %) - ${want ? 'ein' : 'aus'}`);
+            this.setValue(tile.state, tile.invert ? !want : want).catch(err => this.log.warn(`${tile.label || key}: ${err.message}`));
+        }
     }
 
     async metaOf(id) {
@@ -353,6 +406,9 @@ class SmartView extends utils.Adapter {
         }
         if (this.protectIds && this.protectIds.has(id)) {
             this.checkProtection();
+        }
+        if (this.climIds && this.climIds.has(id)) {
+            this.checkClimate();
         }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.telegram.ring) {

@@ -896,3 +896,34 @@ test('adapter: alarm tile detectors are taken from the NOX / SPC adapter when sa
     assert.deepEqual(al.areas[0].detectors, [{ label: 'Büro', open: 'spc-edp.0.zones.3.open', deact: '' }], 'SPC: display only');
     assert.equal(al2.detectors, undefined, 'only with "Melder anzeigen"');
 });
+
+test('adapter: dehumidifier automatic - on at the mean humidity of the rooms, off at the lower value, manual in between', async t => {
+    const { adapter, api } = await startAdapter(t, {}, a => {
+        a.add('tuya.0.ent.power', { name: 'Entfeuchter', type: 'boolean', role: 'switch', write: true }, false);
+        a.add('hum.0.keller', { name: 'Feuchte Keller', type: 'number', role: 'value.humidity', unit: '%' }, 60);
+        a.add('hum.0.waschraum', { name: 'Feuchte Waschraum', type: 'number', role: 'value.humidity', unit: '%' }, 62);
+    });
+    const tile = { id: 'ent', type: 'climate', label: 'Entfeuchter', state: 'tuya.0.ent.power', auto: true, autoOn: 65, autoOff: 55,
+        sensors: [{ label: 'Keller', humidity: 'hum.0.keller' }, { label: 'Waschraum', humidity: 'hum.0.waschraum' }] };
+    await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'k', name: 'Keller', tiles: [tile] }] }) });
+    await new Promise(r => setTimeout(r, 200));
+    adapter.writes.length = 0;
+    const power = () => adapter.writes.filter(w => w[0] === 'tuya.0.ent.power').map(w => w[1]);
+    adapter.change('hum.0.waschraum', 72); // mean 66
+    await until(() => power().length === 1);
+    assert.deepEqual(power(), [true]);
+    await new Promise(r => setTimeout(r, 100)); // the device confirms (fake ack after 50 ms)
+    // still above 55: switched off by hand stays off
+    adapter.change('hum.0.waschraum', 64); // mean 62
+    adapter.change('tuya.0.ent.power', false);
+    await new Promise(r => setTimeout(r, 200));
+    assert.deepEqual(power(), [true]);
+    // up again over 65 -> on, down to 55 -> off
+    adapter.change('hum.0.keller', 70); // mean 67
+    await until(() => power().length === 2);
+    await new Promise(r => setTimeout(r, 100));
+    adapter.change('hum.0.keller', 50);
+    adapter.change('hum.0.waschraum', 58); // mean 54
+    await until(() => power().length === 3);
+    assert.deepEqual(power(), [true, true, false]);
+});

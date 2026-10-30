@@ -141,6 +141,7 @@ function tileIds(t) {
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
     .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan'].map(k => t[k]))
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
+    .concat((t.sensors || []).flatMap(r => [r.humidity, r.temp]))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
 }
@@ -834,8 +835,19 @@ function climOn(t) {
   return t.invert ? !truthy(v) : truthy(v);
 }
 
-/** the main value: humidity for a dehumidifier, temperature for an air conditioner (the other if missing) */
+/** mean of the rooms' humidity or temperature (null without values) */
+function climMean(t, key) {
+  const vals = (t.sensors || []).map(r => (r[key] ? val(r[key]) : null)).filter(v => v !== null && v !== undefined && v !== '').map(v => Number(String(v).replace(',', '.'))).filter(Number.isFinite);
+  return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+}
+
+const deNum = (v, d) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+/** the main value: humidity for a dehumidifier, temperature for an air conditioner (the other if missing); rooms -> mean */
 function climMain(t) {
+  const want = t.climKind === 'ac' ? 'temp' : 'humidity';
+  const mean = climMean(t, want);
+  if (mean !== null) return { key: want, text: 'Ø ' + deNum(mean, want === 'temp' ? 1 : 0), unit: want === 'temp' ? '°C' : '%' };
   const order = t.climKind === 'ac' ? ['temp', 'humidity'] : ['humidity', 'temp'];
   const key = order.find(k => t[k] && st(t[k]) && !st(t[k]).missing);
   if (!key) return null;
@@ -871,7 +883,12 @@ function climLine(t) {
   if (tg) parts.push('Soll ' + tg);
   const m = climChoiceText(t, 'mode', 'modes');
   if (m && climOn(t)) parts.push(m);
+  if (climAuto(t)) parts.push('Auto');
   return ['', parts.join(' · ')];
+}
+
+function climAuto(t) {
+  return Boolean(t.auto && Number.isFinite(t.autoOn) && Number.isFinite(t.autoOff) && t.autoOff < t.autoOn);
 }
 
 function climSwitch(t, on) {
@@ -2251,6 +2268,16 @@ function fillSheet(sh, t) {
     if (t.temp) info.push(['Temperatur', esc(fmt({ decimals: 1 }, t.temp).text) + ' ' + esc(fmt({}, t.temp).unit || '°C')]);
     if (t.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0 }, t.humidity).text) + ' ' + esc(fmt({}, t.humidity).unit || '%')]);
     if (t.alarm) info.push(['Störung / Tank', truthy(val(t.alarm)) ? '<span class="bad">ja</span>' : '<span class="ok">nein</span>']);
+    // rooms: humidity · temperature each, then the means
+    for (const r of t.sensors || []) {
+      const h = r.humidity ? fmt({ decimals: 0 }, r.humidity) : null;
+      const tp = r.temp ? fmt({ decimals: 1 }, r.temp) : null;
+      info.push([esc(r.label || 'Raum'), [h ? esc(h.text) + ' ' + esc(h.unit || '%') : '', tp ? esc(tp.text) + ' ' + esc(tp.unit || '°C') : ''].filter(Boolean).join(' · ')]);
+    }
+    const mh = climMean(t, 'humidity');
+    const mt = climMean(t, 'temp');
+    if ((t.sensors || []).length > 1 && (mh !== null || mt !== null)) info.push(['Mittelwert', [mh !== null ? deNum(mh, 0) + ' %' : '', mt !== null ? deNum(mt, 1) + ' °C' : ''].filter(Boolean).join(' · ')]);
+    if (climAuto(t)) info.push(['Automatik', 'ein ab ' + deNum(t.autoOn, 0) + ' %, aus bei ' + deNum(t.autoOff, 0) + ' %']);
     const modes = climChoices(t, 'mode', 'modes');
     const fans = climChoices(t, 'fan', 'fans');
     const btns = (list, key, act) => '<div class="row modes">' + list.map(([k, x]) => '<button type="button" data-a="' + act + '" data-v="' + esc(k) + '"' + (t[key] && sameVal(val(t[key]), k) ? ' class="primary"' : '') + '>' + esc(x) + '</button>').join('') + '</div>';

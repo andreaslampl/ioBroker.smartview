@@ -291,6 +291,12 @@ switches/buttons on them.
   invert, step, min, max, modes, fans}: `climChoices()` (own texts or data point states), `climStep()` reuses
   thermoStep, timers on/off (www + lib/timers ACTIONS, main.fireTimer like switch). Icons contact, dehum, aircon.
   Pitfall: classList.toggle(x, undefined) toggles - always pass a boolean. Checked in Playwright.
+- 0.33.0: owner asked for the dehumidifier to switch on above a humidity and run down to the set value, with humidity and
+  temperature of several rooms and the mean as threshold -> climate options `sensors` [{label, humidity, temp}] (read
+  only), `auto`, `autoOn`, `autoOff` (0-100, autoOff < autoOn). main `checkClimate()` (after resubscribe and on changes of
+  `climIds`): mean of the rooms' humidity (else the tile's own), zone high/mid/low per tile (`climZone`), acts only when the
+  zone changes (also once after start), only if the device is not already in that state -> manual switching in between
+  stays. app.js `climMean()`, tile shows "Ø 64 %", sheet rows per room + Mittelwert + Automatik. Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

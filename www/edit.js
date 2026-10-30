@@ -148,6 +148,10 @@ const TYPE_FIELDS = {
     ['fan', 'Lüfterstufe (optional)', 'state-w'],
     ['fans', 'Texte der Lüfterstufen (optional)', 'text', 'z. B. 1=Leise;2=Mittel;3=Stark – leer = Texte des Datenpunkts'],
     ['alarm', 'Störung / Wassertank voll (optional)', 'state-r', 'true = Kachel rot'],
+    ['sensors', 'Räume (Feuchte / Temperatur)', 'sensors'],
+    ['auto', 'Automatik nach Luftfeuchte', 'check', 'SmartView schaltet ein, wenn der Mittelwert der Räume (ohne Räume: die Luftfeuchte oben) „Ein ab“ erreicht, und aus, wenn er auf „Aus bei“ fällt – auch ohne offene Seite. Dazwischen kann man von Hand schalten.'],
+    ['autoOn', 'Ein ab (% Luftfeuchte)', 'number', 'z. B. 65'],
+    ['autoOff', 'Aus bei (% Luftfeuchte)', 'number', 'z. B. 55 – muss kleiner sein als „Ein ab“'],
   ],
   radio: [
     ['station', 'Raum: Sender-Datenpunkt', 'state-w', 'sonos-radio.0.rooms.<Raum>.station – Lautstärke, Stopp, Titel und Gruppe ergänzt SmartView beim Übernehmen selbst. Die Senderknöpfe kommen aus der Senderliste des Adapters.'],
@@ -801,6 +805,57 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.status || r.mode || r.modeStatus) };
   }
 
+  /** Rooms of a dehumidifier / air conditioner tile: name, humidity, temperature (read only, mean for the automatic). */
+  function sensorsField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Räume (optional)', wrap, 'Luftfeuchte und Temperatur mehrerer Räume – im Bedienfenster einzeln und als Mittelwert, auf der Kachel der Mittelwert.');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), humidity: x.humidity.value.trim(), temp: x.temp.value.trim() }));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name des Raums', textInput(r.label));
+        x.label.placeholder = 'z. B. Keller';
+        x.humidity = stateField(b, 'Luftfeuchte', r.humidity, false);
+        x.temp = stateField(b, 'Temperatur (optional)', r.temp, false);
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Raum entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Raum';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.humidity || r.temp) };
+  }
+
   /** More rooms of a radio tile: name + station data point, switched with ‹ › on the tile. */
   function radioRoomsField(box, rows) {
     const wrap = document.createElement('div');
@@ -972,6 +1027,7 @@ const Editor = (() => {
         else if (kind === 'circuits') inputs[key] = circuitsField(body, t[key] || []);
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);
+        else if (kind === 'sensors') inputs[key] = sensorsField(body, t[key] || []);
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') {
