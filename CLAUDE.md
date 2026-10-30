@@ -323,6 +323,10 @@ switches/buttons on them.
   PUT /api/layout; `/api/energy` lists `fc20` instances for the editor (`fc20Field()`). app.js `fireInfo()` (ALARM >
   Voralarm > Störung > keine Verbindung > Abschaltung > Ruhe), `fireModes()` (off 12/0, on 11/1 from the mode's states),
   `fireDetectors()`; reset and switching a detector off ask first. Checked in Playwright + adapter test; not on the real FC20.
+- 0.38.0: owner asked to choose lights / blinds and add ioBroker data points (also for arrive) -> leave `lightTiles`,
+  `blindTiles` (empty = all), arrive `blindTiles`; both `extra` [{label, state, value, group light|blind|other}] (light/blind
+  go with their tick, blind ones delayed; empty value: light false/true, blind true/false for leave/arrive; other only with
+  a value). Extras are not in stateIds (page cannot write them); server `_scene` adds them to `allowed` for that button.
 - Ideas not done yet: charts/history.
 
 ## Conventions

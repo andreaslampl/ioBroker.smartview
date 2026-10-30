@@ -353,6 +353,13 @@ Kacheln, die es schon gibt:
   PIN, wird sie **einmal** abgefragt. Nicht scharfschaltbereite Bereiche werden vorher angezeigt.
 - **Radio aus**, **Luftentfeuchter / Klimageräte aus**.
 
+- **Nur diese Lichter / Nur diese Rollläden:** Häkchen-Liste der Kacheln – nichts angehakt = alle wie oben.
+- **Zusätzliche Datenpunkte aus dem ioBroker:** auch Geräte ohne Kachel – Name, Datenpunkt, Gruppe und Wert.
+  „Licht“ gehört zum Haken „Lichter aus“ (Wert leer = `false`), „Rollladen“ zum Rollladen-Haken (mit der
+  Verzögerung; Wert leer = `true`, KNX 1 = ab), „Sonstiges“ wird immer geschrieben (z. B. `0_userdata.0.Anwesend` =
+  `false`). Beim „Ankommen“ genauso (Licht leer = `true`, Rollladen leer = `false` = auf). Diese Datenpunkte darf nur
+  der Knopf schreiben, nicht die Seite selbst.
+
 Antippen öffnet erst eine Übersicht: was geschaltet wird (mit Anzahl) und welche **Fenster noch offen** sind. Erst der
 Knopf „Haus verlassen“ darin schaltet. Was schon aus ist, bekommt keinen Befehl. Geschaltet wird im Adapter – die Seite
 darf danach zugehen.

@@ -1021,3 +1021,42 @@ test('adapter: fire alarm tile (FC20) - filled from the instance, detectors with
     c2.ws.send(JSON.stringify({ type: 'set', id: `${F}.objects.melder.m_02.mode`, val: 12 }));
     await until(() => adapter.writes.some(w => w[0] === `${F}.objects.melder.m_02.mode` && w[1] === 12));
 });
+
+test('adapter: "Haus verlassen" - only chosen lights / blinds, extra data points of ioBroker (light, blind, other)', async t => {
+    const { adapter, api, port } = await startAdapter(t, {}, a => {
+        a.add('knx.0.Garten.Licht', { name: 'Gartenlicht', type: 'boolean', role: 'switch', write: true }, true);
+        a.add('knx.0.Garage.Rollo', { name: 'Garagenrollo', type: 'boolean', role: 'switch', write: true }, false);
+        a.add('0_userdata.0.Anwesend', { name: 'Anwesend', type: 'boolean', role: 'state', write: true }, true);
+        a.add('knx.0.OG.Rollo', { name: 'Rollo OG', type: 'number', role: 'level.blind', write: true }, 100);
+    });
+    const layout = { pages: [{ id: 'u', name: 'Übersicht', tiles: [
+        { id: 'l1', type: 'switch', label: 'Küche', state: 'knx.0.EG.Licht.Kueche' },
+        { id: 'd1', type: 'dimmer', label: 'Essen', state: 'knx.0.EG.Licht.Essen_Dimmer' },
+        { id: 'r1', type: 'blind', label: 'Wohnzimmer', state: 'knx.0.EG.Rollladen.Wohnzimmer' },
+        { id: 'r2', type: 'blind', label: 'OG', state: 'knx.0.OG.Rollo' },
+        { id: 'go', type: 'leave', label: 'Weg', lightsOff: true, lightTiles: ['l1'], blindsDown: true, blindTiles: ['r2'], extra: [
+            { label: 'Garten', state: 'knx.0.Garten.Licht', group: 'light' },
+            { label: 'Garage', state: 'knx.0.Garage.Rollo', group: 'blind' },
+            { label: 'Anwesenheit', state: '0_userdata.0.Anwesend', value: 'false', group: 'other' },
+        ] },
+    ] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body.pages[0].tiles[4];
+    assert.deepEqual(saved.extra.map(e => e.group), ['light', 'blind', 'other']);
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    // the extra data points are not writable from the page itself
+    assert.ok(!c.msgs.find(m => m.type === 'init').writable.includes('0_userdata.0.Anwesend'));
+    adapter.writes.length = 0;
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go' }));
+    await until(() => c.msgs.some(m => m.type === 'scene'));
+    await until(() => adapter.writes.length >= 5);
+    assert.deepEqual(adapter.writes.map(w => [w[0], w[1]]).sort(), [
+        ['0_userdata.0.Anwesend', false],
+        ['knx.0.EG.Licht.Kueche', false],
+        ['knx.0.Garage.Rollo', true],
+        ['knx.0.Garten.Licht', false],
+        ['knx.0.OG.Rollo', 0],
+    ], 'dimmer and the other blind are not chosen');
+});

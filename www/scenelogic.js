@@ -86,35 +86,44 @@
       if (into.size > before) groups.push([label + (into === later ? ' (nach ' + t.delayMin + ' min)' : ''), into.size - before]);
     };
     const leave = t.type === 'leave';
+    const extra = group => (Array.isArray(t.extra) ? t.extra : []).filter(e => e.state && (e.group || 'other') === group);
+    // own data points: the value from the settings, else off / on (lights) or down / up (KNX blinds: 1 = down)
+    const extraValue = (e, def) => (e.value === '' || e.value === undefined ? def : typed(e.value, st(e.state)));
+    const chosen = (list, x) => !Array.isArray(list) || !list.length || list.includes(x.id);
 
     if (leave && t.lightsOff) {
       step('Lichter aus', now, add => {
         for (const x of tiles) {
-          if (!isLight(x) || isOn(st, x) === false) continue;
+          // "nur diese Lichter": every ticked switch / dimmer; else all lights
+          const sel = Array.isArray(t.lightTiles) && t.lightTiles.length;
+          if (sel ? !t.lightTiles.includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') : !isLight(x)) continue;
+          if (isOn(st, x) === false) continue;
           if (x.type === 'switch') add(x.state, Boolean(x.invert));
           else if (x.switchState) add(x.switchState, false);
           else add(x.state, 0);
         }
+        for (const e of extra('light')) add(e.state, extraValue(e, false));
       });
     }
-    if (!leave && Array.isArray(t.lights) && t.lights.length) {
+    if (!leave && ((Array.isArray(t.lights) && t.lights.length) || extra('light').length)) {
       if (t.onlyDark && o.dark === false) {
         warn.push('Lichter bleiben aus – es ist hell');
       } else {
         step('Licht an' + (t.onlyDark && o.dark === undefined ? ' (wenn dunkel)' : ''), now, add => {
           for (const x of tiles) {
-            if (!t.lights.includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') || isOn(st, x)) continue;
+            if (!(t.lights || []).includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') || isOn(st, x)) continue;
             if (x.type === 'switch') add(x.state, !x.invert);
             else if (x.switchState) add(x.switchState, true);
             else add(x.state, 100);
           }
+          for (const e of extra('light')) add(e.state, extraValue(e, true));
         });
       }
     }
     if ((leave && t.blindsDown) || (!leave && t.blindsUp)) {
       step(leave ? 'Rollläden zu / Markisen ein' : 'Rollläden auf', delayed ? later : now, add => {
         for (const x of tiles) {
-          if (x.type !== 'blind' || !x.state) continue;
+          if (x.type !== 'blind' || !x.state || !chosen(t.blindTiles, x)) continue;
           if (!leave && x.kind === 'awning') continue; // awnings stay in when coming home
           const reason = o.locked ? o.locked(x) : '';
           if (reason) {
@@ -123,6 +132,7 @@
           }
           add(x.state, blindValue(st, x, leave && x.kind !== 'awning' ? 0 : 100));
         }
+        for (const e of extra('blind')) add(e.state, extraValue(e, leave));
       });
     }
     if (t.heatMode) {
@@ -166,6 +176,9 @@
         for (const x of tiles) if (x.type === 'climate' && x.state && isOn(st, x)) add(x.state, Boolean(x.invert));
       });
     }
+    step('Weitere Datenpunkte', now, add => {
+      for (const e of extra('other')) if (e.value !== '') add(e.state, typed(e.value, st(e.state)));
+    });
     if (leave) {
       // open windows: window overviews and contact tiles
       const open = new Set();

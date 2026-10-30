@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.37.0",
+    "version": "0.38.0",
     "news": {
+      "0.38.0": {
+        "en": "'Haus verlassen' / 'Ankommen': choose which lights and blinds (nothing ticked = all) and add any data points of ioBroker (group light / blind / other, own value)",
+        "de": "„Haus verlassen“ / „Ankommen“: auswählbar, welche Lichter und Rollläden (nichts angehakt = alle), dazu beliebige ioBroker-Datenpunkte (Gruppe Licht / Rollladen / Sonstiges, eigener Wert)"
+      },
       "0.37.0": {
         "en": "Fire alarm panel tile (FC20 / Cerberus PRO, adapter fc20-cerberus-bacnet): alarm / pre-alarm / fault / disablement with the lists, last message, connection; with 'Schalten erlauben' silence, reset and detectors off / on (PIN recommended)",
         "de": "Kachel Brandmeldeanlage (FC20 / Cerberus PRO, Adapter fc20-cerberus-bacnet): Alarm / Voralarm / Störung / Abschaltung mit den Listen, letzte Meldung, Verbindung; mit „Schalten erlauben“ Akustik ab, Rücksetzen und Melder ab-/einschalten (PIN empfohlen)"

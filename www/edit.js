@@ -143,12 +143,15 @@ const TYPE_FIELDS = {
     ['reset', 'Rücksetzen (Taste)', 'state-w'],
   ],
   leave: [
-    ['lightsOff', 'Alle Lichter aus', 'check', 'Schalter und Dimmer auf der Ebene „Licht“ (nach Symbol oder Ebene im Kachel-Dialog) – Steckdosen bleiben an.'],
+    ['lightsOff', 'Lichter aus', 'check', 'Ohne Auswahl unten: alle Schalter und Dimmer auf der Ebene „Licht“ (nach Symbol oder Ebene im Kachel-Dialog) – Steckdosen bleiben an.'],
+    ['lightTiles', 'Nur diese Lichter (nichts angehakt = alle Lichter)', 'lighttiles'],
     ['blindsDown', 'Rollläden zu, Markisen ein', 'check'],
+    ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
     ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'Wert für alle Heizungs-Kacheln mit Betriebsart, z. B. KNX 2 = Standby. Leer = Heizung bleibt.'],
     ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel (braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt).'],
     ['radioOff', 'Radio aus', 'check'],
     ['climateOff', 'Luftentfeuchter / Klimageräte aus', 'check'],
+    ['extra', 'Zusätzliche Datenpunkte aus dem ioBroker', 'extra'],
     ['delayMin', 'Rollläden und Alarmanlage erst nach (Minuten, optional)', 'number', 'Zeit zum Hinausgehen – Lichter, Heizung, Radio sofort. „Ankommen“ bricht das Warten ab.'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Was geschaltet wurde – und eine Warnung, wenn die Alarmanlage 90 s danach nicht scharf ist.'],
     ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste, true = auslösen), z. B. für homekit-easy, logik oder ein Skript. Achtung: dort wird keine PIN abgefragt.'],
@@ -159,6 +162,8 @@ const TYPE_FIELDS = {
     ['lights', 'Diese Lichter einschalten', 'lighttiles'],
     ['onlyDark', 'Lichter nur, wenn es dunkel ist', 'check', 'Nach Sonnenauf- und -untergang (Standort aus den ioBroker-Systemeinstellungen).'],
     ['blindsUp', 'Rollläden auf (Markisen bleiben ein)', 'check'],
+    ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
+    ['extra', 'Zusätzliche Datenpunkte aus dem ioBroker', 'extra'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check'],
     ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste). Achtung: ohne PIN – z. B. Alarm unscharf per Sprachbefehl nur, wenn du das wirklich willst.'],
   ],
@@ -573,6 +578,63 @@ const Editor = (() => {
     }
     s.value = value === undefined ? list[0] || '' : value || '';
     return s;
+  }
+
+  /**
+   * More data points of ioBroker for "Haus verlassen" / "Ankommen": name, data point, value, group. Lights and blinds go
+   * with their tick (blinds delayed), "Sonstiges" always.
+   */
+  function extraField(box, rows, type) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    const leave = type === 'leave';
+    field(box, 'Zusätzliche Datenpunkte aus dem ioBroker (optional)', wrap, 'Auch Geräte ohne Kachel. „Licht“ und „Rollladen“ zählen zu ihrem Haken (Rollläden mit der Verzögerung), „Sonstiges“ wird immer geschrieben. Wert leer: Licht ' + (leave ? 'aus (false)' : 'an (true)') + ', Rollladen ' + (leave ? 'ab (true, KNX 1 = ab)' : 'auf (false)') + '.');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), state: x.state.value.trim(), value: x.value.value.trim(), group: x.group.value }));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name (optional)', textInput(r.label));
+        x.label.placeholder = 'z. B. Gartenlicht';
+        x.state = stateField(b, 'Datenpunkt', r.state, true);
+        x.group = field(b, 'Gruppe', select([['light', 'Licht'], ['blind', 'Rollladen'], ['other', 'Sonstiges']], r.group || 'light'));
+        x.value = field(b, 'Wert (optional)', textInput(r.value));
+        x.value.placeholder = 'z. B. false, 0, 100 oder 2';
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Datenpunkt entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Datenpunkt';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '', group: 'light' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state) };
   }
 
   /** instance of the FC20 adapter (fills the fire tile's data points) */
@@ -1120,20 +1182,22 @@ const Editor = (() => {
       for (const [key, label, kind, help] of TYPE_FIELDS[t.type]) {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
         else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
-        else if (kind === 'lighttiles') {
+        else if (kind === 'extra') inputs[key] = extraField(body, t[key] || [], t.type);
+        else if (kind === 'lighttiles' || kind === 'blindtiles') {
           const box = document.createElement('div');
           box.className = 'checks';
           const chosen = new Set(t[key] || []);
           const boxes = [];
+          const want = kind === 'blindtiles' ? ['blind'] : ['switch', 'dimmer'];
           for (const p of SV.draft.pages) {
-            for (const x of p.tiles.filter(y => y.type === 'switch' || y.type === 'dimmer')) {
+            for (const x of p.tiles.filter(y => want.includes(y.type))) {
               const c = check((x.label || x.state || x.id) + ' (' + p.name + ')', chosen.has(x.id));
               c.input.value = x.id;
               boxes.push(c.input);
               box.appendChild(c);
             }
           }
-          if (!boxes.length) box.textContent = 'Noch keine Schalter- oder Dimmer-Kacheln.';
+          if (!boxes.length) box.textContent = kind === 'blindtiles' ? 'Noch keine Rollladen-Kacheln.' : 'Noch keine Schalter- oder Dimmer-Kacheln.';
           field(body, label, box);
           inputs[key] = { type: 'custom', get: () => boxes.filter(i => i.checked).map(i => i.value) };
         } else if (kind === 'alarmtile') {
