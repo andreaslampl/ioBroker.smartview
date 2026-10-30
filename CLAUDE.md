@@ -316,6 +316,13 @@ switches/buttons on them.
   same key re-run cancels; alarm armed check after delay + 90 s -> warn/notify), `sceneStates()` creates/deletes
   `scenes.<page>_<tile>` buttons (external, no PIN!), `isDark()` from lib/sun.js. Tests shorten via `sceneMinute` /
   `sceneCheckMs`. Checked in Playwright and an adapter test.
+- 0.37.0: owner asked for an FC20 fire panel tile -> type `fire` {alarm, alarmText, preAlarm, fault, faultText, disabled,
+  disabledText, lastMsg, connection (r), reset, silence (w); panel 'fc20-cerberus-bacnet.N' -> `fillFire()` (empty fields or
+  those of another FC20 instance), control, showDetectors, detectors [{label, state, alarm, fault, off, mode}]}. Writes
+  only with control (`fireWrites()`, like alarm). main `fireDetectorsOf()` (objects.melder.*.state, sorted by name) on
+  PUT /api/layout; `/api/energy` lists `fc20` instances for the editor (`fc20Field()`). app.js `fireInfo()` (ALARM >
+  Voralarm > Störung > keine Verbindung > Abschaltung > Ruhe), `fireModes()` (off 12/0, on 11/1 from the mode's states),
+  `fireDetectors()`; reset and switching a detector off ask first. Checked in Playwright + adapter test; not on the real FC20.
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { arrive: 'home', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { fire: 'fire', arrive: 'home', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
@@ -139,7 +139,8 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan'].map(k => t[k]))
+    .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan', 'preAlarm', 'faultText', 'disabledText', 'lastMsg', 'connection', 'fault', 'disabled'].map(k => t[k]))
+    .concat(t.type === 'fire' ? (t.detectors || []).flatMap(d => [d.state, d.alarm, d.fault, d.off, d.mode]) : [])
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
     .concat((t.sensors || []).flatMap(r => [r.humidity, r.temp]))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
@@ -626,6 +627,10 @@ function windowsHtml(t) {
 function tileState(t) {
   if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'radio') return radioPlaying(radioCur(t)) ? 'on' : '';
+  if (t.type === 'fire') {
+    const f = fireInfo(t);
+    return f.alarm ? 'alert' : f.pre || f.fault || f.offline ? 'warn' : '';
+  }
   if (t.type === 'contact') {
     const c = contactStatus(t).status;
     return c === 'open' ? 'alert' : c === 'tilt' ? 'warn' : '';
@@ -984,6 +989,45 @@ function alarmDetectors(c) {
     const open = Boolean(d.open && truthy(val(d.open)));
     const stx = off ? '<span class="warnc">abgeschaltet</span>' : open ? '<span class="bad">offen</span>' : '<span class="ok">zu</span>';
     const btn = c.control && d.deact ? '<button type="button" data-a="deact" data-v="' + i + '">' + (off ? 'Einschalten' : 'Abschalten') + '</button>' : '';
+    return '<div class="mrow det' + (off ? ' off' : '') + '"><span>' + esc(d.label) + '</span><b>' + stx + '</b>' + btn + '</div>';
+  });
+  return '<h4 class="dethead">Melder</h4><div class="mrows sheetrows detlist">' + rows.join('') + '</div>';
+}
+
+// ---------------- fire alarm panel (FC20) ----------------
+
+/** worst state first: ALARM > Voralarm > Störung > Abschaltung > keine Verbindung > Ruhe */
+function fireInfo(t) {
+  const on = id => Boolean(id && truthy(val(id)));
+  const txt = id => (id ? String(val(id) || '') : '');
+  const f = { alarm: on(t.alarm), pre: on(t.preAlarm), fault: on(t.fault), off: on(t.disabled), offline: Boolean(t.connection && val(t.connection) === false) };
+  f.text = f.alarm ? 'ALARM' : f.pre ? 'Voralarm' : f.fault ? 'Störung' : f.offline ? 'keine Verbindung' : f.off ? 'Abschaltung aktiv' : 'Ruhe';
+  f.alarmList = txt(t.alarmText);
+  f.faultList = txt(t.faultText);
+  f.offList = txt(t.disabledText);
+  f.line = f.alarm ? ['alarmtxt', f.alarmList] : f.fault && f.faultList ? ['wblim', f.faultList] : f.off && f.offList ? ['wblim', 'ab: ' + f.offList] : null;
+  return f;
+}
+
+/** mode values to switch a detector off / on (accepted modes of the object: Abgeschaltet 12 / Aus 0, Eingeschaltet 11 / Ein 1) */
+function fireModes(d) {
+  const states = (d.mode && (st(d.mode) || {}).states) || {};
+  const pick = keys => keys.find(k => states[k] !== undefined);
+  return { off: pick(['12', '0']), on: pick(['11', '1']) };
+}
+
+function fireDetectors(t) {
+  const list = Array.isArray(t.detectors) ? t.detectors : [];
+  if (!list.length) return '';
+  const rows = list.map((d, i) => {
+    const off = Boolean(d.off && truthy(val(d.off)));
+    const alarm = Boolean(d.alarm && truthy(val(d.alarm)));
+    const fault = Boolean(d.fault && truthy(val(d.fault)));
+    const text = d.state ? String(val(d.state) || '') : '';
+    const stx = alarm ? '<span class="bad">' + esc(text || 'Alarm') + '</span>' : off ? '<span class="warnc">abgeschaltet</span>' : fault ? '<span class="warnc">' + esc(text || 'Störung') + '</span>' : '<span class="ok">' + esc(text || 'Ruhe') + '</span>';
+    const m = fireModes(d);
+    const v = off ? m.on : m.off;
+    const btn = t.control && v !== undefined ? '<button type="button" data-a="fdet" data-v="' + i + '">' + (off ? 'Einschalten' : 'Abschalten') + '</button>' : '';
     return '<div class="mrow det' + (off ? ' off' : '') + '"><span>' + esc(d.label) + '</span><b>' + stx + '</b>' + btn + '</div>';
   });
   return '<h4 class="dethead">Melder</h4><div class="mrows sheetrows detlist">' + rows.join('') + '</div>';
@@ -1388,7 +1432,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1492,6 +1536,11 @@ function fillRow(el, t) {
         (line ? '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
       break;
     }
+    case 'fire': {
+      const f = fireInfo(t);
+      ctl = (f.line && f.line[1] ? '<span class="lsub ' + f.line[0] + '">' + esc(f.line[1]) + '</span>' : '') + '<span class="lval">' + esc(f.text) + '</span>';
+      break;
+    }
     case 'contact': {
       const c = contactStatus(t);
       ctl = (c.ts && c.status !== 'unknown' ? '<span class="lsub">seit ' + since(c.ts) + '</span>' : '') + '<span class="lval">' + esc(contactText(t)) + '</span>';
@@ -1588,7 +1637,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1632,6 +1681,12 @@ function fillTile(el, t) {
       const line = alarmLine(t, c, a);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
         (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
+      break;
+    }
+    case 'fire': {
+      const f = fireInfo(t);
+      html = '<div class="row1">' + ic + '</div><div class="big' + (f.alarm ? ' alarmtxt' : '') + '">' + esc(f.text) + '</div>' +
+        (f.line && f.line[1] ? '<div class="tsub ' + f.line[0] + '">' + esc(f.line[1]) + '</div>' : '') + label;
       break;
     }
     case 'leave':
@@ -1768,6 +1823,19 @@ function bindControls(el, t) {
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
       else if (a === 'scene') sceneRun(t);
+      else if (a === 'fsilence') send(t.silence, true);
+      else if (a === 'freset') {
+        if (confirm('Brandmeldeanlage wirklich zurücksetzen?')) send(t.reset, true);
+      } else if (a === 'fdet') {
+        const d = (t.detectors || [])[Number(b.dataset.v)];
+        if (!d || !d.mode) return;
+        const off = Boolean(d.off && truthy(val(d.off)));
+        const m = fireModes(d);
+        const v = off ? m.on : m.off;
+        if (v === undefined) return;
+        if (!off && !confirm('Melder „' + d.label + '“ abschalten? Er meldet dann keinen Brand mehr.')) return;
+        send(d.mode, Number(v));
+      }
       else if (a === 'clon') climSwitch(t, true);
       else if (a === 'cloff') climSwitch(t, false);
       else if (a === 'clplus') climStep(t, 1);
@@ -1975,7 +2043,7 @@ const LAYERS = [
   ['energie', 'Energie', 'bolt'],
   ['sonstiges', 'Sonstiges', 'info'],
 ];
-const LAYER_TYPE = { contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
+const LAYER_TYPE = { fire: 'brand', contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
 const LAYER_ICON = {
   bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
   blind: 'beschattung', awning: 'beschattung',
@@ -2117,6 +2185,7 @@ function fillMarker(el, t) {
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
+  else if (t.type === 'fire') v = fireInfo(t).text === 'Ruhe' ? '' : fireInfo(t).text;
   else if (t.type === 'radio') v = radioPlaying(radioCur(t)) ? radioText(radioCur(t)) : '';
   else if (t.type === 'climate') {
     const m = climMain(t);
@@ -2294,6 +2363,18 @@ function fillSheet(sh, t) {
       (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
+  } else if (t.type === 'fire') {
+    const f = fireInfo(t);
+    const info = [];
+    if (f.alarmList) info.push(['Alarm', '<span class="bad">' + esc(f.alarmList) + '</span>']);
+    if (f.pre) info.push(['Voralarm', '<span class="warnc">ja</span>']);
+    if (f.faultList || f.fault) info.push(['Störung', '<span class="warnc">' + esc(f.faultList || 'ja') + '</span>']);
+    if (f.offList || f.off) info.push(['Abgeschaltet', '<span class="warnc">' + esc(f.offList || 'ja') + '</span>']);
+    if (t.lastMsg && val(t.lastMsg)) info.push(['Letzte Meldung', esc(String(val(t.lastMsg)))]);
+    if (t.connection) info.push(['Verbindung zur Zentrale', f.offline ? '<span class="bad">getrennt</span>' : '<span class="ok">ok</span>']);
+    const btns = t.control ? [t.silence ? '<button type="button" data-a="fsilence">Akustik ab</button>' : '', t.reset ? '<button type="button" data-a="freset" class="primary">Rücksetzen</button>' : ''].join('') : '';
+    body = '<div class="bigval' + (f.alarm ? ' alarmtxt' : '') + '">' + esc(f.text) + '</div>' + (btns ? '<div class="row">' + btns + '</div>' : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') + fireDetectors(t);
   } else if (t.type === 'leave' || t.type === 'arrive') {
     const plan = scenePlan(t);
     const n = plan.now.size + plan.later.size;

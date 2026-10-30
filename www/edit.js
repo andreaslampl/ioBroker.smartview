@@ -26,6 +26,7 @@ const TYPE_LABELS = {
   climate: 'Luftentfeuchter / Klimagerät',
   leave: 'Haus verlassen (alles aus mit einem Knopf)',
   arrive: 'Ankommen (Alarm aus, Heizung, Licht)',
+  fire: 'Brandmeldeanlage (FC20 / Cerberus PRO)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -124,6 +125,22 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
+  ],
+  fire: [
+    ['panel', 'FC20-Instanz', 'fc20panel', 'Füllt die Datenpunkte unten (Adapter fc20-cerberus-bacnet).'],
+    ['control', 'Schalten erlauben (Akustik ab, Rücksetzen, Melder ab- / einschalten)', 'check', 'Ohne Haken nur Anzeige – auch der ioBroker nimmt dann keine Befehle von ihr an. Mit Haken am besten eine PIN setzen. Der FC20-Adapter braucht dafür „Befehle erlauben“.'],
+    ['showDetectors', 'Melder anzeigen', 'check', 'Beim Speichern werden die Melder der Zentrale geholt (Ordner „Melder“). Im Bedienfenster: Zustand, mit „Schalten erlauben“ Abschalten / Einschalten. Neue Melder: Kachel nochmal speichern.'],
+    ['alarm', 'Alarm', 'state-r'],
+    ['alarmText', 'Melder im Alarm (Text)', 'state-r'],
+    ['preAlarm', 'Voralarm', 'state-r'],
+    ['fault', 'Störung', 'state-r'],
+    ['faultText', 'Störungen (Text)', 'state-r'],
+    ['disabled', 'Abschaltung aktiv', 'state-r'],
+    ['disabledText', 'Abgeschaltet (Text)', 'state-r'],
+    ['lastMsg', 'Letzte Meldung', 'state-r'],
+    ['connection', 'Verbindung zur Zentrale', 'state-r'],
+    ['silence', 'Akustik ab (Taste)', 'state-w'],
+    ['reset', 'Rücksetzen (Taste)', 'state-w'],
   ],
   leave: [
     ['lightsOff', 'Alle Lichter aus', 'check', 'Schalter und Dimmer auf der Ebene „Licht“ (nach Symbol oder Ebene im Kachel-Dialog) – Steckdosen bleiben an.'],
@@ -545,6 +562,26 @@ const Editor = (() => {
     let list = [];
     try {
       list = (await api('energy')).chargers || [];
+    } catch (e) {
+      // not installed
+    }
+    for (const id of list.concat(value && !list.includes(value) ? [value] : [])) {
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = id + (list.includes(id) ? '' : ' (nicht gefunden)');
+      s.appendChild(o);
+    }
+    s.value = value === undefined ? list[0] || '' : value || '';
+    return s;
+  }
+
+  /** instance of the FC20 adapter (fills the fire tile's data points) */
+  async function fc20Field(box, value, label, help) {
+    const s = select([['', '(keine – Datenpunkte selbst wählen)']], value || '');
+    field(box, label, s, help);
+    let list = [];
+    try {
+      list = (await api('energy')).fc20 || [];
     } catch (e) {
       // not installed
     }
@@ -1082,6 +1119,7 @@ const Editor = (() => {
       inputs.label = field(body, 'Beschriftung', textInput(t.label));
       for (const [key, label, kind, help] of TYPE_FIELDS[t.type]) {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
+        else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'lighttiles') {
           const box = document.createElement('div');
           box.className = 'checks';

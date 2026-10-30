@@ -154,6 +154,7 @@ class SmartView extends utils.Adapter {
                 homekit: () => this.homekitInfo(),
                 energyInstances: () => this.instancesOf('energie'),
                 chargerInstances: () => this.instancesOf('versicharge'),
+                fc20Instances: () => this.instancesOf('fc20-cerberus-bacnet'),
                 energyDay: (instance, date) => this.energyDay(instance, date),
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
@@ -865,6 +866,10 @@ class SmartView extends utils.Adapter {
     async fillDetectors(layout) {
         for (const p of (layout && Array.isArray(layout.pages) ? layout.pages : [])) {
             for (const t of (p && Array.isArray(p.tiles) ? p.tiles : [])) {
+                if (t && t.type === 'fire') {
+                    t.detectors = t.showDetectors ? await this.fireDetectorsOf(String(t.panel || '')) : [];
+                    continue;
+                }
                 if (!t || t.type !== 'alarm') {
                     continue;
                 }
@@ -901,6 +906,31 @@ class SmartView extends utils.Adapter {
         }
         out.sort((x, y) => x.nr - y.nr);
         return out.map(({ nr: _nr, ...d }) => d);
+    }
+
+    /** detectors of an FC20 panel (fc20-cerberus-bacnet.N.objects.melder.<id>.*), sorted by name */
+    async fireDetectorsOf(panel) {
+        if (!/^fc20-cerberus-bacnet\.\d+$/.test(panel)) {
+            return [];
+        }
+        const states = await this.getForeignStatesAsync(`${panel}.objects.melder.*.state`).catch(() => ({}));
+        const out = [];
+        for (const id of Object.keys(states || {})) {
+            const base = id.replace(/\.state$/, '');
+            const obj = await this.getForeignObjectAsync(base).catch(() => null);
+            const name = obj && obj.common && obj.common.name;
+            const modeObj = await this.getForeignObjectAsync(`${base}.mode`).catch(() => null);
+            out.push({
+                label: (typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
+                state: `${base}.state`,
+                alarm: `${base}.alarm`,
+                fault: `${base}.fault`,
+                off: `${base}.disabled`,
+                ...(modeObj ? { mode: `${base}.mode` } : {}),
+            });
+        }
+        out.sort((a, b) => a.label.localeCompare(b.label, 'de', { numeric: true }));
+        return out;
     }
 
     /** message on all configured ways (app push, Telegram, WhatsApp) */

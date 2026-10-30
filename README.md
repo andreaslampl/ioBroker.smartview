@@ -326,6 +326,20 @@ in °C, Schritt 0,5), Betriebsart und Lüfterstufe als Knöpfe (Texte aus dem Da
   keine Seite offen ist. Geschaltet wird nur beim Überschreiten der Grenzen – wer dazwischen von Hand ein- oder
   ausschaltet, wird nicht überstimmt. Ohne Räume zählt die Luftfeuchte der Kachel selbst.
 
+### Brandmeldeanlage (FC20)
+
+Kachel **„Brandmeldeanlage (FC20 / Cerberus PRO)“** für den Adapter
+[fc20-cerberus-bacnet](https://github.com/andreaslampl/ioBroker.fc20-cerberus-bacnet): FC20-Instanz wählen, die
+Datenpunkte füllen sich selbst.
+
+- **Kachel:** ALARM (rot, mit den Meldern) / Voralarm / Störung (orange, mit Text) / Abschaltung aktiv / keine
+  Verbindung / Ruhe.
+- **Bedienfenster:** Alarm-, Störungs- und Abschaltungs-Listen, letzte Meldung der Zentrale, Verbindung.
+- **Melder anzeigen:** beim Speichern werden die Melder der Zentrale geholt (Ordner „Melder“) – jeder mit Zustand.
+- **Schalten erlauben** (sonst nur Anzeige, auch der ioBroker nimmt dann nichts an): **Akustik ab**, **Rücksetzen**
+  (mit Nachfrage) und **Melder abschalten / einschalten** (über die Betriebsart, mit Nachfrage beim Abschalten).
+  Dafür muss im FC20-Adapter „Befehle erlauben“ gesetzt sein. Eine **PIN** ist dringend empfohlen.
+
 ### Haus verlassen
 
 Kachel **„Haus verlassen (alles aus mit einem Knopf)“**. Sie braucht keine eigenen Datenpunkte, sondern nimmt die

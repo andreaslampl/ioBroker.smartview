@@ -976,3 +976,48 @@ test('adapter: "Haus verlassen" / "Ankommen" run in the adapter - one PIN, delay
     assert.ok(!adapter.writes.some(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer'), 'arriving cancelled the delayed blinds');
     assert.ok(adapter.writes.some(w => w[0] === 'knx.0.EG.Licht.Kueche' && w[1] === true), 'arrive switches the chosen light on');
 });
+
+test('adapter: fire alarm tile (FC20) - filled from the instance, detectors with mode, commands only with "Schalten erlauben"', async t => {
+    const F = 'fc20-cerberus-bacnet.0';
+    const { adapter, api, port } = await startAdapter(t, {}, a => {
+        a.objects[`system.adapter.${F}`] = { type: 'instance', common: { name: 'fc20-cerberus-bacnet' } };
+        for (const [k, v] of [['summary.alarm', false], ['summary.alarmList', ''], ['summary.preAlarm', false], ['summary.fault', true], ['summary.faultList', 'Stich 21'],
+            ['summary.disabled', false], ['summary.disabledList', ''], ['summary.lastMessage', 'Störung Stich 21'], ['info.connection', true]]) {
+            a.add(`${F}.${k}`, { name: k, type: typeof v === 'boolean' ? 'boolean' : 'string', role: 'indicator' }, v);
+        }
+        a.add(`${F}.panel.reset`, { name: 'Rücksetzen', type: 'boolean', role: 'button', write: true });
+        a.add(`${F}.panel.silence`, { name: 'Akustik ab', type: 'boolean', role: 'button', write: true });
+        for (const [id, name] of [['m_02', 'Küche'], ['m_01', 'Büro']]) {
+            const b = `${F}.objects.melder.${id}`;
+            a.objects[b] = { type: 'channel', common: { name } };
+            a.add(`${b}.state`, { name: 'Zustand', type: 'string', role: 'text' }, 'Ruhe');
+            a.add(`${b}.alarm`, { name: 'Alarm', type: 'boolean', role: 'indicator.alarm.fire' }, false);
+            a.add(`${b}.fault`, { name: 'Störung', type: 'boolean', role: 'indicator' }, false);
+            a.add(`${b}.disabled`, { name: 'Abgeschaltet', type: 'boolean', role: 'indicator' }, false);
+            a.add(`${b}.mode`, { name: 'Betriebsart', type: 'number', role: 'level.mode', write: true, states: { 11: 'Eingeschaltet', 12: 'Abgeschaltet' } }, 11);
+        }
+    });
+    assert.deepEqual((await api('energy')).body.fc20, [F]);
+    const tile = { id: 'bma', type: 'fire', label: 'BMA', panel: F, showDetectors: true };
+    let saved = (await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'b', name: 'Brand', tiles: [tile] }] }) })).body.pages[0].tiles[0];
+    assert.equal(saved.faultText, `${F}.summary.faultList`);
+    assert.deepEqual(saved.detectors.map(d => d.label), ['Büro', 'Küche'], 'sorted by name');
+    assert.equal(saved.detectors[0].mode, `${F}.objects.melder.m_01.mode`);
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    // display only: nothing writable
+    assert.deepEqual(c.msgs.find(m => m.type === 'init').writable, []);
+    c.ws.send(JSON.stringify({ type: 'set', id: `${F}.panel.reset`, val: true }));
+    await until(() => c.msgs.some(m => m.type === 'error' && /Nicht freigegeben/.test(m.text)));
+    // with "Schalten erlauben": reset, silence and the detector modes
+    saved = (await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'b', name: 'Brand', tiles: [{ ...tile, control: true }] }] }) })).body.pages[0].tiles[0];
+    const c2 = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c2.ws.close());
+    await c2.open;
+    await until(() => c2.msgs.some(m => m.type === 'init'));
+    assert.deepEqual(c2.msgs.find(m => m.type === 'init').writable.sort(), [`${F}.objects.melder.m_01.mode`, `${F}.objects.melder.m_02.mode`, `${F}.panel.reset`, `${F}.panel.silence`]);
+    c2.ws.send(JSON.stringify({ type: 'set', id: `${F}.objects.melder.m_02.mode`, val: 12 }));
+    await until(() => adapter.writes.some(w => w[0] === `${F}.objects.melder.m_02.mode` && w[1] === 12));
+});
