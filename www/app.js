@@ -801,8 +801,8 @@ function radioStations(c) {
 
 function radioVolStep(c, dir) {
   const v = Number(val(c.volume)) || 0;
-  // next step of 5 (23 -> 25 / 20)
-  send(c.volume, Math.max(0, Math.min(100, dir > 0 ? Math.floor(v / 5) * 5 + 5 : Math.ceil(v / 5) * 5 - 5)));
+  // next step of 2 (23 -> 24 / 22)
+  send(c.volume, Math.max(0, Math.min(100, dir > 0 ? Math.floor(v / 2) * 2 + 2 : Math.ceil(v / 2) * 2 - 2)));
 }
 
 /**

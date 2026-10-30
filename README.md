@@ -294,7 +294,7 @@ muss die Radio-Seite nicht extra geöffnet werden. Nur den **Sender-Datenpunkt d
 
 - Kachel: laufender Sender (oder „Aus“), Titel, Lautstärke.
 - Antippen: ein Knopf pro Sender (die Senderliste aus den Einstellungen von sonos-radio), **Stopp**, Lautstärke − / +
-  in 5er-Schritten, Titel und mit welchen Räumen gerade zusammen gespielt wird.
+  in 2er-Schritten, Titel und mit welchen Räumen gerade zusammen gespielt wird.
 - **Weitere Räume**: wie bei den Heizkreisen – pro Raum Name + Sender-Datenpunkt, auf der Kachel ‹ › zum Umschalten,
   im Bedienfenster Knöpfe. Welcher Raum gewählt ist, merkt sich jedes Gerät selbst.
 

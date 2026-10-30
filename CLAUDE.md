@@ -270,7 +270,7 @@ switches/buttons on them.
 - 0.31.0: owner asked for a tile for ioBroker.sonos-radio so its page need not open -> tile type `radio` {station (w),
   playing (w), volume (w), title, group, online; `roomLabel`, `rooms` [{label, station, …}] max 12}; layout `fillRadio()`
   fills the rest from `<inst>.rooms.<id>.station`. app.js `RADIO_KEYS`, `radioRooms()`/`radioCur()` (circIndex/circSwitch
-  like alarm areas), sheet: station buttons from the station state's common.states, Stopp (playing false), volume ±5.
+  like alarm areas), sheet: station buttons from the station state's common.states, Stopp (playing false), volume ±5 (±2 since 0.31.5, owner asked).
   Grouping stays on the sonos-radio page. Checked in Playwright with fake states; not with real Sonos.
 - 0.31.1: owner wanted a surveillance camera symbol for the site plan (the photo camera looked like a camera) -> icons
   `cctv` (default for camera tiles) and `dome`, both in layer kamera.

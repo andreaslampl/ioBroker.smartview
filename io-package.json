@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.4",
+    "version": "0.31.5",
     "news": {
+      "0.31.5": {
+        "en": "Radio tile: volume in steps of 2",
+        "de": "Radio-Kachel: Lautstärke in 2er-Schritten"
+      },
       "0.31.4": {
         "en": "Heating + / −: the setpoint stays within the data point's own min/max too (a hot water circuit with min 35 in a tile whose min is 10 for the rooms)",
         "de": "Heizung + / −: der Sollwert bleibt auch in Min/Max des Datenpunkts (z. B. Warmwasser mit Min 35 in einer Kachel, deren Min 10 für die Räume gilt)"
