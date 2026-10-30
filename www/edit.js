@@ -22,6 +22,8 @@ const TYPE_LABELS = {
   wallbox: 'Wallbox (Laden, PV-Überschuss)',
   alarm: 'Alarmanlage (scharf / unscharf)',
   radio: 'Webradio (Adapter sonos-radio)',
+  contact: 'Fensterkontakt / Magnetkontakt (z. B. im Lageplan)',
+  climate: 'Luftentfeuchter / Klimagerät',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -120,6 +122,32 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
+  ],
+  contact: [
+    ['state', 'Kontakt (true = offen)', 'state-r', 'Magnetkontakt des Fensters bzw. der Tür'],
+    ['tilt', 'Zweiter Kontakt / Kipp-Kontakt (optional)', 'state-r'],
+    ['logic', 'Auswertung', 'select:tilt=Kontakt 1 offen, Kontakt 2 gekippt;both=ein Kontakt offen: gekippt, beide: offen;table=eigene Tabelle', 'wie in der Fensterübersicht'],
+    ['map', 'Tabelle (nur bei „eigene Tabelle“)', 'text', '4 Buchstaben z/t/o für: beide zu, nur 1 offen, nur 2 offen, beide offen – z. B. ztoo'],
+    ['invert', 'Kontakt 1 umgekehrt (true = zu)', 'check'],
+    ['invert2', 'Kontakt 2 umgekehrt (true = zu)', 'check'],
+    ['hideClosed', 'Wenn zu, ausblenden (Lageplan)', 'check', 'Das Symbol erscheint nur, wenn offen (rot) oder gekippt (orange). Im Bearbeiten-Modus bleibt es sichtbar.'],
+  ],
+  climate: [
+    ['climKind', 'Gerät', 'select:dehum=Luftentfeuchter (Soll in % Luftfeuchte);ac=Klimagerät (Soll in °C)'],
+    ['state', 'Ein/Aus (Datenpunkt)', 'state-w'],
+    ['status', 'Rückmeldung Ein/Aus (optional)', 'state-r'],
+    ['invert', 'Ein/Aus umgekehrt', 'check'],
+    ['target', 'Sollwert (optional)', 'state-w', 'Luftentfeuchter: Ziel-Luftfeuchte in %, Klimagerät: Solltemperatur'],
+    ['step', 'Schritt für − / + (optional)', 'number', 'Standard: 5 (%) bzw. 0,5 (°C)'],
+    ['min', 'Sollwert mindestens (optional)', 'number'],
+    ['max', 'Sollwert höchstens (optional)', 'number'],
+    ['humidity', 'Luftfeuchte Ist (optional)', 'state-r'],
+    ['temp', 'Temperatur Ist (optional)', 'state-r'],
+    ['mode', 'Betriebsart (optional)', 'state-w', 'z. B. Kühlen / Entfeuchten / Lüften'],
+    ['modes', 'Texte der Betriebsarten (optional)', 'text', 'z. B. 0=Auto;1=Kühlen;2=Entfeuchten;3=Lüften – leer = Texte des Datenpunkts'],
+    ['fan', 'Lüfterstufe (optional)', 'state-w'],
+    ['fans', 'Texte der Lüfterstufen (optional)', 'text', 'z. B. 1=Leise;2=Mittel;3=Stark – leer = Texte des Datenpunkts'],
+    ['alarm', 'Störung / Wassertank voll (optional)', 'state-r', 'true = Kachel rot'],
   ],
   radio: [
     ['station', 'Raum: Sender-Datenpunkt', 'state-w', 'sonos-radio.0.rooms.<Raum>.station – Lautstärke, Stopp, Titel und Gruppe ergänzt SmartView beim Übernehmen selbst. Die Senderknöpfe kommen aus der Senderliste des Adapters.'],

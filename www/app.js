@@ -120,9 +120,10 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
+  if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
@@ -138,7 +139,7 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online'].map(k => t[k]))
+    .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan'].map(k => t[k]))
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
     .filter(Boolean);
@@ -624,6 +625,11 @@ function windowsHtml(t) {
 function tileState(t) {
   if (t.type === 'windows') return windowsWarn(t) || windowStates(t).some(w => w.status === 'open') ? 'alert' : '';
   if (t.type === 'radio') return radioPlaying(radioCur(t)) ? 'on' : '';
+  if (t.type === 'contact') {
+    const c = contactStatus(t).status;
+    return c === 'open' ? 'alert' : c === 'tilt' ? 'warn' : '';
+  }
+  if (t.type === 'climate') return t.alarm && truthy(val(t.alarm)) ? 'alert' : climOn(t) ? 'on' : '';
   if (t.type === 'alarm') {
     const a = alarmInfo(alarmCur(t));
     return a.alarm || alarmElsewhere(t).length ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
@@ -803,6 +809,83 @@ function radioVolStep(c, dir) {
   const v = Number(val(c.volume)) || 0;
   // next step of 2 (23 -> 24 / 22)
   send(c.volume, Math.max(0, Math.min(100, dir > 0 ? Math.floor(v / 2) * 2 + 2 : Math.ceil(v / 2) * 2 - 2)));
+}
+
+// ---------------- window contact, dehumidifier / air conditioner ----------------
+
+/** one contact tile as a window row: {status: open|tilt|closed|unknown, ts} */
+function contactStatus(t) {
+  return WinLogic.states({ windows: [{ state: t.state, tilt: t.tilt, invert: t.invert, invert2: t.invert2, logic: t.logic, map: t.map }] }, st)[0];
+}
+
+function contactText(t) {
+  return WinLogic.TEXT[contactStatus(t).status];
+}
+
+/** closed contact with "wenn zu ausblenden": not shown on the plan (in edit mode it stays) */
+function contactHidden(t) {
+  return Boolean(t.type === 'contact' && t.hideClosed && !SV.editing && contactStatus(t).status === 'closed');
+}
+
+function climOn(t) {
+  const id = t.status || t.state;
+  const v = id ? val(id) : null;
+  if (v === null || v === undefined) return false;
+  return t.invert ? !truthy(v) : truthy(v);
+}
+
+/** the main value: humidity for a dehumidifier, temperature for an air conditioner (the other if missing) */
+function climMain(t) {
+  const order = t.climKind === 'ac' ? ['temp', 'humidity'] : ['humidity', 'temp'];
+  const key = order.find(k => t[k] && st(t[k]) && !st(t[k]).missing);
+  if (!key) return null;
+  const f = fmt({ decimals: key === 'temp' ? 1 : 0 }, t[key]);
+  return { key, text: f.text, unit: f.unit || (key === 'temp' ? '°C' : '%') };
+}
+
+function climTarget(t) {
+  if (!t.target) return null;
+  const f = fmt({ decimals: t.climKind === 'ac' ? 1 : 0 }, t.target);
+  return f.text === '–' ? null : f.text + ' ' + (f.unit || (t.climKind === 'ac' ? '°C' : '%'));
+}
+
+/** [[value, text]] of the mode / fan buttons: own texts, else the data point's states */
+function climChoices(t, key, texts) {
+  if (!t[key]) return [];
+  const own = parseTexts(t[texts]);
+  const map = Object.keys(own).length ? own : (st(t[key]) || {}).states || {};
+  return Array.isArray(map) ? map.map((x, i) => [String(i), String(x)]) : Object.entries(map).map(([k, x]) => [k, String(x)]);
+}
+
+function climChoiceText(t, key, texts) {
+  const v = t[key] ? val(t[key]) : null;
+  if (v === null || v === undefined) return '';
+  const hit = climChoices(t, key, texts).find(([k]) => sameVal(v, k));
+  return hit ? hit[1] : String(v);
+}
+
+function climLine(t) {
+  if (t.alarm && truthy(val(t.alarm))) return ['alarmtxt', 'Störung / Tank voll'];
+  const parts = [climOn(t) ? 'Ein' : 'Aus'];
+  const tg = climTarget(t);
+  if (tg) parts.push('Soll ' + tg);
+  const m = climChoiceText(t, 'mode', 'modes');
+  if (m && climOn(t)) parts.push(m);
+  return ['', parts.join(' · ')];
+}
+
+function climSwitch(t, on) {
+  send(t.state, t.invert ? !on : on);
+}
+
+function climStep(t, dir) {
+  // same rules as the heating setpoint (unknown value -> nothing, limits of tile and data point)
+  thermoStep({ ...t, state: t.target, setStatus: '', step: t.step || (t.climKind === 'ac' ? 0.5 : 5) }, dir);
+}
+
+function climSend(t, key, v) {
+  const s = st(t[key]) || {};
+  send(t[key], s.type !== 'string' && v !== '' && Number.isFinite(Number(v)) ? Number(v) : v);
 }
 
 /**
@@ -1260,7 +1343,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1320,6 +1403,7 @@ function fillRow(el, t) {
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
+  el.classList.toggle('warn', stt === 'warn');
   el.classList.toggle('missing', missing(t));
   const head = '<span class="lic">' + tileIc(t) + '</span><span class="lname">' + esc(t.label || '') + '</span>';
   let ctl = '';
@@ -1361,6 +1445,18 @@ function fillRow(el, t) {
       const line = alarmLine(t, c, a);
       ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Bereich">⇄</button><span class="lsub">' + esc(c._circs[c._circ].label) + '</span>' : '') +
         (line ? '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
+      break;
+    }
+    case 'contact': {
+      const c = contactStatus(t);
+      ctl = (c.ts && c.status !== 'unknown' ? '<span class="lsub">seit ' + since(c.ts) + '</span>' : '') + '<span class="lval">' + esc(contactText(t)) + '</span>';
+      break;
+    }
+    case 'climate': {
+      const line = climLine(t);
+      const m = climMain(t);
+      ctl = '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' + (m ? '<span class="lval">' + esc(m.text + ' ' + m.unit) + '</span>' : '') +
+        (t.state ? '<button type="button" data-a="' + (climOn(t) ? 'cloff' : 'clon') + '">' + (climOn(t) ? 'AUS' : 'EIN') + '</button>' : '');
       break;
     }
     case 'radio': {
@@ -1447,7 +1543,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1456,6 +1552,7 @@ function fillTile(el, t) {
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
+  el.classList.toggle('warn', stt === 'warn');
   el.classList.toggle('missing', missing(t));
   el.classList.toggle('tap', !['heading', 'html', 'windows'].includes(t.type));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
@@ -1490,6 +1587,19 @@ function fillTile(el, t) {
       const line = alarmLine(t, c, a);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
         (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
+      break;
+    }
+    case 'contact': {
+      const c = contactStatus(t);
+      html = '<div class="row1">' + ic + '</div><div class="big">' + esc(contactText(t)) + '</div>' +
+        (c.ts && c.status !== 'unknown' ? '<div class="tsub">seit ' + since(c.ts) + '</div>' : '') + label;
+      break;
+    }
+    case 'climate': {
+      const m = climMain(t);
+      const line = climLine(t);
+      html = '<div class="row1">' + ic + '<span class="tval">' + (m ? esc(m.text + ' ' + m.unit) : '') + '</span></div>' +
+        '<div class="big">' + (climOn(t) ? 'Ein' : 'Aus') + '</div><div class="tsub ' + line[0] + '">' + esc(line[1].replace(/^(Ein|Aus)( · )?/, '')) + '</div>' + label;
       break;
     }
     case 'radio': {
@@ -1608,6 +1718,12 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
+      else if (a === 'clon') climSwitch(t, true);
+      else if (a === 'cloff') climSwitch(t, false);
+      else if (a === 'clplus') climStep(t, 1);
+      else if (a === 'clminus') climStep(t, -1);
+      else if (a === 'clmode') climSend(t, 'mode', b.dataset.v);
+      else if (a === 'clfan') climSend(t, 'fan', b.dataset.v);
       else if (a === 'rplay') send(radioCur(t).station, b.dataset.v);
       else if (a === 'rstop') send(radioCur(t).playing, false);
       else if (a === 'rvol') radioVolStep(radioCur(t), Number(b.dataset.v));
@@ -1808,14 +1924,14 @@ const LAYERS = [
   ['energie', 'Energie', 'bolt'],
   ['sonstiges', 'Sonstiges', 'info'],
 ];
-const LAYER_TYPE = { alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
+const LAYER_TYPE = { contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
 const LAYER_ICON = {
   bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
   blind: 'beschattung', awning: 'beschattung',
   heat: 'klima', thermometer: 'klima', fan: 'klima', drop: 'klima',
   window: 'fenster', door: 'fenster', garage: 'fenster', gate: 'fenster',
   alarm: 'sicherheit', shield: 'sicherheit', lock: 'sicherheit', motion: 'sicherheit',
-  fire: 'brand', camera: 'kamera', cctv: 'kamera', dome: 'kamera',
+  fire: 'brand', camera: 'kamera', cctv: 'kamera', dome: 'kamera', contact: 'fenster', dehum: 'klima', aircon: 'klima',
   socket: 'energie', power: 'energie', bolt: 'energie', energy: 'energie', charger: 'energie', car: 'energie',
 };
 
@@ -1940,6 +2056,8 @@ function fillMarker(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('cam', t.type === 'camera');
+  el.classList.toggle('warn', stt === 'warn');
+  el.classList.toggle('chide', contactHidden(t));
   let v = '';
   if (t.type === 'value') {
     const f = fmt(t, t.state);
@@ -1949,6 +2067,10 @@ function fillMarker(el, t) {
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
   else if (t.type === 'radio') v = radioPlaying(radioCur(t)) ? radioText(radioCur(t)) : '';
+  else if (t.type === 'climate') {
+    const m = climMain(t);
+    v = m ? m.text + ' ' + m.unit : '';
+  }
   else if (t.type === 'wallbox') v = wbBig(t);
   else if (t.type === 'energy') {
     const d = energyData(t);
@@ -2121,6 +2243,23 @@ function fillSheet(sh, t) {
       (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
+  } else if (t.type === 'contact') {
+    const c = contactStatus(t);
+    body = '<div class="bigval">' + esc(contactText(t)) + '</div>' + (c.ts && c.status !== 'unknown' ? '<p class="muted" style="text-align:center;margin:0">seit ' + since(c.ts) + '</p>' : '');
+  } else if (t.type === 'climate') {
+    const info = [];
+    if (t.temp) info.push(['Temperatur', esc(fmt({ decimals: 1 }, t.temp).text) + ' ' + esc(fmt({}, t.temp).unit || '°C')]);
+    if (t.humidity) info.push(['Luftfeuchte', esc(fmt({ decimals: 0 }, t.humidity).text) + ' ' + esc(fmt({}, t.humidity).unit || '%')]);
+    if (t.alarm) info.push(['Störung / Tank', truthy(val(t.alarm)) ? '<span class="bad">ja</span>' : '<span class="ok">nein</span>']);
+    const modes = climChoices(t, 'mode', 'modes');
+    const fans = climChoices(t, 'fan', 'fans');
+    const btns = (list, key, act) => '<div class="row modes">' + list.map(([k, x]) => '<button type="button" data-a="' + act + '" data-v="' + esc(k) + '"' + (t[key] && sameVal(val(t[key]), k) ? ' class="primary"' : '') + '>' + esc(x) + '</button>').join('') + '</div>';
+    body = '<div class="bigval' + (t.alarm && truthy(val(t.alarm)) ? ' alarmtxt' : '') + '">' + (climOn(t) ? 'Ein' : 'Aus') + '</div>' +
+      (t.state ? '<div class="row"><button type="button" data-a="cloff">Aus</button><button type="button" data-a="clon" class="primary">Ein</button></div>' : '') +
+      (t.target ? '<p class="muted" style="text-align:center;margin:8px 0 0">' + (t.climKind === 'ac' ? 'Solltemperatur' : 'Soll-Luftfeuchte') + '</p><div class="row"><button type="button" data-a="clminus" aria-label="weniger">' + icon('minus') + '</button><span class="bigval sm">' + esc(climTarget(t) || '–') + '</span><button type="button" data-a="clplus" aria-label="mehr">' + icon('plus') + '</button></div>' : '') +
+      (modes.length ? '<p class="muted" style="text-align:center;margin:8px 0 0">Betriebsart</p>' + btns(modes, 'mode', 'clmode') : '') +
+      (fans.length ? '<p class="muted" style="text-align:center;margin:8px 0 0">Lüfter</p>' + btns(fans, 'fan', 'clfan') : '') +
+      (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'radio') {
     const c = radioCur(t);
     const cur = radioPlaying(c) ? String(val(c.station) || '') : '';

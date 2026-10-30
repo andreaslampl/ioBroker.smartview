@@ -7,6 +7,7 @@ const Timers = (() => {
   const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
   const ACTIONS = {
     switch: [['on', 'Ein'], ['off', 'Aus']],
+    climate: [['on', 'Ein'], ['off', 'Aus']],
     dimmer: [['on', 'Ein (100 %)'], ['off', 'Aus'], ['level', 'Helligkeit …']],
     blind: [['up', 'Auf'], ['down', 'Ab'], ['position', 'Position (% offen) …']],
   };

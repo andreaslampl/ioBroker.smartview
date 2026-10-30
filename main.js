@@ -816,7 +816,7 @@ class SmartView extends utils.Adapter {
         }
         const when = entry.at === 'time' ? entry.time : `${entry.at === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang'}${entry.offset ? ` ${entry.offset > 0 ? '+' : ''}${entry.offset} min` : ''}`;
         this.log.info(`Timer "${tile.label || tile.id}" (${when}): ${action}${value !== undefined ? ` ${value} %` : ''}`);
-        if (tile.type === 'switch') {
+        if (tile.type === 'switch' || tile.type === 'climate') {
             const on = action === 'on';
             await this.setValue(tile.state, tile.invert ? !on : on);
         } else if (tile.type === 'dimmer') {

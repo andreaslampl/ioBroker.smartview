@@ -206,6 +206,15 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .layerbar.small .lchip .ic { width: 15px; height: 15px; }
 /* a hidden layer still shows a marker that is in alarm (fire, intrusion, open window …) */
 .marker.lhidden:not(.alert) { display: none; }
+.marker.chide { display: none; }
+.marker.warn .dot { border-color: var(--warn); color: var(--warn); }
+.marker.alert.contact .dot, .marker.warn.contact .dot { color: #fff; }
+.marker.alert.contact .dot { background: var(--bad); }
+.marker.warn.contact .dot { background: var(--warn); }
+.tile.warn { border-color: var(--warn); }
+.tile.warn .tic, .tile.warn .tval, .tile.warn .big { color: var(--warn); }
+.tile.alert.contact .big { color: var(--bad); }
+.lrow.warn .lic, .lrow.warn .lval { color: var(--warn); }
 .campop { position: fixed; z-index: 60; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.45); pointer-events: none; }
 .campop img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; display: block; background: #000; }
 .campop span { display: block; font-size: 13px; padding: 5px 4px 1px; color: var(--muted); }

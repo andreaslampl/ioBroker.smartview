@@ -283,6 +283,14 @@ switches/buttons on them.
 - 0.31.4 field: log "warmwasser_soll ... value 10 less than min 35" (owner's own Ochsner data point, likely in a heating tile
   with min 10 for the rooms). `thermoStep()` clamps to the narrower of tile and data point limits; if they contradict
   (tile 10-30, data point 35-60) the data point's own range wins.
+- 0.32.0: owner asked for a magnet contact symbol on the site plan (red open, orange tilted, optionally gone when closed) and
+  a dehumidifier / air conditioner tile. Tile `contact` {state, tilt; invert, invert2, logic, map, hideClosed}: app.js
+  `contactStatus()` = WinLogic.states with one row, tileState 'warn' (new orange class on tile/row/marker; contact markers
+  filled red/orange), marker class `chide` (`contactHidden()`, never in edit mode). Tile `climate` {state, status, target,
+  temp, humidity, mode, fan, alarm (w: state/target/mode/fan); climKind dehum|ac (icon dehum/aircon, step 5 / 0.5),
+  invert, step, min, max, modes, fans}: `climChoices()` (own texts or data point states), `climStep()` reuses
+  thermoStep, timers on/off (www + lib/timers ACTIONS, main.fireTimer like switch). Icons contact, dehum, aircon.
+  Pitfall: classList.toggle(x, undefined) toggles - always pass a boolean. Checked in Playwright.
 - Ideas not done yet: charts/history.
 
 ## Conventions

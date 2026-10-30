@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.31.5",
+    "version": "0.32.0",
     "news": {
+      "0.32.0": {
+        "en": "New tiles: window contact (e.g. on the floor plan: red when open, orange when tilted, option hidden when closed; same evaluation as the window overview) and dehumidifier / air conditioner (on/off, setpoint − / +, mode, fan, humidity / temperature, tank full / fault, time switch); symbols magnet contact, dehumidifier, air conditioner",
+        "de": "Neue Kacheln: Fensterkontakt (z. B. im Lageplan: rot bei offen, orange bei gekippt, Option „wenn zu ausblenden“; gleiche Auswertung wie die Fensterübersicht) und Luftentfeuchter / Klimagerät (Ein/Aus, Sollwert − / +, Betriebsart, Lüfter, Feuchte / Temperatur, Tank voll / Störung, Zeitschaltuhr); Symbole Magnetkontakt, Luftentfeuchter, Klimagerät"
+      },
       "0.31.5": {
         "en": "Radio tile: volume in steps of 2",
         "de": "Radio-Kachel: Lautstärke in 2er-Schritten"

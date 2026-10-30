@@ -435,3 +435,19 @@ test('layout: radio tile filled from the station data point, rooms switched like
     assert.ok(ids.read.includes('sonos-radio.0.rooms.terrasse.title'));
     assert.ok(!ids.write.includes('sonos-radio.0.rooms.terrasse.title'), 'title stays read only');
 });
+
+test('layout: window contact (read only, hidden when closed) and dehumidifier / air conditioner', () => {
+    const { cleanLayout, stateIds, tileWriteIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'p', name: 'P', type: 'plan', tiles: [
+        { id: 'c', type: 'contact', state: 'knx.0.mk1', tilt: 'knx.0.mk2', logic: 'both', map: 'bad!', hideClosed: 1, invert2: 1 },
+        { id: 'k', type: 'climate', climKind: 'ac', state: 'x.0.on', target: 'x.0.set', temp: 'x.0.t', mode: 'x.0.mode', fan: 'x.0.fan', alarm: 'x.0.err', modes: '0=Auto;1=Kühlen', climKind2: 'no' },
+    ] }] });
+    const [c, k] = l.pages[0].tiles;
+    assert.deepEqual([c.logic, c.map, c.hideClosed, c.invert2], ['both', 'ztoo', true, true]);
+    assert.deepEqual(tileWriteIds(c), [], 'a contact is never written');
+    assert.equal(k.climKind, 'ac');
+    assert.deepEqual(tileWriteIds(k).sort(), ['x.0.fan', 'x.0.mode', 'x.0.on', 'x.0.set']);
+    const ids = stateIds(l);
+    assert.ok(ids.read.includes('knx.0.mk2') && ids.read.includes('x.0.err'));
+    assert.ok(!ids.write.includes('knx.0.mk1') && !ids.write.includes('x.0.t'));
+});

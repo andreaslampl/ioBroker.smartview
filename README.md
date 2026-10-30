@@ -60,6 +60,8 @@ ausschalten.
 | Fensterübersicht | pro Fenster Name, Magnetkontakt (true = offen), optional Kipp-Kontakt und „umgekehrt“ | geschlossen (grün) / gekippt (orange) / offen (rot) mit „seit …“; oben die Anzahl offener Fenster |
 | HTML-Anzeige | Datenpunkt mit HTML-Text, z. B. eine Tabelle aus einem Skript (wie das VIS-Widget „Basic HTML“; dort steht er als `{datenpunkt}`) | aktualisiert sich live; Bilder des web-Adapters (VIS-Symbole) werden über SmartView geladen; Größe „groß“ = volle Breite |
 | Webradio | Sender-Datenpunkt eines Raums aus sonos-radio (Rest ergänzt sich), optional weitere Räume | antippen = Senderknöpfe, Stopp, Lautstärke (siehe unten) |
+| Fensterkontakt | Kontakt (true = offen), optional zweiter / Kipp-Kontakt | rot = offen, orange = gekippt; im Lageplan optional nur sichtbar, wenn nicht zu |
+| Luftentfeuchter / Klimagerät | Ein/Aus, optional Sollwert, Ist-Feuchte / -Temperatur, Betriebsart, Lüfter, Störung / Tank voll | antippen = Ein/Aus, Soll − / +, Betriebsart, Lüfter, Zeitschaltuhr |
 | Wallbox | Wallbox-Instanz (versicharge) und Energie-Instanz, oder Datenpunkte selbst | antippen = Lademodus, Details (siehe unten) |
 | Überschrift | – | – |
 
@@ -299,6 +301,20 @@ muss die Radio-Seite nicht extra geöffnet werden. Nur den **Sender-Datenpunkt d
   im Bedienfenster Knöpfe. Welcher Raum gewählt ist, merkt sich jedes Gerät selbst.
 
 Gruppen (mehrere Räume gleichzeitig) stellt man weiter auf der Radio-Seite von sonos-radio zusammen (Link-Kachel).
+
+### Fensterkontakt im Lageplan
+
+Kachel **„Fensterkontakt / Magnetkontakt“**: ein Fenster oder eine Tür als Symbol, **rot** wenn offen, **orange** wenn
+gekippt. Ausgewertet wird wie in der Fensterübersicht (zweiter Kontakt, „ein Kontakt offen = gekippt, beide = offen“,
+eigene Tabelle, umgekehrt). Mit **„Wenn zu, ausblenden“** ist das Symbol nur da, solange etwas offen ist – im
+Bearbeiten-Modus bleibt es sichtbar, damit man es verschieben kann.
+
+### Luftentfeuchter / Klimagerät
+
+Kachel **„Luftentfeuchter / Klimagerät“**: Ein/Aus, Sollwert mit − / + (Luftentfeuchter in %, Schritt 5; Klimagerät
+in °C, Schritt 0,5), Betriebsart und Lüfterstufe als Knöpfe (Texte aus dem Datenpunkt oder selbst, z. B.
+`1=Leise;2=Mittel;3=Stark`), Ist-Feuchte / -Temperatur und **Störung / Wassertank voll** (Kachel rot). Lange drücken
+= Zeitschaltuhr (Ein/Aus).
 
 ### Kameras
 
