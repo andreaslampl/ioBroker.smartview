@@ -45,6 +45,12 @@ class FakeAdapter extends EventEmitter {
             setImmediate(() => callback(h ? h(command, message) : 1));
         }
     }
+    async extendForeignObjectAsync(id, obj) {
+        this.objects[id] = { ...(this.objects[id] || {}), ...obj };
+    }
+    async delForeignObjectAsync(id) {
+        delete this.objects[id];
+    }
     async getForeignObjectAsync(id) {
         return this.objects[id] ? { _id: id, ...this.objects[id] } : null;
     }

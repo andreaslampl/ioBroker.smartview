@@ -12,6 +12,8 @@ const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
 const WinLogic = require('./www/winlogic');
+const SceneLogic = require('./www/scenelogic');
+const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
 const CAMERA_ID = /^livecam\.\d+\.cameras\.[^.]+$/;
@@ -158,6 +160,8 @@ class SmartView extends utils.Adapter {
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
                 setTimer: (key, timer) => this.timers.set(key, timer),
                 tileByKey: key => this.tileByKey(key),
+                scenePlan: tile => this.scenePlan(tile),
+                runScene: (tile, page, opts) => this.runScene(tile, page, opts),
                 fillDetectors: layout => this.fillDetectors(layout),
                 telegramInstances: () => this.telegramInstances(),
                 whatsappInstances: () => this.instancesOf('whatsapp-cmb'),
@@ -193,6 +197,7 @@ class SmartView extends utils.Adapter {
         await this.setState('info.connection', ok, true);
         this.log.info(`SmartView at ${this.urlList.http}${this.urlList.https ? ` and ${this.urlList.https}` : ''}`);
         this.subscribeStates('push.message');
+        this.subscribeStates('scenes.*');
         this.pingTimer = setInterval(() => {
             this.server.ping();
             // window tiles with messages: "longer open than" is a matter of time, not of a state change
@@ -278,6 +283,107 @@ class SmartView extends utils.Adapter {
         this.checkWindows(true);
         this.checkProtection();
         this.checkClimate();
+        await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
+    }
+
+    // ---------------- "Haus verlassen" / "Ankommen" (www/scenelogic.js) ----------------
+
+    /** dark now (before sunrise / after sunset); undefined without a location in the system settings */
+    isDark(now = Date.now()) {
+        const loc = this.timers && this.timers.location;
+        if (!loc) {
+            return undefined;
+        }
+        const { rise, set } = sunTimes(now, loc.latitude, loc.longitude);
+        return now < rise || now >= set;
+    }
+
+    scenePlan(tile) {
+        const tiles = this.store.layout.pages.flatMap(p => p.tiles);
+        const locked = x => {
+            const l = this.lockFor(x.state);
+            return l ? l.reason : '';
+        };
+        return SceneLogic.plan(tile, tiles, id => this.stateInfo(id), { locked, dark: this.isDark() });
+    }
+
+    /**
+     * Runs a leave / arrive tile: commands now, blinds + alarm after `delayMin` (leave), message, check that the alarm
+     * armed. `allowed` limits the data points (the user's write rights), `source` is logged.
+     */
+    async runScene(tile, pageId, { source = '', allowed = null } = {}) {
+        const key = `${pageId}/${tile.id}`;
+        const name = tile.label || (tile.type === 'leave' ? 'Haus verlassen' : 'Ankommen');
+        this.scenePending = this.scenePending || new Map();
+        // a new run of the same button, or coming home, ends what is still waiting
+        for (const [k, timer] of this.scenePending) {
+            if (k === key || tile.type === 'arrive') {
+                clearTimeout(timer);
+                this.scenePending.delete(k);
+                this.log.info(`${name}: verzögerte Befehle von ${k} abgebrochen`);
+            }
+        }
+        const plan = this.scenePlan(tile);
+        const ok = id => !allowed || allowed.has(id);
+        const exec = map => Promise.all([...map].filter(([id]) => ok(id)).map(([id, v]) => this.setValue(id, v).catch(err => this.log.warn(`${name}: ${id}: ${err.message}`))));
+        const text = plan.groups.map(([g, n]) => `${g} (${n})`).join(', ') || 'nichts zu tun';
+        this.log.info(`${name}${source ? ` (${source})` : ''}: ${text}${plan.warn.length ? ` - ${plan.warn.join('; ')}` : ''}`);
+        await exec(plan.now);
+        const delay = plan.later.size ? tile.delayMin * (this.sceneMinute || 60000) : 0; // tests shorten the minute
+        if (plan.later.size) {
+            this.scenePending.set(key, setTimeout(() => {
+                this.scenePending.delete(key);
+                this.log.info(`${name}: nach ${tile.delayMin} min - ${plan.later.size} Befehl(e)`);
+                exec(plan.later).catch(() => {});
+            }, delay));
+        }
+        if (tile.notify) {
+            this.notify(name, text + (plan.warn.length ? `\n${plan.warn.join('\n')}` : ''), pageId);
+        }
+        // did the alarm system arm? (90 s after the command, the NOX / SPC need a moment)
+        if (tile.type === 'leave' && plan.alarm.length) {
+            setTimeout(() => {
+                const notArmed = plan.alarm.filter(a => {
+                    const v = (this.liveStates.get(a.status) || {}).val;
+                    return a.status && String(v) !== String(a.value);
+                });
+                if (notArmed.length) {
+                    const what = notArmed.map(a => a.label).join(', ');
+                    this.log.warn(`${name}: Alarmanlage NICHT scharf - ${what}`);
+                    if (tile.notify) {
+                        this.notify(`${name}: Alarmanlage NICHT scharf`, what, pageId);
+                    }
+                }
+            }, delay + (this.sceneCheckMs || 90000)).unref?.();
+        }
+        return { text, warn: plan.warn, delayed: plan.later.size ? tile.delayMin : 0 };
+    }
+
+    /** smartview.N.scenes.<page>_<tile> (button) for leave / arrive tiles with "von außen auslösbar" */
+    async sceneStates() {
+        const want = new Map();
+        for (const p of this.store.layout.pages) {
+            for (const t of p.tiles) {
+                if ((t.type === 'leave' || t.type === 'arrive') && t.external) {
+                    want.set(`${this.namespace}.scenes.${p.id}_${t.id}`, { page: p, tile: t });
+                }
+            }
+        }
+        const have = await this.getForeignObjectsAsync(`${this.namespace}.scenes.*`, 'state').catch(() => ({}));
+        for (const id of Object.keys(have || {})) {
+            if (!want.has(id)) {
+                await this.delForeignObjectAsync(id).catch(() => {});
+            }
+        }
+        for (const [id, { page, tile }] of want) {
+            const name = tile.label || (tile.type === 'leave' ? 'Haus verlassen' : 'Ankommen');
+            await this.extendForeignObjectAsync(id, {
+                type: 'state',
+                common: { name: `${name} (${page.name})`, type: 'boolean', role: 'button', read: true, write: true, def: false },
+                native: {},
+            });
+        }
+        this.sceneIds = want;
     }
 
     /** dehumidifier automatic: mean humidity of the tile's rooms (else its own humidity) */
@@ -379,6 +485,14 @@ class SmartView extends utils.Adapter {
             if (state && !state.ack && state.val !== null && state.val !== '') {
                 await this.sendMessage(state.val);
                 await this.setState('push.message', state.val, true);
+            }
+            return;
+        }
+        if (this.sceneIds && this.sceneIds.has(id)) {
+            if (state && !state.ack && SceneLogic.truthy(state.val)) {
+                const { page, tile } = this.sceneIds.get(id);
+                this.runScene(tile, page.id, { source: `ioBroker ${state.from || ''}`.trim() }).catch(err => this.log.warn(`${tile.label || id}: ${err.message}`));
+                this.setForeignStateAsync(id, false, true).catch(() => {});
             }
             return;
         }
@@ -1163,6 +1277,9 @@ class SmartView extends utils.Adapter {
             clearTimeout(this.hkTimer);
             for (const st of [...(this.ruleStates || new Map()).values(), ...(this.lockState || new Map()).values()]) {
                 clearTimeout(st.timer);
+            }
+            for (const timer of (this.scenePending || new Map()).values()) {
+                clearTimeout(timer);
             }
             if (this.timers) {
                 this.timers.stop();

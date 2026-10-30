@@ -25,6 +25,7 @@ const TYPE_LABELS = {
   contact: 'Fensterkontakt / Magnetkontakt (z. B. im Lageplan)',
   climate: 'Luftentfeuchter / Klimagerät',
   leave: 'Haus verlassen (alles aus mit einem Knopf)',
+  arrive: 'Ankommen (Alarm aus, Heizung, Licht)',
 };
 
 /** Fields per tile type: [key, label, kind, help]; kind: state-w, state-r, text, number, check, select:<opts>, camera */
@@ -131,6 +132,18 @@ const TYPE_FIELDS = {
     ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel (braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt).'],
     ['radioOff', 'Radio aus', 'check'],
     ['climateOff', 'Luftentfeuchter / Klimageräte aus', 'check'],
+    ['delayMin', 'Rollläden und Alarmanlage erst nach (Minuten, optional)', 'number', 'Zeit zum Hinausgehen – Lichter, Heizung, Radio sofort. „Ankommen“ bricht das Warten ab.'],
+    ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Was geschaltet wurde – und eine Warnung, wenn die Alarmanlage 90 s danach nicht scharf ist.'],
+    ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste, true = auslösen), z. B. für homekit-easy, logik oder ein Skript. Achtung: dort wird keine PIN abgefragt.'],
+  ],
+  arrive: [
+    ['alarmOff', 'Alarmanlage unscharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel; ihre PIN wird einmal abgefragt.'],
+    ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'z. B. KNX 1 = Komfort. Leer = Heizung bleibt.'],
+    ['lights', 'Diese Lichter einschalten', 'lighttiles'],
+    ['onlyDark', 'Lichter nur, wenn es dunkel ist', 'check', 'Nach Sonnenauf- und -untergang (Standort aus den ioBroker-Systemeinstellungen).'],
+    ['blindsUp', 'Rollläden auf (Markisen bleiben ein)', 'check'],
+    ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check'],
+    ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste). Achtung: ohne PIN – z. B. Alarm unscharf per Sprachbefehl nur, wenn du das wirklich willst.'],
   ],
   contact: [
     ['state', 'Kontakt (true = offen)', 'state-r', 'Magnetkontakt des Fensters bzw. der Tür'],
@@ -1069,7 +1082,23 @@ const Editor = (() => {
       inputs.label = field(body, 'Beschriftung', textInput(t.label));
       for (const [key, label, kind, help] of TYPE_FIELDS[t.type]) {
         if (kind === 'state-w' || kind === 'state-r') inputs[key] = stateField(body, label, t[key], kind === 'state-w', help);
-        else if (kind === 'alarmtile') {
+        else if (kind === 'lighttiles') {
+          const box = document.createElement('div');
+          box.className = 'checks';
+          const chosen = new Set(t[key] || []);
+          const boxes = [];
+          for (const p of SV.draft.pages) {
+            for (const x of p.tiles.filter(y => y.type === 'switch' || y.type === 'dimmer')) {
+              const c = check((x.label || x.state || x.id) + ' (' + p.name + ')', chosen.has(x.id));
+              c.input.value = x.id;
+              boxes.push(c.input);
+              box.appendChild(c);
+            }
+          }
+          if (!boxes.length) box.textContent = 'Noch keine Schalter- oder Dimmer-Kacheln.';
+          field(body, label, box);
+          inputs[key] = { type: 'custom', get: () => boxes.filter(i => i.checked).map(i => i.value) };
+        } else if (kind === 'alarmtile') {
           const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
           inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
         } else if (kind === 'check') {

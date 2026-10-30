@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.35.0",
+    "version": "0.36.0",
     "news": {
+      "0.36.0": {
+        "en": "'Haus verlassen' now runs in the adapter: blinds + alarm optionally delayed, message afterwards (warning when the alarm did not arm), startable from ioBroker / Alexa / Apple Home (smartview.N.scenes.*, without PIN). New tile 'Ankommen': alarm off, heating mode, chosen lights on (only when dark), blinds up; cancels a delayed 'Haus verlassen'",
+        "de": "„Haus verlassen“ läuft jetzt im Adapter: Rollläden + Alarm wahlweise verzögert, Mitteilung danach (Warnung, wenn die Alarmanlage nicht scharf wurde), auch von ioBroker / Alexa / Apple Home auslösbar (smartview.N.scenes.*, ohne PIN). Neue Kachel „Ankommen“: Alarm unscharf, Heizung, gewählte Lichter an (nur wenn dunkel), Rollläden auf; bricht ein verzögertes „Haus verlassen“ ab"
+      },
       "0.35.0": {
         "en": "New tile 'Haus verlassen': one button for all lights off (layer light), blinds down / awnings in, heating mode, arming the alarm (its PIN asked once), radio and dehumidifiers off - shows what it will do and which windows are open first",
         "de": "Neue Kachel „Haus verlassen“: ein Knopf für alle Lichter aus (Ebene Licht), Rollläden zu / Markisen ein, Heizung auf eine Betriebsart, Alarmanlage scharf (deren PIN einmal), Radio und Entfeuchter aus – zeigt vorher, was passiert und welche Fenster offen sind"

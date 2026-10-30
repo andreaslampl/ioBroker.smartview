@@ -340,7 +340,23 @@ Kacheln, die es schon gibt:
 - **Radio aus**, **Luftentfeuchter / Klimageräte aus**.
 
 Antippen öffnet erst eine Übersicht: was geschaltet wird (mit Anzahl) und welche **Fenster noch offen** sind. Erst der
-Knopf „Haus verlassen“ darin schaltet. Was schon aus ist, bekommt keinen Befehl.
+Knopf „Haus verlassen“ darin schaltet. Was schon aus ist, bekommt keinen Befehl. Geschaltet wird im Adapter – die Seite
+darf danach zugehen.
+
+- **Rollläden und Alarmanlage erst nach … Minuten:** Zeit zum Hinausgehen; Lichter, Heizung, Radio gehen sofort.
+- **Mitteilung senden:** was geschaltet wurde (Push / Telegram / WhatsApp, wie unter „Allgemein“ eingerichtet) – und
+  eine Warnung „Alarmanlage NICHT scharf“, wenn sie 90 s nach dem Befehl nicht scharf ist (steht auch im Log).
+- **Auch von ioBroker / Alexa / Apple Home auslösbar:** legt `smartview.0.scenes.<Seite>_<Kachel>` an (Taste,
+  `true` = auslösen) – z. B. als Schalter in homekit-easy (dann auch für Alexa), aus logik oder einem Skript.
+  **Achtung:** dort wird **keine PIN** abgefragt.
+
+### Ankommen
+
+Kachel **„Ankommen (Alarm aus, Heizung, Licht)“** – das Gegenstück: Alarmanlage **unscharf** (alle Bereiche der
+gewählten Alarm-Kachel, PIN einmal), Heizung auf eine Betriebsart (z. B. `1` = Komfort), **gewählte Lichter an** – mit
+„nur wenn dunkel“ nach Sonnenauf-/-untergang (Standort aus den ioBroker-Systemeinstellungen; ohne Standort gehen sie
+immer an), **Rollläden auf** (Markisen bleiben ein). Ein noch wartendes „Haus verlassen“ (Verzögerung) wird
+abgebrochen. Mitteilung und Auslösen von außen wie oben.
 
 ### Kameras
 

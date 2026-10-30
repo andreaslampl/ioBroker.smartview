@@ -307,7 +307,16 @@ switches/buttons on them.
   thermostat modes incl. circuits; alarm areas with valueArm when control; radio/climate on -> off; open windows from
   windows/contact tiles as warning), sheet = summary + button, `leaveRun()` asks one PIN for all protected ids
   (`sendNow()` split from `send()`). Icon `leave`. Checked in Playwright.
-- Ideas not done yet: charts/history; "Ankommen" counterpart; leave from ioBroker/Alexa (server-side scene).
+- 0.36.0: owner wanted all four suggested extras -> scenes run in the adapter: `www/scenelogic.js` (UMD like winlogic,
+  `plan(tile, tiles, st, {locked, dark})` -> {groups, now, later, warn, alarm}; page = preview, adapter = execution).
+  leave options `delayMin` (blinds + alarm into `later`), `notify`, `external`; new tile `arrive` {alarmOff, heatMode,
+  lights [tile ids], onlyDark, blindsUp, notify, external}. Server ws {type:'scene', page, tile, pin}: tile from the
+  user's view (layoutFor), control right, one PIN checked against every protected tile involved (reply {type:'pin',
+  scene}), `runScene()` with allowed = the user's write ids. main `runScene()` (pending timers per key; arrive cancels all,
+  same key re-run cancels; alarm armed check after delay + 90 s -> warn/notify), `sceneStates()` creates/deletes
+  `scenes.<page>_<tile>` buttons (external, no PIN!), `isDark()` from lib/sun.js. Tests shorten via `sceneMinute` /
+  `sceneCheckMs`. Checked in Playwright and an adapter test.
+- Ideas not done yet: charts/history.
 
 ## Conventions
 

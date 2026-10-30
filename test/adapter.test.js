@@ -927,3 +927,52 @@ test('adapter: dehumidifier automatic - on at the mean humidity of the rooms, of
     await until(() => power().length === 3);
     assert.deepEqual(power(), [true, true, false]);
 });
+
+test('adapter: "Haus verlassen" / "Ankommen" run in the adapter - one PIN, delay, arriving cancels, trigger from ioBroker, alarm check', async t => {
+    const A = 'nox_alarmzentrale.0.areas.1';
+    const { adapter, api, port } = await startAdapter(t, {}, a => {
+        a.add(`${A}.state`, { name: 'Zustand', type: 'number', role: 'value', states: { 1: 'Unscharf', 5: 'Scharf' } }, 1);
+        a.add(`${A}.setState`, { name: 'setzen', type: 'number', role: 'level', write: true }, 1);
+    });
+    adapter.sceneMinute = 300; // "minutes" of 300 ms
+    adapter.sceneCheckMs = 200;
+    adapter.ackDelay = null; // the alarm system does not confirm -> "nicht scharf"
+    const warns = [];
+    adapter.log = { ...adapter.log, warn: m => warns.push(m), info() {} };
+    const layout = { pages: [{ id: 'u', name: 'Übersicht', tiles: [
+        { id: 'l1', type: 'switch', label: 'Küche', state: 'knx.0.EG.Licht.Kueche' },
+        { id: 'r1', type: 'blind', label: 'Rollo', state: 'knx.0.EG.Rollladen.Wohnzimmer' },
+        { id: 'al', type: 'alarm', label: 'Alarm', area: A, control: true, pin: '2580' },
+        { id: 'go', type: 'leave', label: 'Weg', lightsOff: true, blindsDown: true, alarmArm: 'al', delayMin: 1, notify: true, external: true },
+        { id: 'home', type: 'arrive', label: 'Da', alarmOff: 'al', lights: ['l1'], external: true },
+    ] }] };
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    await until(() => adapter.objects['smartview.0.scenes.u_go'] && adapter.objects['smartview.0.scenes.u_home']);
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    adapter.writes.length = 0;
+    // the alarm needs its PIN, asked once for the whole button
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go' }));
+    await until(() => c.msgs.some(m => m.type === 'pin' && m.scene === 'u/go' && m.result === 'need'));
+    assert.equal(adapter.writes.length, 0);
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go', pin: '2580' }));
+    await until(() => c.msgs.some(m => m.type === 'scene' && m.key === 'u/go'));
+    assert.equal(c.msgs.find(m => m.type === 'scene').delayed, 1);
+    assert.deepEqual(adapter.writes.map(w => w[0]), ['knx.0.EG.Licht.Kueche'], 'light at once, blinds + alarm later');
+    await until(() => adapter.writes.length === 3);
+    assert.deepEqual(adapter.writes.slice(1).map(w => [w[0], w[1]]).sort(), [['knx.0.EG.Rollladen.Wohnzimmer', 0], [`${A}.setState`, 5]]);
+    // armed? the alarm system did not confirm -> warning
+    await until(() => warns.some(w => /Weg: Alarmanlage NICHT scharf - Alarm/.test(w)));
+    // leave again, then arrive before the delay is over: blinds/alarm never come
+    adapter.writes.length = 0;
+    adapter.change(`${A}.state`, 1);
+    adapter.foreign['smartview.0.scenes.u_go'] = { val: true, ack: false, from: 'system.adapter.javascript.0' };
+    adapter.emit('stateChange', 'smartview.0.scenes.u_go', adapter.foreign['smartview.0.scenes.u_go']);
+    await until(() => adapter.foreign['smartview.0.scenes.u_go'].ack === true);
+    adapter.emit('stateChange', 'smartview.0.scenes.u_home', { val: true, ack: false });
+    await new Promise(r => setTimeout(r, 500));
+    assert.ok(!adapter.writes.some(w => w[0] === 'knx.0.EG.Rollladen.Wohnzimmer'), 'arriving cancelled the delayed blinds');
+    assert.ok(adapter.writes.some(w => w[0] === 'knx.0.EG.Licht.Kueche' && w[1] === true), 'arrive switches the chosen light on');
+});
