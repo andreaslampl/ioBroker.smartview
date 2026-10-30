@@ -332,6 +332,11 @@ switches/buttons on them.
   windows options `wordOpen/Tilt/Closed/All`, `iconOpen/Tilt/Closed` (ICONS or win-*), `openColor` bad|on (on = yellow, tile
   state 'on' instead of 'alert'). `WinLogic.words(t)`, `entries(list, words)`; app.js `winIcon()`; main window messages
   use the words. Checked in Playwright.
+- 0.40.0: owner asked for closing the gate after some time, "only when a light barrier exists" -> gate `autoClose` (min),
+  `autoSafe` (required tick: drive has light barrier / safety edge), `barrier` (r, true = interrupted, `barrierInvert`),
+  `autoNotify`. main `checkGates()` (timer from the moment status = open, cleared when not; one close via `gateClose()` like
+  the Zu button; barrier interrupted -> `due`, closes when free; 2 min later warn/notify if not closed). `gateMinute` /
+  `gateCheckMs` for tests. Adapter test.
 - Ideas not done yet: charts/history.
 
 ## Conventions

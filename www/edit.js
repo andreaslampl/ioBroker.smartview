@@ -67,6 +67,11 @@ const TYPE_FIELDS = {
     ['posOpen', 'Position oben / offen (optional)', 'state-r', 'Endlage, true = ganz offen'],
     ['posClosed', 'Position unten / zu (optional)', 'state-r', 'Endlage, true = ganz geschlossen'],
     ['confirm', 'Vorher nachfragen', 'check'],
+    ['autoClose', 'Automatisch schließen nach (Minuten, optional)', 'number', 'Ist das Tor so lange offen, schickt der Adapter einmal „Zu“ (auch ohne offene Seite). Braucht eine Endlage (oben oder unten) und den Haken darunter.'],
+    ['autoSafe', 'Der Antrieb hat eine Lichtschranke / Schließkantensicherung', 'check', 'Ohne diesen Haken wird nie automatisch geschlossen. Der Antrieb selbst muss beim Schließen auf Hindernisse reagieren – SmartView sieht nicht, ob jemand darunter steht.'],
+    ['barrier', 'Lichtschranke (optional)', 'state-r', 'true = unterbrochen: dann wird nicht geschlossen, sondern gewartet, bis sie frei ist.'],
+    ['barrierInvert', 'Lichtschranke umgekehrt (true = frei)', 'check'],
+    ['autoNotify', 'Mitteilung beim automatischen Schließen', 'check', 'Push / Telegram / WhatsApp – und eine Warnung, wenn das Tor 2 Minuten danach noch nicht zu ist.'],
   ],
   value: [
     ['state', 'Datenpunkt', 'state-r'],

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.39.0",
+    "version": "0.40.0",
     "news": {
+      "0.40.0": {
+        "en": "Gate tile: close automatically after X minutes open (in the adapter) - only with the tick 'drive has a light barrier / safety edge', waits while the light barrier data point is interrupted, optional message and warning when it does not close",
+        "de": "Tor-Kachel: automatisch schließen nach X Minuten offen (im Adapter) – nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“, wartet, solange der Lichtschranken-Datenpunkt unterbrochen ist, optional Mitteilung und Warnung, wenn es nicht zugeht"
+      },
       "0.39.0": {
         "en": "Window overview usable for anything: own words for open / tilted / closed and for 'nothing open' (e.g. 'alle Lichter sind aus'), own symbol per state, yellow instead of red",
         "de": "Fensterübersicht für alles nutzbar: eigene Wörter für offen / gekippt / geschlossen und für „nichts offen“ (z. B. „alle Lichter sind aus“), eigenes Symbol je Zustand, gelb statt rot"

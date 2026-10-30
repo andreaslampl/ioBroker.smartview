@@ -1060,3 +1060,36 @@ test('adapter: "Haus verlassen" - only chosen lights / blinds, extra data points
         ['knx.0.OG.Rollo', 0],
     ], 'dimmer and the other blind are not chosen');
 });
+
+test('adapter: gate closes automatically after the time open - only with the safety tick, waits for the light barrier', async t => {
+    const { adapter, api } = await startAdapter(t, {}, a => {
+        a.add('knx.0.Garage.Zu', { name: 'Garage Zu', type: 'boolean', role: 'button', write: true }, false);
+        a.add('knx.0.Garage.Auf', { name: 'Garage Auf', type: 'boolean', role: 'button', write: true }, false);
+        a.add('knx.0.Garage.EndlageZu', { name: 'Endlage zu', type: 'boolean', role: 'sensor' }, true);
+        a.add('knx.0.Garage.Lichtschranke', { name: 'Lichtschranke', type: 'boolean', role: 'sensor' }, false);
+    });
+    adapter.gateMinute = 100;
+    adapter.gateCheckMs = 100;
+    const gate = { id: 'g', type: 'gate', label: 'Garage', open: 'knx.0.Garage.Auf', close: 'knx.0.Garage.Zu', posClosed: 'knx.0.Garage.EndlageZu', autoClose: 2 };
+    const save = tile => api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'a', name: 'Außen', tiles: [tile] }] }) });
+    const closes = () => adapter.writes.filter(w => w[0] === 'knx.0.Garage.Zu' && w[1] === true).length;
+    // without "Lichtschranke vorhanden" nothing happens
+    await save(gate);
+    adapter.change('knx.0.Garage.EndlageZu', false);
+    await new Promise(r => setTimeout(r, 400));
+    assert.equal(closes(), 0);
+    // with the tick: after 2 "minutes" open, but the light barrier is interrupted -> waits
+    adapter.change('knx.0.Garage.EndlageZu', true);
+    await save({ ...gate, autoSafe: true, barrier: 'knx.0.Garage.Lichtschranke' });
+    await new Promise(r => setTimeout(r, 100));
+    adapter.change('knx.0.Garage.Lichtschranke', true);
+    adapter.change('knx.0.Garage.EndlageZu', false);
+    await new Promise(r => setTimeout(r, 400));
+    assert.equal(closes(), 0, 'light barrier interrupted');
+    adapter.change('knx.0.Garage.Lichtschranke', false);
+    await until(() => closes() === 1);
+    // closed: nothing more
+    adapter.change('knx.0.Garage.EndlageZu', true);
+    await new Promise(r => setTimeout(r, 400));
+    assert.equal(closes(), 1);
+});

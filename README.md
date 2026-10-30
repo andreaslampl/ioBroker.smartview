@@ -131,6 +131,12 @@ nicht ab – dort eigene Schutzmöglichkeiten nutzen.
 - Ist das Tor schon offen und man drückt Auf, kommt **„… ist schon offen“** und es wird nichts gesendet (ebenso
   „schon zu“). Beim Taster-Impuls mit unbekannter Stellung wird vorher nachgefragt; optional immer nachfragen.
 
+**Automatisch schließen:** „Automatisch schließen nach … Minuten“ – ist das Tor so lange offen, schickt der Adapter
+einmal „Zu“ (auch ohne offene Seite). Das geht **nur** mit dem Haken „Der Antrieb hat eine Lichtschranke /
+Schließkantensicherung“ und einer Endlage (oben oder unten). Mit dem optionalen **Lichtschranken-Datenpunkt** (true =
+unterbrochen) wird gewartet, bis sie frei ist. „Mitteilung beim automatischen Schließen“ meldet es – und warnt, wenn das
+Tor 2 Minuten danach noch nicht zu ist.
+
 ### Heizung / Raumregler
 
 Nur der Sollwert ist Pflicht, alles andere kommt dazu, wenn es eingetragen ist:

@@ -284,7 +284,137 @@ class SmartView extends utils.Adapter {
         this.checkWindows(true);
         this.checkProtection();
         this.checkClimate();
+        this.checkGates();
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
+    }
+
+    // ---------------- gates: close automatically after some minutes open ----------------
+
+    /** open | closed | moving | unknown from the end positions (same as the page's gateStatus) */
+    gateStatus(t) {
+        const v = id => (this.liveStates.get(id) || {}).val;
+        const known = id => id && v(id) !== null && v(id) !== undefined;
+        const on = id => SceneLogic.truthy(v(id));
+        if (!known(t.posOpen) && !known(t.posClosed)) {
+            return 'unknown';
+        }
+        if (known(t.posOpen) && on(t.posOpen)) {
+            return 'open';
+        }
+        if (known(t.posClosed) && on(t.posClosed)) {
+            return 'closed';
+        }
+        if (t.posOpen && t.posClosed) {
+            return 'moving';
+        }
+        return t.posOpen ? 'closed' : 'open';
+    }
+
+    /** the close command like the page's "Zu" button (level false, impulse, or the close data point) */
+    async gateClose(t) {
+        const single = t.gateMode === 'single';
+        const id = single ? t.state : t.close;
+        if (!id) {
+            throw new Error('kein Datenpunkt für „Zu“');
+        }
+        if (single && t.single === 'level') {
+            return this.setValue(id, false);
+        }
+        await this.setValue(id, true);
+        if (single ? t.single === 'impulse' : t.impulse) {
+            setTimeout(() => this.setValue(id, false, { force: true }).catch(() => {}), 1000);
+        }
+    }
+
+    /**
+     * Gate tiles with "automatisch schließen nach": a timer starts when the gate is open and is cleared when it is not;
+     * when it runs out the gate gets one close command, 2 min later a warning if it is still not closed.
+     */
+    checkGates() {
+        this.gateTimers = this.gateTimers || new Map();
+        const list = [];
+        for (const p of this.store.layout.pages) {
+            for (const t of p.tiles) {
+                // only with the tick "Antrieb hat Lichtschranke / Schließkantensicherung"
+                if (t.type === 'gate' && t.autoClose > 0 && t.autoSafe && (t.posOpen || t.posClosed)) {
+                    list.push({ key: `${p.id}/${t.id}`, page: p, tile: t });
+                }
+            }
+        }
+        this.gateIds = new Set(list.flatMap(g => [g.tile.posOpen, g.tile.posClosed, g.tile.barrier].filter(Boolean)));
+        const keys = new Set(list.map(g => g.key));
+        for (const [key, g] of this.gateTimers) {
+            if (!keys.has(key)) {
+                clearTimeout(g.timer);
+                this.gateTimers.delete(key);
+            }
+        }
+        const minute = this.gateMinute || 60000; // tests shorten the minute
+        for (const { key, page, tile } of list) {
+            const open = this.gateStatus(tile) === 'open';
+            const cur = this.gateTimers.get(key);
+            if (!open) {
+                if (cur) {
+                    clearTimeout(cur.timer);
+                    this.gateTimers.delete(key);
+                }
+                continue;
+            }
+            if (cur) {
+                // time is up but the light barrier was interrupted: close as soon as it is free
+                if (cur.due && !this.gateBlocked(tile)) {
+                    cur.due = false;
+                    cur.close();
+                }
+                continue;
+            }
+            const name = tile.label || 'Tor';
+            const entry = {};
+            entry.close = async () => {
+                if (this.gateStatus(tile) !== 'open') {
+                    return;
+                }
+                if (this.gateBlocked(tile)) {
+                    if (!entry.due) {
+                        this.log.info(`${name}: Lichtschranke unterbrochen - schließt, sobald sie frei ist`);
+                    }
+                    entry.due = true;
+                    return;
+                }
+                this.log.info(`${name}: seit ${tile.autoClose} min offen - wird geschlossen`);
+                try {
+                    await this.gateClose(tile);
+                    if (tile.autoNotify) {
+                        this.notify(name, `War ${tile.autoClose} min offen – wird automatisch geschlossen`, page.id);
+                    }
+                } catch (err) {
+                    this.log.warn(`${name}: ${err.message}`);
+                }
+                const check = setTimeout(() => {
+                    if (this.gateStatus(tile) !== 'closed') {
+                        this.log.warn(`${name}: automatisch schließen - ist nach 2 min nicht zu`);
+                        if (tile.autoNotify) {
+                            this.notify(`${name}: schließt nicht`, 'Nach dem automatischen Schließen ist es nicht zu – bitte nachsehen.', page.id);
+                        }
+                    }
+                }, this.gateCheckMs || 120000);
+                entry.timer = check;
+            };
+            entry.timer = setTimeout(entry.close, tile.autoClose * minute);
+            this.gateTimers.set(key, entry);
+        }
+    }
+
+    /** light barrier interrupted (true = interrupted, unless "umgekehrt"); unknown = not blocked */
+    gateBlocked(t) {
+        if (!t.barrier) {
+            return false;
+        }
+        const v = (this.liveStates.get(t.barrier) || {}).val;
+        if (v === null || v === undefined) {
+            return false;
+        }
+        return Boolean(t.barrierInvert) !== SceneLogic.truthy(v);
     }
 
     // ---------------- "Haus verlassen" / "Ankommen" (www/scenelogic.js) ----------------
@@ -524,6 +654,9 @@ class SmartView extends utils.Adapter {
         }
         if (this.climIds && this.climIds.has(id)) {
             this.checkClimate();
+        }
+        if (this.gateIds && this.gateIds.has(id)) {
+            this.checkGates();
         }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.telegram.ring) {
@@ -1310,6 +1443,9 @@ class SmartView extends utils.Adapter {
             }
             for (const timer of (this.scenePending || new Map()).values()) {
                 clearTimeout(timer);
+            }
+            for (const g of (this.gateTimers || new Map()).values()) {
+                clearTimeout(g.timer);
             }
             if (this.timers) {
                 this.timers.stop();
