@@ -349,6 +349,10 @@ switches/buttons on them.
   broadcast {type:'dnd'}; init carries `dnd`; ws {type:'dnd', on} (control right) -> `setDnd()`. Client `setDnd()` (🔕
   `#dndMark`), menu `dndMenuItem()`, intercom.js `ring()` silent while `SV.dnd.on`, `dndChanged()` stops a running tone.
   The picture still shows. Adapter test + Playwright (menu, mark).
+- 0.43.0 field: the monitor stayed off when it rang (Windows had switched it off; a touch wakes it) -> `GET /api/ring`
+  {ringing, dnd} (access key only, no user session; main `ringing()` from liveStates, ring state now always subscribed)
+  + `tools/monitor-wecker.ps1/.cmd` (polls every 1 s, mouse_event +1/-1 px and SetThreadExecutionState on the rising
+  edge, skipped while dnd unless `$WakeDuringDnd`). Not yet tried on the owner's touch PC.
 - Ideas not done yet: charts/history.
 
 ## Conventions

@@ -1138,3 +1138,19 @@ test('adapter: do not disturb - switch from the menu / ioBroker, time window, no
     assert.equal(adapter.dndInfo().on, true);
     assert.equal(adapter.dndInfo().manual, false);
 });
+
+test('adapter: /api/ring for the monitor wake-up helper (ringing, do not disturb, access key)', async t => {
+    const { adapter, api, base } = await startAdapter(t, { accessKey: 'geheim' });
+    const key = { headers: { Cookie: '' } };
+    assert.equal((await fetch(base + 'api/ring')).status, 403);
+    await fetch(base + 'api/layout?key=geheim', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pages: [{ id: 's', name: 'S', tiles: [] }], ring: { state: '0_userdata.0.Klingel' } }) });
+    const ring = async () => (await (await fetch(base + 'api/ring?key=geheim', key)).json());
+    assert.deepEqual(await ring(), { ringing: false, dnd: false });
+    adapter.emit('stateChange', '0_userdata.0.Klingel', { val: true, ack: true, ts: Date.now(), lc: Date.now() });
+    await until(async () => (await ring()).ringing === true);
+    adapter.emit('stateChange', 'smartview.0.ring.dnd', { val: true, ack: false });
+    await until(async () => (await ring()).dnd === true);
+    adapter.emit('stateChange', '0_userdata.0.Klingel', { val: false, ack: true, ts: Date.now(), lc: Date.now() });
+    await until(async () => (await ring()).ringing === false);
+    void api;
+});

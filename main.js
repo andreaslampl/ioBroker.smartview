@@ -164,6 +164,10 @@ class SmartView extends utils.Adapter {
                 tileByKey: key => this.tileByKey(key),
                 scenePlan: tile => this.scenePlan(tile),
                 dnd: () => this.dndInfo(),
+                ringing: () => {
+                    const st = this.liveStates.get(this.ringStateId());
+                    return Boolean(st && SceneLogic.truthy(st.val));
+                },
                 setDnd: on => this.setDnd(on),
                 runScene: (tile, page, opts) => this.runScene(tile, page, opts),
                 fillDetectors: layout => this.fillDetectors(layout),
@@ -265,7 +269,8 @@ class SmartView extends utils.Adapter {
         const layout = this.store.layout;
         const { read } = stateIds(RefLogic.resolveAll(layout));
         const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).flatMap(r => [r.state, r.and && r.and.state].filter(Boolean))]);
-        if (layout.telegram.instance && layout.telegram.ring && this.ringStateId()) {
+        // the doorbell state: for Telegram / WhatsApp and /api/ring (monitor wake-up script)
+        if (this.ringStateId()) {
             ids.add(this.ringStateId());
         }
         for (const id of this.subscribed) {

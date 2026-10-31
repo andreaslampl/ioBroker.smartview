@@ -566,6 +566,22 @@ Der Wake-Lock braucht eine sichere Verbindung (https, oder http mit dem Edge-Fla
 „unsafely-treat-insecure-origin-as-secure“ wie für das Mikrofon). Am zuverlässigsten: in Windows „Bildschirm
 ausschalten“ auf **Nie** stellen und das Ausschalten SmartView überlassen.
 
+### Monitor wecken, wenn Windows ihn ausgeschaltet hat
+
+Hat Windows den Monitor schon ausgeschaltet, kann ihn ein Browser nicht mehr einschalten – eine Berührung schon. Das
+kleine Hilfsprogramm `tools/monitor-wecker.ps1` macht genau das: Es fragt jede Sekunde SmartView
+(`http://<ioBroker-IP>:8098/api/ring`), und wenn es läutet, bewegt es die Maus um ein Pixel hin und zurück – der
+Monitor geht an, angeklickt wird nichts. Auch bei „Nicht stören“ geht der Monitor an (Bild ohne Ton); wer das nicht will, setzt `$WakeDuringDnd = $false`.
+
+1. `monitor-wecker.ps1` und `monitor-wecker.cmd` auf den Touch-PC kopieren, z. B. nach `C:\SmartView`.
+2. `monitor-wecker.ps1` mit dem Editor öffnen und oben `$SmartView` (Adresse von SmartView) und – falls ein
+   Zugangsschlüssel gesetzt ist – `$Key` eintragen.
+3. Test: `http://<ioBroker-IP>:8098/api/ring` im Browser öffnen → `{"ringing":false,"dnd":false}`.
+4. Doppelklick auf `monitor-wecker.cmd` startet es unsichtbar. Für den Autostart: `Win + R` → `shell:startup` und
+   dort eine Verknüpfung auf `monitor-wecker.cmd` anlegen.
+
+Der Klingel-Datenpunkt ist der aus ⚙ Allgemein → Klingel (bzw. `livecam.N.intercom.ringing` der Sprechanlage).
+
 ### Vollbild bleibt
 
 ⚙ → **„Vollbild (bleibt nach dem Sperren)“**: Wenn das Tablet sperrt, verlässt der Browser das Vollbild – das lässt
