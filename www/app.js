@@ -2638,11 +2638,41 @@ async function disablePush() {
   }
 }
 
+// ---------------- do not disturb (no ring tone; switch ring.dnd or time window, from the adapter) ----------------
+
+function setDnd(d) {
+  SV.dnd = d || null;
+  const on = Boolean(SV.dnd && SV.dnd.on);
+  document.body.classList.toggle('dnd', on);
+  const el = $('dndMark');
+  if (el) {
+    el.hidden = !on;
+    el.title = on ? 'Nicht stören' + (SV.dnd.window && !SV.dnd.manual ? ' (' + SV.dnd.from + '–' + SV.dnd.to + ')' : '') : '';
+  }
+  if (typeof Intercom !== 'undefined' && Intercom.dndChanged) Intercom.dndChanged();
+}
+
+function dndMenuItem(box) {
+  const d = SV.dnd || { on: false, manual: false };
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'item';
+  b.innerHTML = icon('bell') + 'Nicht stören (kein Klingelton): <b>' + (d.manual ? 'Ein' : 'Aus') + '</b>' +
+    (d.window && !d.manual ? ' <small class="muted">– Zeitfenster ' + esc(d.from) + '–' + esc(d.to) + ' aktiv</small>' : '');
+  b.onclick = () => {
+    if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
+    if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
+    SV.ws.send(JSON.stringify({ type: 'dnd', on: !d.manual }));
+    box.closest('.overlay').remove();
+  };
+  box.appendChild(b);
+}
+
 async function openMenu() {
   closeSheet();
   const ov = document.createElement('div');
   ov.className = 'overlay bottom';
-  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-ic></div><div data-screen></div><div data-users></div>' +
+  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-dnd></div><div data-ic></div><div data-screen></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
     (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + (document.fullscreenElement ? 'Vollbild beenden' : 'Vollbild (bleibt nach dem Sperren)') + '</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
@@ -2666,6 +2696,7 @@ async function openMenu() {
   const full = ov.querySelector('[data-full]');
   if (full) full.onclick = () => Screen.fullscreen();
   renderPushMenu(ov.querySelector('[data-push]'));
+  if (layout().ring.intercom || layout().ring.state) dndMenuItem(ov.querySelector('[data-dnd]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
   if (typeof Screen !== 'undefined') Screen.menuItems(ov.querySelector('[data-screen]'));
   Users.menuItems(ov.querySelector('[data-users]'));
@@ -2732,10 +2763,13 @@ function connect() {
   };
   ws.onmessage = ev => {
     const msg = JSON.parse(ev.data);
-    if (msg.type === 'locks') {
+    if (msg.type === 'dnd') {
+      setDnd(msg.dnd);
+    } else if (msg.type === 'locks') {
       SV.locks = clientLocks(msg.locks);
       refreshLocked();
     } else if (msg.type === 'init') {
+      setDnd(msg.dnd);
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);

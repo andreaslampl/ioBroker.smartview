@@ -279,6 +279,16 @@ Port 8098). In VIS-2 als iframe: `allow="microphone; autoplay"`. Der Ton muss ei
 der Seite freigegeben werden (Browser-Regel); im Kiosk-Betrieb hilft
 `--autoplay-policy=no-user-gesture-required` in der Edge-Verknüpfung.
 
+### Nicht stören (kein Klingelton)
+
+- **⚙ → „Nicht stören (kein Klingelton)“** schaltet den Klingelton auf **allen** Geräten aus; beim Läuten erscheint das
+  Bild trotzdem. Oben steht dann 🔕. Dasselbe über den Datenpunkt **`smartview.0.ring.dnd`** (z. B. als Schalter-Kachel,
+  aus logik oder per Alexa über homekit-easy); `smartview.0.ring.dndActive` zeigt, ob es gerade gilt.
+- **Automatisch:** unter ⚙ Allgemein → Klingel „Nicht stören automatisch von … bis …“, z. B. 22:00 bis 07:00 (auch über
+  Mitternacht).
+- Optional „auch keine Klingel-Mitteilungen“ über Telegram / WhatsApp, solange „Nicht stören“ gilt.
+- Der Schalter „Klingelton an diesem Gerät“ bleibt zusätzlich – für ein einzelnes Gerät dauerhaft.
+
 ### Energiefluss (PV)
 
 Mit dem Adapter **energie** (`iobroker url https://github.com/andreaslampl/ioBroker.energie`) gibt es die

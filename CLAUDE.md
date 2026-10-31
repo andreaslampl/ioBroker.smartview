@@ -343,6 +343,12 @@ switches/buttons on them.
   (resolved view); timers (`keyOf`), blind locks and scene runs use `_ref`; edit mode / missing original = placeholder.
   Server/main: stateIds of `RefLogic.resolveAll(view)` (only originals the user can see), PIN via the original's pinHash;
   server automations iterate the raw layout, so links never act twice. Tests + Playwright.
+- 0.42.0: owner will need "Nicht stören" without ring tone at the intercom -> states `ring.dnd` (switch, io-package) and
+  `ring.dndActive`; layout ring `dndFrom`/`dndTo` (HH:MM, over midnight) + `dndQuiet` (no Telegram/WhatsApp ring messages).
+  main `dndInfo()` {on, manual, window, from, to}, `checkDnd()` every 30 s + after resubscribe -> server `dndChanged()`
+  broadcast {type:'dnd'}; init carries `dnd`; ws {type:'dnd', on} (control right) -> `setDnd()`. Client `setDnd()` (🔕
+  `#dndMark`), menu `dndMenuItem()`, intercom.js `ring()` silent while `SV.dnd.on`, `dndChanged()` stops a running tone.
+  The picture still shows. Adapter test + Playwright (menu, mark).
 - Ideas not done yet: charts/history.
 
 ## Conventions

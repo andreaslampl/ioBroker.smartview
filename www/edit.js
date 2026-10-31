@@ -1967,6 +1967,12 @@ const Editor = (() => {
     cameraField(body, l.ring.camera).then(s => (ringCam = s));
     const door = stateField(body, 'Tür öffnen (optional)', l.ring.door, true);
     if (!l.ring.door) door.placeholder = 'livecam.0.intercom.openDoor';
+    const dndFrom = field(body, 'Nicht stören automatisch von (HH:MM, optional)', textInput(l.ring.dndFrom), 'Kein Klingelton in dieser Zeit, z. B. 22:00 bis 07:00 – das Bild erscheint trotzdem. Jederzeit auch über ⚙ → „Nicht stören“ oder den Datenpunkt smartview.0.ring.dnd.');
+    dndFrom.placeholder = '22:00';
+    const dndTo = field(body, 'bis (HH:MM)', textInput(l.ring.dndTo));
+    dndTo.placeholder = '07:00';
+    const dndQuiet = check('Während „Nicht stören“ auch keine Klingel-Mitteilungen (Telegram / WhatsApp)', l.ring.dndQuiet);
+    body.appendChild(dndQuiet);
 
     const h2 = document.createElement('h3');
     h2.textContent = 'Mitteilungen (Push)';
@@ -2174,7 +2180,15 @@ const Editor = (() => {
         top: sideChecks.top.filter(i => i.checked).map(i => i.value),
         bottom: sideChecks.bottom.filter(i => i.checked).map(i => i.value),
       };
-      l.ring = { state: ringState.value.trim(), camera: ringCam ? ringCam.value : l.ring.camera, door: door.value.trim(), intercom: icSel.value };
+      l.ring = {
+        state: ringState.value.trim(),
+        camera: ringCam ? ringCam.value : l.ring.camera,
+        door: door.value.trim(),
+        intercom: icSel.value,
+        dndFrom: dndFrom.value.trim(),
+        dndTo: dndTo.value.trim(),
+        dndQuiet: dndQuiet.input.checked,
+      };
       l.push = rules;
       l.telegram = tgGet();
       l.whatsapp = waGet();

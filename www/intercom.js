@@ -36,8 +36,13 @@ const Intercom = (() => {
     return Math.min(100, Math.max(0, Number(view.ringVolume) || 70)) / 100;
   }
 
+  /** "Nicht stören" of the adapter (switch or time window): ring silently */
+  function dnd() {
+    return Boolean(typeof SV !== 'undefined' && SV.dnd && SV.dnd.on);
+  }
+
   function ring(on) {
-    on = on && deviceRings() && Boolean(tones);
+    on = on && deviceRings() && !dnd() && Boolean(tones);
     if (on === ringOn) return; // state messages repeat while ringing: do not restart the melody
     ringOn = on;
     if (!on) return tones && tones.stop();
@@ -339,5 +344,13 @@ const Intercom = (() => {
   $('missedBtn').onclick = showCalls;
   unlockAudio();
 
-  return { sync, menuItems, active: () => Boolean(inst) };
+  /** switched on while it rings: stop the tone at once */
+  function dndChanged() {
+    if (dnd() && ringOn) {
+      ringOn = false;
+      if (tones) tones.stop();
+    }
+  }
+
+  return { sync, menuItems, active: () => Boolean(inst), dndChanged };
 })();

@@ -163,6 +163,8 @@ class SmartView extends utils.Adapter {
                 setTimer: (key, timer) => this.timers.set(key, timer),
                 tileByKey: key => this.tileByKey(key),
                 scenePlan: tile => this.scenePlan(tile),
+                dnd: () => this.dndInfo(),
+                setDnd: on => this.setDnd(on),
                 runScene: (tile, page, opts) => this.runScene(tile, page, opts),
                 fillDetectors: layout => this.fillDetectors(layout),
                 telegramInstances: () => this.telegramInstances(),
@@ -200,6 +202,11 @@ class SmartView extends utils.Adapter {
         this.log.info(`SmartView at ${this.urlList.http}${this.urlList.https ? ` and ${this.urlList.https}` : ''}`);
         this.subscribeStates('push.message');
         this.subscribeStates('scenes.*');
+        this.subscribeStates('ring.dnd');
+        const dnd = await this.getStateAsync('ring.dnd').catch(() => null);
+        this.dndSwitch = Boolean(dnd && dnd.val);
+        this.checkDnd();
+        this.dndTimer = setInterval(() => this.checkDnd(), 30000);
         this.pingTimer = setInterval(() => {
             this.server.ping();
             // window tiles with messages: "longer open than" is a matter of time, not of a state change
@@ -287,6 +294,43 @@ class SmartView extends utils.Adapter {
         this.checkClimate();
         this.checkGates();
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
+        this.checkDnd(); // the time window may have changed
+    }
+
+    // ---------------- do not disturb (no ring tone) ----------------
+
+    /** on by the switch ring.dnd, or within the time window of the settings (also over midnight, 22:00-07:00) */
+    dndInfo(now = new Date()) {
+        const r = this.store.layout.ring;
+        let window = false;
+        if (r.dndFrom && r.dndTo && r.dndFrom !== r.dndTo) {
+            const min = s => Number(s.split(':')[0]) * 60 + Number(s.split(':')[1]);
+            const t = now.getHours() * 60 + now.getMinutes();
+            const from = min(r.dndFrom);
+            const to = min(r.dndTo);
+            window = from < to ? t >= from && t < to : t >= from || t < to;
+        }
+        return { on: Boolean(this.dndSwitch) || window, manual: Boolean(this.dndSwitch), window, from: r.dndFrom, to: r.dndTo };
+    }
+
+    checkDnd() {
+        const d = this.dndInfo();
+        if (d.on !== this.dndLast) {
+            if (this.dndLast !== undefined) {
+                this.log.info(`Nicht stören ${d.on ? 'an' : 'aus'}${d.window && !d.manual ? ` (Zeitfenster ${d.from}-${d.to})` : ''}`);
+            }
+            this.dndLast = d.on;
+            this.setState('ring.dndActive', d.on, true).catch(() => {});
+        }
+        if (this.server) {
+            this.server.dndChanged(d);
+        }
+    }
+
+    async setDnd(on) {
+        this.dndSwitch = Boolean(on);
+        await this.setState('ring.dnd', this.dndSwitch, true);
+        this.checkDnd();
     }
 
     // ---------------- gates: close automatically after some minutes open ----------------
@@ -620,6 +664,12 @@ class SmartView extends utils.Adapter {
             }
             return;
         }
+        if (id === `${this.namespace}.ring.dnd`) {
+            if (state && !state.ack) {
+                this.setDnd(SceneLogic.truthy(state.val)).catch(() => {});
+            }
+            return;
+        }
         if (this.sceneIds && this.sceneIds.has(id)) {
             if (state && !state.ack && SceneLogic.truthy(state.val)) {
                 const { page, tile } = this.sceneIds.get(id);
@@ -660,6 +710,10 @@ class SmartView extends utils.Adapter {
             this.checkGates();
         }
         if (id === this.ringStateId() && val && !prev) {
+            if (this.store.layout.ring.dndQuiet && this.dndInfo().on) {
+                this.log.info('Es läutet - Nicht stören: keine Mitteilung');
+                return;
+            }
             if (this.store.layout.telegram.ring) {
                 this.telegramRing().catch(err => this.log.warn(`Telegram: ${err.message}`));
             }
@@ -1448,6 +1502,7 @@ class SmartView extends utils.Adapter {
             for (const g of (this.gateTimers || new Map()).values()) {
                 clearTimeout(g.timer);
             }
+            clearInterval(this.dndTimer);
             if (this.timers) {
                 this.timers.stop();
             }

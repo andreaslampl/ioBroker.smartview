@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.41.0",
+    "version": "0.42.0",
     "news": {
+      "0.42.0": {
+        "en": "Doorbell 'Nicht stören': no ring tone on any device (the picture still shows) - switch in the ⚙ menu or data point smartview.0.ring.dnd, optionally automatic in a time window (e.g. 22:00-07:00) and without Telegram / WhatsApp doorbell messages; 🔕 in the header",
+        "de": "Klingel „Nicht stören“: kein Klingelton auf allen Geräten (das Bild erscheint trotzdem) – Schalter im ⚙-Menü oder Datenpunkt smartview.0.ring.dnd, optional automatisch in einem Zeitfenster (z. B. 22:00–07:00) und ohne Telegram-/WhatsApp-Klingelmitteilungen; 🔕 in der Kopfzeile"
+      },
       "0.41.0": {
         "en": "New tile 'Verknüpfung': shows another tile (e.g. of the overview on the floor plan) with exactly its data points, settings, PIN, time switch and locks - only position, size, label and layer are its own",
         "de": "Neue Kachel „Verknüpfung“: zeigt eine andere Kachel (z. B. aus der Übersicht im Lageplan) mit genau deren Datenpunkten, Einstellungen, PIN, Zeitschaltuhr und Sperren – nur Position, Größe, Beschriftung und Ebene sind eigene"
@@ -428,6 +432,38 @@
           "en": "Push notifications",
           "de": "Push-Mitteilungen"
         }
+      },
+      "native": {}
+    },
+    {
+      "_id": "ring.dnd",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Do not disturb: no ring tone (true = on)",
+          "de": "Nicht stören: kein Klingelton (true = an)"
+        },
+        "type": "boolean",
+        "role": "switch",
+        "read": true,
+        "write": true,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "ring.dndActive",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Do not disturb active now (switch or time window)",
+          "de": "Nicht stören gerade aktiv (Schalter oder Zeitfenster)"
+        },
+        "type": "boolean",
+        "role": "indicator",
+        "read": true,
+        "write": false,
+        "def": false
       },
       "native": {}
     },

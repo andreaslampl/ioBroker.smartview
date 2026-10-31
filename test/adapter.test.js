@@ -1111,3 +1111,30 @@ test('adapter: a link on another page writes the original\'s data points and nee
     c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Kueche', val: false }));
     await until(() => c.msgs.some(m => m.type === 'pin' && m.result === 'need'));
 });
+
+test('adapter: do not disturb - switch from the menu / ioBroker, time window, no doorbell messages when chosen', async t => {
+    const { adapter, api, port } = await startAdapter(t);
+    const now = new Date();
+    const hm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    assert.equal(c.msgs.find(m => m.type === 'init').dnd.on, false);
+    // from the menu
+    c.ws.send(JSON.stringify({ type: 'dnd', on: true }));
+    await until(() => c.msgs.some(m => m.type === 'dnd' && m.dnd.on && m.dnd.manual));
+    assert.equal(adapter.foreign['smartview.0.ring.dnd'].val, true);
+    assert.equal(adapter.foreign['smartview.0.ring.dndActive'].val, true);
+    // from ioBroker (e.g. a logik program)
+    adapter.emit('stateChange', 'smartview.0.ring.dnd', { val: false, ack: false });
+    await until(() => c.msgs.filter(m => m.type === 'dnd').pop().dnd.on === false);
+    // time window around now (also over midnight works the same way)
+    const from = new Date(now.getTime() - 3600000);
+    const to = new Date(now.getTime() + 3600000);
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 's', name: 'S', tiles: [] }], ring: { state: '0_userdata.0.Klingel', dndFrom: hm(from), dndTo: hm(to), dndQuiet: true } }) })).body;
+    assert.deepEqual([saved.ring.dndFrom, saved.ring.dndQuiet], [hm(from), true]);
+    await until(() => c.msgs.filter(m => m.type === 'dnd').pop().dnd.window === true);
+    assert.equal(adapter.dndInfo().on, true);
+    assert.equal(adapter.dndInfo().manual, false);
+});
