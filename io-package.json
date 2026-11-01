@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.43.0",
+    "version": "0.43.1",
     "news": {
+      "0.43.1": {
+        "en": "Wallbox tile: OCPP status texts (ocpp adapter) shown in German (Charging -> Lädt, SuspendedEV -> car does not charge, ...)",
+        "de": "Wallbox-Kachel: OCPP-Status (ocpp-Adapter) auf Deutsch (Charging → Lädt, SuspendedEV → Auto lädt nicht …)"
+      },
       "0.43.0": {
         "en": "Monitor wake-up helper for the touch PC (tools/monitor-wecker.ps1): asks /api/ring every second and moves the mouse by one pixel when it rings, so a monitor Windows switched off turns on again",
         "de": "Monitor-Wecker für den Touch-PC (tools/monitor-wecker.ps1): fragt jede Sekunde /api/ring und bewegt beim Läuten die Maus um ein Pixel – so geht ein von Windows abgeschalteter Monitor wieder an"

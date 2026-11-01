@@ -354,6 +354,8 @@ switches/buttons on them.
   + `tools/monitor-wecker.ps1/.cmd` (polls every 1 s, mouse_event +1/-1 px and SetThreadExecutionState on the rising
   edge, skipped while dnd unless `$WakeDuringDnd`). Not yet tried on the owner's touch PC.
 - Ideas not done yet: charts/history.
+- 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
+  status for status/plugged.
 
 ## Conventions
 

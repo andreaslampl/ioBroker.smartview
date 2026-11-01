@@ -302,13 +302,24 @@ function wbPower(t) {
   return t.state && val(t.state) !== null && val(t.state) !== undefined && Number.isFinite(v) ? v : null;
 }
 
+// OCPP connector status (ocpp adapter) in German
+const OCPP_TEXT = {
+  Available: 'Kein Auto angesteckt', Preparing: 'Auto angesteckt', Charging: 'Lädt', SuspendedEV: 'Auto angesteckt – Auto lädt nicht',
+  SuspendedEVSE: 'Pausiert', Finishing: 'Laden beendet', Reserved: 'Reserviert', Unavailable: 'Nicht verfügbar', Faulted: 'Störung',
+};
+
+function wbStatusText(t) {
+  const s = String(val(t.status) || '');
+  return OCPP_TEXT[s] || s;
+}
+
 function wbCharging(t) {
   const p = wbPower(t);
-  return p !== null ? p >= 50 : /^Lädt/.test(String(val(t.status) || ''));
+  return p !== null ? p >= 50 : /^Lädt/.test(wbStatusText(t));
 }
 
 function wbFault(t) {
-  return /Fehler|Störung/.test(String(val(t.status) || ''));
+  return /Fehler|Störung/.test(wbStatusText(t));
 }
 
 /** big value: power while charging, else the mode */
@@ -320,7 +331,8 @@ function wbBig(t) {
 
 function wbLine(t) {
   const plugged = t.plugged ? val(t.plugged) : undefined;
-  const status = String(val(t.status) || (plugged === undefined || plugged === null ? '' : truthy(plugged) ? 'Auto angesteckt' : 'Kein Auto angesteckt'));
+  const plain = typeof plugged === 'string' && /^[A-Za-z]+$/.test(plugged) && OCPP_TEXT[plugged];
+  const status = wbStatusText(t) || plain || String((plugged === undefined || plugged === null ? '' : truthy(plugged) ? 'Auto angesteckt' : 'Kein Auto angesteckt'));
   // while waiting the control's text says more ("Wartet auf Überschuss", "Startet in 0:40");
   // a limit (heat pump, import limit, "not ready in time") is shown while charging too
   const ctrl = t.ctrl ? String(val(t.ctrl) || '') : '';
@@ -2451,7 +2463,7 @@ function fillSheet(sh, t) {
   } else if (t.type === 'wallbox') {
     const info = [];
     const p = wbPower(t);
-    if (t.status || t.plugged) info.push(['Zustand', esc(wbLine(t) === String(val(t.ctrl) || '') ? String(val(t.status) || '–') : wbLine(t))]);
+    if (t.status || t.plugged) info.push(['Zustand', esc(wbLine(t) === String(val(t.ctrl) || '') ? wbStatusText(t) || '–' : wbLine(t))]);
     if (t.ctrl) info.push(['Laderegelung', esc(String(val(t.ctrl) || '–'))]);
     if (p !== null) info.push(['Ladeleistung', esc(EnergyView.fmtW(p))]);
     if (t.energy) info.push(['Geladen', esc(fmt({ decimals: 2, unit: 'kWh' }, t.energy).text) + ' kWh']);
