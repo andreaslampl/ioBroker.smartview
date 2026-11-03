@@ -1995,6 +1995,9 @@ function bindControls(el, t) {
         const arming = b.dataset.v !== String(c.valueOff);
         if (arming && info.ready === false && !confirm('Nicht scharfschaltbereit' + (info.open ? ' – offen: ' + info.open : '') + '.\nTrotzdem scharf schalten?')) return;
         send(c.command, typedVal(b.dataset.v));
+      } else if (a === 'alarmack') {
+        // NOX control.ackAll: acknowledges every alarm of the panel
+        send(t.ack, true);
       } else if (a === 'deact') {
         // switch a detector off or on again (NOX: inputs.N.deactivated)
         const d = (alarmCur(t).detectors || [])[Number(b.dataset.v)];
@@ -2510,6 +2513,7 @@ function fillSheet(sh, t) {
     if (offList.length) info.push(['Abgeschaltet', '<span class="warnc">' + esc(offList.join(', ')) + '</span>']);
     body = circSwitcher(c, true) + '<div class="bigval' + (a.alarm ? ' alarmtxt' : '') + '">' + esc(a.alarm ? 'ALARM – ' + a.text : a.text) + '</div>' +
       (c.command && c.control ? '<div class="row modes">' + alarmButtons(c) + '</div>' : '') +
+      (t.ack && t.control ? '<div class="row"><button type="button" data-a="alarmack"' + (a.alarm || alarmElsewhere(t).length ? ' class="primary"' : '') + '>Alarm quittieren</button></div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
   } else if (t.type === 'fire') {

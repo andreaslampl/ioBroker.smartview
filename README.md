@@ -91,6 +91,10 @@ Kachel **„Alarmanlage“**: zeigt den Zustand (Text aus dem Datenpunkt, z. B. 
 bei „scharf“ hervorgehoben und blinkt rot bei **Alarm**. Antippen öffnet die Knöpfe **Unscharf / Scharf** (und
 „Intern scharf“, wenn ein Wert dafür eingetragen ist) und zeigt, warum das letzte Scharfschalten scheiterte.
 
+**Alarm quittieren:** Mit „Schalten erlauben“ gibt es im Bedienfenster den Knopf **„Alarm quittieren“** (PIN wird
+abgefragt). Bei der NOX wird dafür `control.ackAll` automatisch eingetragen (Kachel einmal neu speichern); bei der SPC
+gibt es dafür keinen Datenpunkt – dort quittiert das Unscharfschalten.
+
 **Mitteilungen** (Push / Telegram / WhatsApp, wie unter „Allgemein“ eingerichtet): **„Mitteilung bei Alarm“** →
 „🚨 ALARM Wohnhaus – Ausgelöst: BWM Garage“ (je Bereich, mit den ausgelösten Meldern) und „Alarm beendet“;
 **„auch bei scharf / unscharf“** → „Garage: scharf“, egal ob von SmartView, Bedienteil oder Schlüsselschalter.

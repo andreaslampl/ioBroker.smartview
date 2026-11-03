@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.47.1",
+    "version": "0.48.0",
     "news": {
+      "0.48.0": {
+        "en": "Alarm tile: button 'Alarm quittieren' (NOX control.ackAll filled from the area; only with 'Schalten erlauben', PIN protected)",
+        "de": "Alarmanlagen-Kachel: Knopf „Alarm quittieren“ (NOX control.ackAll wird aus dem Bereich eingetragen; nur mit „Schalten erlauben“, PIN-geschützt)"
+      },
       "0.47.1": {
         "en": "Each tile with messages (leave / arrive, windows, gate, appliances, alarm, fire) chooses its ways: app push, Telegram, WhatsApp",
         "de": "Jede Kachel mit Mitteilungen (Verlassen / Ankommen, Fenster, Tor, Haushaltsgeräte, Alarm, Brand) wählt ihre Wege: App-Push, Telegram, WhatsApp"

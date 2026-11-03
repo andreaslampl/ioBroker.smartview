@@ -389,6 +389,9 @@ switches/buttons on them.
   (layout: leave, arrive, windows, gate, appliances, alarm, fire; missing = all), `main.notify(title, body, page, tag, ch)`
   sends only the ticked ways; every call site passes its tile's `channels`. Editor kind `channels` (row like the push
   rules). Adapter test + Playwright.
+- 0.48.0: owner asked whether alarms can be acknowledged in the alarm tile -> state `ack` (w, tile level), `fillAlarm()` sets
+  NOX `<inst>.control.ackAll` (SPC none), `alarmWrites()` includes it (only with control, PIN via tileWriteIds); sheet button
+  "Alarm quittieren" (data-a alarmack, primary while an alarm is on) -> send(t.ack, true). Unit test + Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

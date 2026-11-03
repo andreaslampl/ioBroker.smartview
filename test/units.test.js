@@ -409,7 +409,7 @@ test('layout: alarm tile with several areas, filled from NOX areas, all commands
     assert.equal(t.ready, 'nox_alarmzentrale.0.areas.1.ready');
     assert.equal(t.areas.length, 1, 'areas without data points are dropped');
     assert.deepEqual([t.areas[0].openText, t.areas[0].alarmText, t.areas[0].valueArm], ['nox_alarmzentrale.0.areas.2.openInputs', 'nox_alarmzentrale.0.areas.2.alarmInputs', '5']);
-    assert.deepEqual(tileWriteIds(t), ['nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.2.setState', 'n.0.inputs.10059.deactivated']);
+    assert.deepEqual(tileWriteIds(t), ['nox_alarmzentrale.0.control.ackAll', 'nox_alarmzentrale.0.areas.1.setState', 'nox_alarmzentrale.0.areas.2.setState', 'n.0.inputs.10059.deactivated']);
     const ids = stateIds(l);
     assert.ok(ids.read.includes('nox_alarmzentrale.0.areas.2.ready') && ids.write.includes('nox_alarmzentrale.0.areas.2.setState'));
 });
@@ -546,4 +546,15 @@ test('PIN: a copy made in the editor keeps the PIN of its original', () => {
     assert.equal(b.pinHash, old.pages[0].tiles[0].pinHash);
     assert.equal(b.pinFrom, undefined);
     assert.equal(c.pinHash, undefined, 'no source = no PIN (as before)');
+});
+
+test('alarm tile: NOX acknowledge button filled from the area, writable only with "Schalten erlauben"', () => {
+    const { cleanLayout, stateIds } = require('../lib/layout');
+    const mk = control => cleanLayout({ pages: [{ id: 'u', name: 'U', tiles: [{ id: 'al', type: 'alarm', area: 'nox_alarmzentrale.0.areas.2', control }] }] });
+    const on = mk(true);
+    assert.equal(on.pages[0].tiles[0].ack, 'nox_alarmzentrale.0.control.ackAll');
+    assert.ok(stateIds(on).write.includes('nox_alarmzentrale.0.control.ackAll'));
+    assert.ok(!stateIds(mk(false)).write.includes('nox_alarmzentrale.0.control.ackAll'));
+    const spc = cleanLayout({ pages: [{ id: 'u', name: 'U', tiles: [{ id: 'al', type: 'alarm', area: 'spc-edp.0.areas.1', control: true }] }] });
+    assert.equal(spc.pages[0].tiles[0].ack, undefined, 'SPC: no acknowledge data point');
 });
