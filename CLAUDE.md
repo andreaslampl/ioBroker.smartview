@@ -402,6 +402,9 @@ switches/buttons on them.
   options from `/api/objects` `states` (ids `(nox_alarmzentrale|spc-edp).N.areas.M.(state|mode)`, names from `folders`),
   unknown current value kept as "(nicht gefunden)". Playwright.
   Field: owner confirmed the alarm tile with area picker + detectors works ("Perfekt Funktioniert").
+- 0.48.4 field: owner's dishwasher showed OperationState.Run in ioBroker but "Aus" in the tile - most likely the device's
+  kind was left on the default "Leistung" (power, needs a number). `AppLogic.kindOf()`: a non-numeric text value counts as
+  status; main `checkAppliances()` uses it instead of d.kind. Not yet confirmed that this was the cause.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

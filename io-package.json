@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.3",
+    "version": "0.48.4",
     "news": {
+      "0.48.4": {
+        "en": "Appliances tile: a text status (e.g. Home Connect OperationState) works even if the device was left on 'Leistung'",
+        "de": "Haushaltsgeräte-Kachel: Ein Text-Status (z. B. Home Connect OperationState) funktioniert auch, wenn beim Gerät „Leistung“ eingestellt blieb"
+      },
       "0.48.3": {
         "en": "Alarm tile: the NOX / SPC area is picked from a list (also for further areas) instead of typed",
         "de": "Alarmanlagen-Kachel: Der NOX-/SPC-Bereich wird aus einer Liste gewählt (auch bei weiteren Bereichen) statt eingetippt"

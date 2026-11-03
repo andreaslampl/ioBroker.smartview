@@ -558,3 +558,12 @@ test('alarm tile: NOX acknowledge button filled from the area, writable only wit
     const spc = cleanLayout({ pages: [{ id: 'u', name: 'U', tiles: [{ id: 'al', type: 'alarm', area: 'spc-edp.0.areas.1', control: true }] }] });
     assert.equal(spc.pages[0].tiles[0].ack, undefined, 'SPC: no acknowledge data point');
 });
+
+test('appliances: a text status picked with "Leistung" is read as a status', () => {
+    const A = require('../www/applogic');
+    const st = id => ({ hc: { val: 'BSH.Common.EnumType.OperationState.Run' }, sh: { val: 850, unit: 'W' } }[id]);
+    assert.equal(A.kindOf({ kind: 'power', state: 'hc' }, st), 'state');
+    assert.deepEqual(A.reading({ kind: 'power', state: 'hc' }, st), { run: true, done: false });
+    assert.equal(A.kindOf({ kind: 'power', state: 'sh' }, st), 'power');
+    assert.equal(A.reading({ kind: 'power', state: 'sh', onW: 10 }, st).run, true);
+});

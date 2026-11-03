@@ -1205,6 +1205,7 @@ class SmartView extends utils.Adapter {
                     const key = `${page.id}/${t.id}/${i}`;
                     seen.add(key);
                     const r = AppLogic.reading(d, st);
+                    const kind = AppLogic.kindOf(d, st); // also 'state' for a text data point picked as "Leistung"
                     let m = this.appMem.get(key);
                     if (!m || m.state !== d.state) {
                         // new device (or other data point): take what it does now, no message
@@ -1226,17 +1227,17 @@ class SmartView extends utils.Adapter {
                         if (m.status !== 'run') {
                             // power: a minute above the threshold (a dryer's anti-crease turns do not start a run)
                             m.high = m.high || now;
-                            if (d.kind === 'state' || now - m.high >= 60 * sec) {
-                                set('run', { runSince: d.kind === 'state' ? now : m.high });
+                            if (kind === 'state' || now - m.high >= 60 * sec) {
+                                set('run', { runSince: kind === 'state' ? now : m.high });
                             }
                         }
                     } else {
                         m.high = 0;
                         if (m.status === 'run') {
-                            const done = d.kind === 'state' ? r.done : (m.low = m.low || now) && now - m.low >= (d.offMin === undefined ? 3 : d.offMin) * 60 * sec;
-                            const stopped = d.kind === 'state' ? true : done;
+                            const done = kind === 'state' ? r.done : (m.low = m.low || now) && now - m.low >= (d.offMin === undefined ? 3 : d.offMin) * 60 * sec;
+                            const stopped = kind === 'state' ? true : done;
                             if (stopped) {
-                                const ranMs = (d.kind === 'state' ? now : m.low) - (m.runSince || now);
+                                const ranMs = (kind === 'state' ? now : m.low) - (m.runSince || now);
                                 if (done) {
                                     set('done');
                                     if (t.notify && !initial) {
@@ -1248,7 +1249,7 @@ class SmartView extends utils.Adapter {
                             }
                         } else if (m.status === 'done') {
                             const hours = Number(t.doneHours) || 0;
-                            if ((d.kind === 'state' && !r.done) || (hours > 0 && now - m.since >= hours * 3600 * sec)) {
+                            if ((kind === 'state' && !r.done) || (hours > 0 && now - m.since >= hours * 3600 * sec)) {
                                 set('off');
                             }
                         }

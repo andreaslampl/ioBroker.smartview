@@ -49,12 +49,25 @@
     }
 
     /**
+     * 'state' or 'power': a device set to "Leistung" whose data point holds a text (e.g. Home Connect
+     * "BSH.Common.EnumType.OperationState.Run") is read as a status - easy to pick the wrong kind in the editor
+     */
+    function kindOf(dev, st) {
+        if (dev.kind === 'state') {
+            return 'state';
+        }
+        const info = dev.state ? st(dev.state) : null;
+        const v = info && !info.missing ? info.val : null;
+        return typeof v === 'string' && v.trim() !== '' && !Number.isFinite(Number(v.replace(',', '.'))) ? 'state' : 'power';
+    }
+
+    /**
      * What the data point says now: {run: true|false|null (unknown), done: true when the status says finished, w}
      * @param {object} dev {kind: 'power'|'state', state, onW, runAt, doneAt}
      */
     function reading(dev, st) {
         const info = dev.state ? st(dev.state) : null;
-        if (dev.kind === 'state') {
+        if (kindOf(dev, st) === 'state') {
             if (!info || info.missing || info.val === null || info.val === undefined) {
                 return { run: null, done: false };
             }
@@ -78,7 +91,7 @@
         return n * (u === 'min' ? 60000 : u === 'h' ? 3600000 : 1000);
     }
 
-    const api = { TEXT, DEFAULT_RUN, DEFAULT_DONE, matches, watts, reading, remaining };
+    const api = { TEXT, DEFAULT_RUN, DEFAULT_DONE, matches, watts, reading, remaining, kindOf };
     if (typeof module === 'object' && module.exports) {
         module.exports = api;
     } else {
