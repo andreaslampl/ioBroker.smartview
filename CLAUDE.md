@@ -405,6 +405,8 @@ switches/buttons on them.
 - 0.48.4 field: owner's dishwasher showed OperationState.Run in ioBroker but "Aus" in the tile - most likely the device's
   kind was left on the default "Leistung" (power, needs a number). `AppLogic.kindOf()`: a non-numeric text value counts as
   status; main `checkAppliances()` uses it instead of d.kind. Not yet confirmed that this was the cause.
+- 0.48.5 field: dishwasher still not shown as running (dryer via Shelly works; tile probably has onlyActive) -> info log on
+  every appliance status change and on the first reading (value + kind) to diagnose.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

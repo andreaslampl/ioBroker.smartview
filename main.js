@@ -1210,11 +1210,13 @@ class SmartView extends utils.Adapter {
                     if (!m || m.state !== d.state) {
                         // new device (or other data point): take what it does now, no message
                         m = { state: d.state, status: r.run ? 'run' : 'off', since: now, runSince: r.run ? now : 0 };
+                        this.log.info(`Haushaltsgerät ${d.label || key}: ${d.state} = ${JSON.stringify((st(d.state) || {}).val)} -> ${m.status} (Erkennung: ${kind === 'state' ? 'Status' : 'Leistung'})`);
                         this.appMem.set(key, m);
                         changed = true;
                         return;
                     }
                     const set = (status, extra = {}) => {
+                        this.log.info(`Haushaltsgerät ${d.label || key}: ${m.status} -> ${status} (${d.state} = ${JSON.stringify((st(d.state) || {}).val)})`);
                         Object.assign(m, { status, since: now, high: 0, low: 0 }, extra);
                         changed = true;
                     };

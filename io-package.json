@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.4",
+    "version": "0.48.5",
     "news": {
+      "0.48.5": {
+        "en": "Appliances tile: every status change (and the value that caused it) is written to the log",
+        "de": "Haushaltsgeräte-Kachel: Jeder Wechsel Aus/Läuft/Fertig steht mit dem auslösenden Wert im Log"
+      },
       "0.48.4": {
         "en": "Appliances tile: a text status (e.g. Home Connect OperationState) works even if the device was left on 'Leistung'",
         "de": "Haushaltsgeräte-Kachel: Ein Text-Status (z. B. Home Connect OperationState) funktioniert auch, wenn beim Gerät „Leistung“ eingestellt blieb"
