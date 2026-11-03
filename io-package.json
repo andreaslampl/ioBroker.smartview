@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.2",
+    "version": "0.48.3",
     "news": {
+      "0.48.3": {
+        "en": "Alarm tile: the NOX / SPC area is picked from a list (also for further areas) instead of typed",
+        "de": "Alarmanlagen-Kachel: Der NOX-/SPC-Bereich wird aus einer Liste gewählt (auch bei weiteren Bereichen) statt eingetippt"
+      },
       "0.48.2": {
         "en": "Alarm tile: when 'Melder anzeigen' finds no detectors, the window and the log say why (area missing / NOX export list missing)",
         "de": "Alarmanlagen-Kachel: Findet „Melder anzeigen“ keine Melder, sagen Bedienfenster und Log warum (Bereich fehlt / NOX-Exportliste fehlt)"

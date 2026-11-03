@@ -134,7 +134,7 @@ const TYPE_FIELDS = {
     ['openColor', 'Farbe, wenn offen', 'select:bad=rot (Warnung);on=gelb wie eingeschaltet'],
   ],
   alarm: [
-    ['area', 'Bereich aus NOX- oder SPC-Adapter (optional)', 'text', 'z. B. nox_alarmzentrale.0.areas.1 oder spc-edp.0.areas.1 – füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, bereit, Werte).'],
+    ['area', 'Bereich aus NOX- oder SPC-Adapter (optional)', 'alarmarea', 'Füllt beim Übernehmen die leeren Felder unten (Zustand, Befehl, Alarm, bereit, Werte) und ist nötig für „Melder anzeigen“.'],
     ['status', 'Zustand (Datenpunkt)', 'state-r', 'z. B. Bereichszustand als Zahl'],
     ['command', 'Befehl (optional)', 'state-w', 'Datenpunkt zum Scharf-/Unscharfschalten – leer = nur Anzeige'],
     ['valueOff', 'Wert für „Unscharf“', 'text', 'NOX: 1, SPC: 0'],
@@ -482,6 +482,34 @@ const Editor = (() => {
       s.appendChild(o);
     }
     s.value = value;
+    return s;
+  }
+
+  /** areas of the NOX / SPC adapters (found by their state / mode data point), as a selection */
+  function areaSelect(value) {
+    const s = select([['', '(kein Bereich)']].concat(value ? [[value, value]] : []), value || '');
+    api('objects')
+      .then(data => {
+        const seen = new Map();
+        for (const o of data.states || data.list || []) {
+          const m = /^((?:nox_alarmzentrale|spc-edp)\.\d+\.areas\.\d+)\.(state|mode)$/.exec(o.id);
+          if (m && !seen.has(m[1])) seen.set(m[1], (data.folders || {})[m[1]] || '');
+        }
+        const cur = s.value;
+        s.textContent = '';
+        const opts = [['', seen.size ? '(kein Bereich)' : '(keine NOX-/SPC-Bereiche gefunden)']].concat(
+          [...seen].sort((a, b) => a[0].localeCompare(b[0], 'de', { numeric: true })).map(([id, name]) => [id, (name ? name + ' – ' : '') + id]),
+        );
+        if (cur && !seen.has(cur)) opts.push([cur, cur + ' (nicht gefunden)']);
+        for (const [v, txt] of opts) {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = txt;
+          s.appendChild(o);
+        }
+        s.value = cur;
+      })
+      .catch(() => {});
     return s;
   }
 
@@ -1258,7 +1286,7 @@ const Editor = (() => {
         const x = {};
         x.label = field(b, 'Name des Bereichs', textInput(r.label));
         x.label.placeholder = 'z. B. Garage';
-        for (const [k, label, help] of texts) x[k] = field(b, label, textInput(r[k]), help || undefined);
+        for (const [k, label, help] of texts) x[k] = field(b, label, k === 'area' ? areaSelect(r[k]) : textInput(r[k]), help || undefined);
         for (const [k, label, w] of states) x[k] = stateField(b, label, r[k], w);
         const tools = document.createElement('div');
         tools.className = 'buttons';
@@ -1412,7 +1440,8 @@ const Editor = (() => {
             h.textContent = help;
             body.appendChild(h);
           }
-        } else if (kind === 'number') inputs[key] = field(body, label, textInput(t[key], 'number'), help);
+        } else if (kind === 'alarmarea') inputs[key] = field(body, label, areaSelect(t[key]), help);
+        else if (kind === 'number') inputs[key] = field(body, label, textInput(t[key], 'number'), help);
         else if (kind.startsWith('select:')) {
           const opts = kind.slice(7).split(';').map(x => x.split('='));
           inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);

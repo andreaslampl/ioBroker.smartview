@@ -398,6 +398,9 @@ switches/buttons on them.
 - 0.48.2: owner did not see any detector switches in the alarm tile -> detectors need showDetectors + `area` (nox_…areas.N)
   + NOX `inputs.N.area` (export list) and a save; empty lists were silent. Now main `fillDetectors()` warns in the log and
   `alarmDetectors()` shows the reason in the sheet (alarmCur copies `area` for it; not in ALARM_KEYS, not a data point).
+- 0.48.3: owner found no picker for the area field -> edit.js `areaSelect()` (kind `alarmarea`, also in alarmAreasField):
+  options from `/api/objects` `states` (ids `(nox_alarmzentrale|spc-edp).N.areas.M.(state|mode)`, names from `folders`),
+  unknown current value kept as "(nicht gefunden)". Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
