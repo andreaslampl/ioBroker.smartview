@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.0",
+    "version": "0.48.1",
     "news": {
+      "0.48.1": {
+        "en": "PIN asked once per open control window (max. 1 min), e.g. disarm and then acknowledge; asked again after closing",
+        "de": "PIN nur einmal pro offenem Bedienfenster (höchstens 1 Minute), z. B. Unscharf und danach Quittieren; nach dem Schließen wieder"
+      },
       "0.48.0": {
         "en": "Alarm tile: button 'Alarm quittieren' (NOX control.ackAll filled from the area; only with 'Schalten erlauben', PIN protected)",
         "de": "Alarmanlagen-Kachel: Knopf „Alarm quittieren“ (NOX control.ackAll wird aus dem Bereich eingetragen; nur mit „Schalten erlauben“, PIN-geschützt)"

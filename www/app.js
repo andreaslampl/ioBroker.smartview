@@ -812,13 +812,20 @@ function sendNow(id, value, pin) {
 /** a protected data point: ask for the PIN before every command (the owner wants no remembered PIN) */
 function withPin(id, fn) {
   if (!SV.pinIds || !SV.pinIds.has(id)) return fn(undefined);
+  // while the control window of one tile stays open (max. 1 min) its PIN is asked once, e.g. Unscharf + Quittieren;
+  // closing the window forgets it
+  const sp = SV.sheetPin;
+  if (sp && SV.sheet && sp.sheet === SV.sheet && Date.now() < sp.until) return fn(sp.pin);
   askPin().then(pin => {
-    if (pin) fn(pin);
+    if (!pin) return;
+    if (SV.sheet) SV.sheetPin = { sheet: SV.sheet, pin, until: Date.now() + 60000 };
+    fn(pin);
   });
 }
 
 /** answer of the server for a protected command */
 function pinResult(msg) {
+  SV.sheetPin = null; // a wrong PIN is not used again
   if (SV.prevStates[msg.id]) {
     SV.states[msg.id] = SV.prevStates[msg.id];
     refresh(msg.id);
@@ -2475,6 +2482,7 @@ function openSheet(t) {
 }
 
 function closeSheet() {
+  SV.sheetPin = null;
   if (SV.sheet) {
     SV.sheet.el.remove();
     SV.sheet = null;

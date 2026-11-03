@@ -92,7 +92,8 @@ bei „scharf“ hervorgehoben und blinkt rot bei **Alarm**. Antippen öffnet di
 „Intern scharf“, wenn ein Wert dafür eingetragen ist) und zeigt, warum das letzte Scharfschalten scheiterte.
 
 **Alarm quittieren:** Mit „Schalten erlauben“ gibt es im Bedienfenster den Knopf **„Alarm quittieren“** (PIN wird
-abgefragt). Bei der NOX wird dafür `control.ackAll` automatisch eingetragen (Kachel einmal neu speichern); bei der SPC
+abgefragt – solange das Bedienfenster offen ist, höchstens 1 Minute, nur einmal: „Unscharf“ und danach „Quittieren“ =
+eine PIN; nach dem Schließen wird wieder gefragt). Bei der NOX wird dafür `control.ackAll` automatisch eingetragen (Kachel einmal neu speichern); bei der SPC
 gibt es dafür keinen Datenpunkt – dort quittiert das Unscharfschalten.
 
 **Mitteilungen** (Push / Telegram / WhatsApp, wie unter „Allgemein“ eingerichtet): **„Mitteilung bei Alarm“** →

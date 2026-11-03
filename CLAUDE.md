@@ -392,6 +392,9 @@ switches/buttons on them.
 - 0.48.0: owner asked whether alarms can be acknowledged in the alarm tile -> state `ack` (w, tile level), `fillAlarm()` sets
   NOX `<inst>.control.ackAll` (SPC none), `alarmWrites()` includes it (only with control, PIN via tileWriteIds); sheet button
   "Alarm quittieren" (data-a alarmack, primary while an alarm is on) -> send(t.ack, true). Unit test + Playwright.
+- 0.48.1: owner found two PINs for disarm + acknowledge tiresome -> `SV.sheetPin` {sheet, pin, until 60 s}: `withPin()` reuses
+  the PIN only while the same sheet object is open; cleared by closeSheet() and any pin reply (wrong/locked). Still asked on
+  every new opening (owner's 0.31.2 wish). Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
