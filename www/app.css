@@ -523,3 +523,15 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 
 /* alarm sheet: open detectors on top, highlighted */
 .mrow.det.open { background: rgba(248, 81, 73, .14); border-radius: 8px; }
+
+/* appliances: shrink to fit an own tile height (fitApps) */
+.tile.appliances.c1 .whead { margin-bottom: 4px; }
+.tile.appliances.c1 .wlist { gap: 4px; }
+.tile.appliances.c1 .win.app { padding: 4px 8px; gap: 8px; }
+.tile.appliances.c1 .win.app .wic .ic { width: 22px; height: 22px; }
+.tile.appliances.c2 .win.app .wst small { display: none; }
+.tile.appliances.c3 .wlist { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-x: hidden; }
+.tile.appliances .win.app { min-width: 0; }
+.tile.appliances .win.app .wname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile.appliances.c3 .win.app { padding: 3px 6px; gap: 6px; }
+.tile.appliances.c3 .win.app .wname { font-size: 13px; }

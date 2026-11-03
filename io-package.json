@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.5",
+    "version": "0.48.6",
     "news": {
+      "0.48.6": {
+        "en": "Appliances tile: with its own size the rows shrink (compact, then two columns) so the running devices fit",
+        "de": "Haushaltsgeräte-Kachel: Bei eigener Kachelgröße werden die Zeilen kleiner (kompakt, dann zweispaltig), damit die laufenden Geräte hineinpassen"
+      },
       "0.48.5": {
         "en": "Appliances tile: every status change (and the value that caused it) is written to the log",
         "de": "Haushaltsgeräte-Kachel: Jeder Wechsel Aus/Läuft/Fertig steht mit dem auslösenden Wert im Log"

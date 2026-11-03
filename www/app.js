@@ -693,6 +693,27 @@ document.addEventListener('click', ev => {
   if (SV.ws && SV.ws.readyState === 1) SV.ws.send(JSON.stringify({ type: 'appAck', key: row.dataset.appkey }));
 }, true);
 
+/**
+ * Rows of the appliances tile must fit into the tile (own size or the space the grid gives): first compact rows, then
+ * without the small "seit / noch" line, then two columns. Measured after the browser laid the tile out.
+ */
+function fitApps(el) {
+  const steps = ['', 'c1', 'c2', 'c3'];
+  el.classList.remove('c1', 'c2', 'c3');
+  // the list scrolls inside a tile with own height: compare the list with the room it got
+  const over = () => {
+    const wl = el.querySelector('.wlist');
+    return el.scrollHeight > el.clientHeight + 1 || Boolean(wl && wl.scrollHeight > wl.clientHeight + 1);
+  };
+  requestAnimationFrame(() => {
+    if (!el.isConnected || !el.classList.contains('fixh')) return; // without own height the tile grows with its rows
+    for (const s of steps) {
+      if (s) el.classList.add(s);
+      if (!over()) return;
+    }
+  });
+}
+
 function appliancesState(t, pageId) {
   const list = appEntries(t, pageId);
   return list.some(e => e.status === 'done') ? 'warn' : list.some(e => e.status === 'run') ? 'on' : '';
@@ -1931,6 +1952,7 @@ function fillTile(el, t) {
   html += warnMark(t);
   if (t.pin) html += '<span class="pinmark" title="mit PIN geschützt">' + icon('lock') + '</span>';
   el.innerHTML = html;
+  if (t.type === 'appliances') fitApps(el);
   if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));
   bindControls(el, t);
   Timers.mark(el, t);

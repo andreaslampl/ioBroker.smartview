@@ -407,6 +407,8 @@ switches/buttons on them.
   status; main `checkAppliances()` uses it instead of d.kind. Not yet confirmed that this was the cause.
 - 0.48.5 field: dishwasher still not shown as running (dryer via Shelly works; tile probably has onlyActive) -> info log on
   every appliance status change and on the first reading (value + kind) to diagnose.
+- 0.48.6: owner asked that the running devices (onlyActive) fit into the tile -> app.js `fitApps()` (only tiles with own height,
+  class fixh): adds c1 (compact rows), c2 (no "seit/noch" line), c3 (two columns, names ellipsized) until the list fits. Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
