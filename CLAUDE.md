@@ -381,6 +381,10 @@ switches/buttons on them.
 - 0.46.1: owner saw the ⚠ on a tile and could not tell which data point -> app.js `missingIds()` / `warnMark()` (title + tap
   -> toast with the ids, capture listener so the tile does not switch), edit.js `stateName()` shows "gibt es nicht" in red
   (`.statename.missing`) for ids the adapter reports missing. The adapter log already had "Data point … does not exist".
+- 0.47.0: owner asked to copy tiles with a count -> edit.js `copyDialog()` (1-30, target page incl. plan pages: x/y side by
+  side +4 %, else x/y/gx/gy dropped; numbered labels "Licht 3" -> 4, 5 …; hkId dropped). Found on the way: copies lost the
+  PIN (resolvePins looked up the new id) -> copies send `pinFrom: 'page/tile'`, `resolvePins()` uses it first. Unit test +
+  Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

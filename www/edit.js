@@ -1472,22 +1472,16 @@ const Editor = (() => {
             };
             buttons.appendChild(mv);
           }
-          const copy = document.createElement('button');
-          copy.type = 'button';
-          copy.textContent = 'Kopieren';
-          copy.onclick = () => {
-            collect();
-            const c = clone(t);
-            c.id = newId(page.tiles, 't');
-            delete c.hkId; // the copy gets its own HomeKit device
-            const i = page.tiles.findIndex(x => x.id === original.id);
-            page.tiles.splice(i + 1, 0, c);
-            d.close();
-            render();
-            editTile(page, c);
-          };
-          buttons.appendChild(copy);
         }
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.textContent = 'Kopieren …';
+        copy.onclick = () => {
+          collect();
+          d.close();
+          copyDialog(page, t, original);
+        };
+        buttons.appendChild(copy);
       }
       const grow = document.createElement('span');
       grow.className = 'grow';
@@ -1526,6 +1520,69 @@ const Editor = (() => {
       }
     }
     build();
+  }
+
+  /** Copies of a tile: how many, onto which page, numbered labels. Same data points (change them afterwards). */
+  function copyDialog(page, t, original) {
+    const d = dialog('Kachel kopieren');
+    const body = document.createElement('div');
+    d.sh.appendChild(body);
+    const count = field(body, 'Wie viele Kopien?', textInput('1'), '1 bis 30. Die Kopien haben dieselben Datenpunkte – danach je Kopie den Datenpunkt ändern.');
+    count.type = 'number';
+    count.min = 1;
+    count.max = 30;
+    const target = field(body, 'Auf Seite', select(SV.draft.pages.map(p => [p.id, p.name + (p.id === page.id ? ' (diese Seite)' : '')]), page.id));
+    const numbered = check('Beschriftung fortlaufend nummerieren (z. B. Licht 2, Licht 3 …)', true);
+    body.appendChild(numbered);
+    // keep the original's changes made in the dialog before copying
+    const i0 = page.tiles.findIndex(x => x.id === original.id);
+    if (i0 >= 0) page.tiles[i0] = t;
+    const buttons = document.createElement('div');
+    buttons.className = 'buttons';
+    const grow = document.createElement('span');
+    grow.className = 'grow';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Abbrechen';
+    cancel.onclick = d.close;
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'primary';
+    ok.textContent = 'Kopieren';
+    ok.onclick = () => {
+      const n = Math.max(1, Math.min(30, Math.round(Number(count.value)) || 1));
+      const tp = SV.draft.pages.find(p => p.id === target.value) || page;
+      // "Licht 3" -> Licht 4, 5 …; "Licht" -> Licht 2, 3 …
+      const m = /^(.*?)(\s*)(\d+)$/.exec(t.label || '');
+      const base = m ? m[1] : t.label || '';
+      let num = m ? Number(m[3]) : 1;
+      let at = tp === page ? page.tiles.findIndex(x => x.id === t.id) + 1 : tp.tiles.length;
+      for (let k = 0; k < n; k++) {
+        const c = clone(t);
+        c.id = newId(tp.tiles, 't');
+        delete c.hkId; // own HomeKit device
+        delete c.gx; // free grid: the next free cell
+        delete c.gy;
+        if (c.pin === true) c.pinFrom = page.id + '/' + t.id; // same PIN as the original (set on the server)
+        if (numbered.input.checked && base) c.label = base + (m ? m[2] || ' ' : ' ') + ++num;
+        if (tp.type === 'plan') {
+          // symbols side by side, a little apart
+          const x0 = Number.isFinite(Number(t.x)) ? Number(t.x) : 10;
+          const y0 = Number.isFinite(Number(t.y)) ? Number(t.y) : 10;
+          c.x = Math.min(97, x0 + 4 * (k + 1));
+          c.y = Math.min(97, y0 + (x0 + 4 * (k + 1) > 97 ? 4 : 0));
+        } else {
+          delete c.x;
+          delete c.y;
+        }
+        tp.tiles.splice(at++, 0, c);
+      }
+      d.close();
+      render();
+      toast(n + (n === 1 ? ' Kopie' : ' Kopien') + ' auf „' + tp.name + '“ – Datenpunkte anpassen und Speichern nicht vergessen.');
+    };
+    buttons.append(grow, cancel, ok);
+    body.appendChild(buttons);
   }
 
   // ---------------- pages ----------------

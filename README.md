@@ -434,6 +434,13 @@ alle Bereiche der gewählten Alarm-Kachel, PIN einmal; über den Datenpunkt nur 
 immer an), **Rollläden auf** (Markisen bleiben ein). Ein noch wartendes „Haus verlassen“ (Verzögerung) wird
 abgebrochen. Mitteilung und Auslösen von außen wie oben.
 
+### Kacheln kopieren
+
+Im Bearbeiten-Modus Kachel antippen → **„Kopieren …“**: **wie viele** Kopien (1–30), **auf welche Seite** (auch auf einen
+Lageplan – dort nebeneinander) und ob die Beschriftung **fortlaufend nummeriert** wird („Licht 1“ → Licht 2, 3, 4 …).
+Die Kopien haben dieselben Datenpunkte und Einstellungen (auch dieselbe PIN) – danach je Kopie den Datenpunkt ändern
+und **Speichern**. Zeitschaltuhren und die Verbindung zu Apple Home werden nicht mitkopiert.
+
 ### Verknüpfung (dieselbe Kachel an zwei Stellen)
 
 Soll eine Kachel z. B. in der Übersicht **und** im Lageplan stehen, nicht zweimal anlegen, sondern im Lageplan eine

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.46.1",
+    "version": "0.47.0",
     "news": {
+      "0.47.0": {
+        "en": "Copy tiles: how many, onto which page (also a floor plan), numbered labels; copies keep the original's PIN (it was lost before)",
+        "de": "Kacheln kopieren: wie viele, auf welche Seite (auch Lageplan), fortlaufend nummeriert; Kopien behalten die PIN des Originals (ging vorher verloren)"
+      },
       "0.46.1": {
         "en": "The ⚠ (data point not found) names the missing data points when tapped; the edit dialog marks the field in red",
         "de": "Das ⚠ (Datenpunkt nicht gefunden) nennt beim Antippen die fehlenden Datenpunkte; der Bearbeiten-Dialog markiert das Feld rot"

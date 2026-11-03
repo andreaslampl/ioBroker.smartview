@@ -536,3 +536,14 @@ test('scenes: own alarm delay - empty = with the blinds, 0 = at once, n = separa
     assert.ok(p3.groups.some(([g]) => g === 'Alarmanlage scharf (nach 5 min)'));
     assert.deepEqual(SL.ids(p3).sort(), ['a.cmd', 'r.pos']);
 });
+
+test('PIN: a copy made in the editor keeps the PIN of its original', () => {
+    const { resolvePins, hashPin } = require('../lib/pin');
+    const old = { pages: [{ id: 'u', tiles: [{ id: 't1', type: 'switch', pinHash: hashPin('2580') }] }] };
+    const next = resolvePins({ pages: [{ id: 'u', tiles: [{ id: 't1', pin: true }, { id: 't2', pin: true, pinFrom: 'u/t1' }, { id: 't3', pin: true }] }] }, old);
+    const [a, b, c] = next.pages[0].tiles;
+    assert.equal(a.pinHash, old.pages[0].tiles[0].pinHash);
+    assert.equal(b.pinHash, old.pages[0].tiles[0].pinHash);
+    assert.equal(b.pinFrom, undefined);
+    assert.equal(c.pinHash, undefined, 'no source = no PIN (as before)');
+});
