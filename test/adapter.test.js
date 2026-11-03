@@ -1213,3 +1213,72 @@ test('adapter: household appliances - Shelly power and Home Connect status, Fert
     const tags = pushed.filter(p => / ist fertig$/.test(p.title)).map(p => p.tag);
     assert.notEqual(tags[0], tags[1]);
 });
+
+test('adapter: "Haus verlassen" with an own alarm delay and a message when the alarm system is armed', async t => {
+    const A = 'nox_alarmzentrale.0.areas.1';
+    const { adapter, api, port, pushed } = await startAdapter(t, {}, a => {
+        a.add(`${A}.state`, { name: 'Zustand', type: 'number', role: 'value', states: { 1: 'Unscharf', 5: 'Scharf' } }, 1);
+        a.add(`${A}.setState`, { name: 'setzen', type: 'number', role: 'level', write: true }, 1);
+    });
+    adapter.sceneMinute = 300;
+    adapter.sceneCheckMs = 200;
+    await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: { endpoint: 'https://web.push.apple.com/al', keys: { p256dh: 'p', auth: 'a' } }, name: 'iPhone' }) });
+    const layout = { pages: [{ id: 'u', name: 'Übersicht', tiles: [
+        { id: 'r1', type: 'blind', label: 'Rollo', state: 'knx.0.EG.Rollladen.Wohnzimmer' },
+        { id: 'al', type: 'alarm', label: 'Alarm', area: A, control: true },
+        { id: 'go', type: 'leave', label: 'Weg', blindsDown: true, alarmArm: 'al', delayMin: 0, alarmDelayMin: 2, alarmNotify: true },
+    ] }] };
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    adapter.writes.length = 0;
+    const t0 = Date.now();
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go' }));
+    await until(() => c.msgs.some(m => m.type === 'scene' && m.key === 'u/go'));
+    assert.deepEqual(adapter.writes.map(w => w[0]), ['knx.0.EG.Rollladen.Wohnzimmer'], 'blinds at once, alarm later');
+    await until(() => adapter.writes.some(w => w[0] === `${A}.setState`));
+    assert.ok(Date.now() - t0 >= 550, 'alarm after its own 2 "minutes"');
+    adapter.change(`${A}.state`, 5); // the panel confirms
+    await until(() => pushed.some(p => p.title === 'Weg: Alarmanlage scharf ✓'));
+});
+
+test('adapter: messages for burglar alarm (per area, armed / disarmed) and fire alarm / pre-alarm / fault', async t => {
+    const N = 'nox_alarmzentrale.0.areas.';
+    const F = 'fc20-cerberus-bacnet.0.summary.';
+    const { adapter, api, pushed } = await startAdapter(t, {}, a => {
+        for (const i of [1, 2]) {
+            a.add(`${N}${i}.state`, { name: 'Zustand', type: 'number', role: 'value' }, 1);
+            a.add(`${N}${i}.alarm`, { name: 'Alarm', type: 'boolean', role: 'indicator.alarm' }, false);
+            a.add(`${N}${i}.alarmInputs`, { name: 'Melder', type: 'string', role: 'text' }, '');
+        }
+        for (const k of ['alarm', 'preAlarm', 'fault']) a.add(F + k, { name: k, type: 'boolean', role: 'indicator' }, false);
+        for (const k of ['alarmText', 'faultText']) a.add(F + k, { name: k, type: 'string', role: 'text' }, '');
+    });
+    adapter.alarmTextWait = 50;
+    await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: { endpoint: 'https://web.push.apple.com/alarm', keys: { p256dh: 'p', auth: 'a' } }, name: 'iPhone' }) });
+    const alarm = {
+        id: 'al', type: 'alarm', label: 'Alarm', areaLabel: 'Haus', status: `${N}1.state`, alarm: `${N}1.alarm`, alarmText: `${N}1.alarmInputs`, valueOff: 1, valueArm: 5,
+        notify: true, notifyMode: true,
+        areas: [{ label: 'Garage', status: `${N}2.state`, alarm: `${N}2.alarm`, alarmText: `${N}2.alarmInputs`, valueOff: 1, valueArm: 5 }],
+    };
+    const fire = { id: 'bma', type: 'fire', label: 'BMA', alarm: F + 'alarm', alarmText: F + 'alarmText', preAlarm: F + 'preAlarm', fault: F + 'fault', faultText: F + 'faultText', notify: true };
+    await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'u', name: 'Übersicht', tiles: [alarm, fire] }] }) });
+    await new Promise(r => setTimeout(r, 200));
+    const titles = () => pushed.map(p => p.title);
+    adapter.change(`${N}2.state`, 5);
+    await until(() => titles().includes('Garage: scharf'));
+    adapter.change(`${N}2.alarm`, true);
+    adapter.change(`${N}2.alarmInputs`, 'BWM Garage');
+    await until(() => pushed.some(p => p.title === '🚨 ALARM Garage' && p.body === 'Ausgelöst: BWM Garage'));
+    adapter.change(F + 'preAlarm', true);
+    await until(() => titles().includes('⚠️ Voralarm BMA'));
+    adapter.change(F + 'alarm', true);
+    adapter.change(F + 'alarmText', 'Melder Küche');
+    await until(() => pushed.some(p => p.title === '🔥 BRANDALARM BMA' && p.body === 'Melder Küche'));
+    adapter.change(F + 'fault', true);
+    await new Promise(r => setTimeout(r, 200));
+    assert.ok(!titles().some(x => /Störung/.test(x)), 'fault only with notifyFault');
+    assert.ok(!titles().includes('🚨 ALARM Haus'), 'nothing for the area that did not trigger');
+});

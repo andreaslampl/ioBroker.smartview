@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.45.1",
+    "version": "0.46.0",
     "news": {
+      "0.46.0": {
+        "en": "Leave: own delay for the alarm system and a message whether it armed; messages for burglar alarm (per area, optionally armed / disarmed) and fire alarm / pre-alarm / fault",
+        "de": "Haus verlassen: eigene Zeit für die Alarmanlage und Mitteilung, ob sie scharf ist; Mitteilungen bei Einbruchalarm (je Bereich, optional scharf / unscharf) und Brandalarm / Voralarm / Störung"
+      },
       "0.45.1": {
         "en": "Alarm tile: open detectors are listed first (highlighted) so they can be switched off at once",
         "de": "Alarmanlagen-Kachel: offene Melder stehen oben (markiert) und lassen sich gleich abschalten"

@@ -2507,7 +2507,7 @@ function fillSheet(sh, t) {
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') + fireDetectors(t);
   } else if (t.type === 'leave' || t.type === 'arrive') {
     const plan = scenePlan(t);
-    const n = plan.now.size + plan.later.size;
+    const n = plan.now.size + plan.later.size + plan.alarmLater.size;
     body = (plan.warn.length ? '<div class="mrows sheetrows">' + plan.warn.map(w => '<div class="mrow"><span class="warnc">⚠ ' + esc(w) + '</span></div>').join('') + '</div>' : '') +
       '<div class="mrows sheetrows">' + (plan.groups.length ? plan.groups.map(([g, c]) => '<div class="mrow"><span>' + esc(g) + '</span><b>' + c + '</b></div>').join('') : '<div class="mrow"><span class="muted">' + (t.type === 'leave' ? 'Es ist schon alles aus.' : 'Es ist schon alles so.') + '</span></div>') + '</div>' +
       '<div class="row"><button type="button" data-a="scene" class="primary"' + (n ? '' : ' disabled') + '>' + icon(t.type === 'leave' ? 'leave' : 'home') + esc(t.label || (t.type === 'leave' ? 'Haus verlassen' : 'Ankommen')) + '</button></div>';

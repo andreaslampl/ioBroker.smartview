@@ -520,3 +520,19 @@ test('scenes: only the chosen alarm areas; coming home from a data point does no
     assert.ok(ext.warn.some(w => /bleibt scharf/.test(w)));
     assert.deepEqual([...SL.plan({ ...arrive, extAlarm: true }, [alarm], st, { external: true }).now.keys()], ['nox.0.a3.cmd']);
 });
+
+test('scenes: own alarm delay - empty = with the blinds, 0 = at once, n = separate map', () => {
+    const SL = require('../www/scenelogic');
+    const st = id => ({ 'a.status': { val: 0, type: 'number' }, 'r.pos': { val: 100, type: 'number' } }[id] || null);
+    const alarm = { id: 'al', type: 'alarm', control: true, status: 'a.status', command: 'a.cmd', valueOff: 0, valueArm: 3 };
+    const blind = { id: 'r', type: 'blind', state: 'r.pos' };
+    const leave = { id: 'lv', type: 'leave', blindsDown: true, alarmArm: 'al', delayMin: 2 };
+    const p1 = SL.plan(leave, [alarm, blind], st);
+    assert.deepEqual([[...p1.now.keys()], [...p1.later.keys()].sort(), p1.alarmLater.size], [[], ['a.cmd', 'r.pos'], 0]);
+    const p2 = SL.plan({ ...leave, alarmDelayMin: 0 }, [alarm, blind], st);
+    assert.deepEqual([[...p2.now.keys()], [...p2.later.keys()]], [['a.cmd'], ['r.pos']]);
+    const p3 = SL.plan({ ...leave, alarmDelayMin: 5 }, [alarm, blind], st);
+    assert.deepEqual([[...p3.alarmLater.keys()], [...p3.later.keys()]], [['a.cmd'], ['r.pos']]);
+    assert.ok(p3.groups.some(([g]) => g === 'Alarmanlage scharf (nach 5 min)'));
+    assert.deepEqual(SL.ids(p3).sort(), ['a.cmd', 'r.pos']);
+});

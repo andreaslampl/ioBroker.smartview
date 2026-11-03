@@ -70,20 +70,24 @@
    * @param {object[]} tiles all tiles of the layout
    * @param {Function} st state info by id
    * @param {object} o locked(tile) -> reason or '', dark (true / false / undefined = unknown)
-   * @returns {{groups: [string, number][], now: Map, later: Map, warn: string[], alarm: object[]}}
+   * @returns {{groups: [string, number][], now: Map, later: Map, alarmLater: Map, warn: string[], alarm: object[]}}
    */
   function plan(t, tiles, st, o = {}) {
     const now = new Map();
     const later = new Map();
+    // leave: the alarm system may have its own delay (alarmDelayMin); empty = with the blinds (delayMin)
+    const alarmLater = new Map();
+    const ownAlarmDelay = t.type === 'leave' && t.alarmDelayMin !== undefined && t.alarmDelayMin !== '' && t.alarmDelayMin !== null;
     const groups = [];
     const warn = [];
     const alarm = [];
     const delayed = t.type === 'leave' && Number(t.delayMin) > 0;
     const step = (label, into, fn) => {
       const before = into.size;
-      const add = (id, v) => id && !now.has(id) && !later.has(id) && into.set(id, v);
+      const add = (id, v) => id && !now.has(id) && !later.has(id) && !alarmLater.has(id) && into.set(id, v);
       fn(add);
-      if (into.size > before) groups.push([label + (into === later ? ' (nach ' + t.delayMin + ' min)' : ''), into.size - before]);
+      const mins = into === later ? t.delayMin : into === alarmLater ? t.alarmDelayMin : 0;
+      if (into.size > before) groups.push([label + (mins ? ' (nach ' + mins + ' min)' : ''), into.size - before]);
     };
     const leave = t.type === 'leave';
     const extra = group => (Array.isArray(t.extra) ? t.extra : []).filter(e => e.state && (e.group || 'other') === group);
@@ -159,7 +163,8 @@
       if (!a || !a.control) {
         warn.push('Alarmanlage: Kachel fehlt oder „Schalten erlauben“ ist nicht gesetzt');
       } else {
-        step(leave ? 'Alarmanlage scharf' : 'Alarmanlage unscharf', delayed ? later : now, add => {
+        const into = !leave ? now : ownAlarmDelay ? (Number(t.alarmDelayMin) > 0 ? alarmLater : now) : delayed ? later : now;
+        step(leave ? 'Alarmanlage scharf' : 'Alarmanlage unscharf', into, add => {
           for (const [idx, area] of areasOf(a).entries()) {
             if (!pickArea(idx)) continue;
             const value = leave ? area.valueArm : area.valueOff;
@@ -198,11 +203,11 @@
       }
       if (open.size) warn.unshift('Offen: ' + [...open].join(', '));
     }
-    return { groups, now, later, warn, alarm };
+    return { groups, now, later, alarmLater, warn, alarm };
   }
 
   /** all ids the button would write (for the PIN and permission check) */
-  const ids = p => [...p.now.keys(), ...p.later.keys()];
+  const ids = p => [...p.now.keys(), ...p.later.keys(), ...(p.alarmLater ? p.alarmLater.keys() : [])];
 
   const api = { plan, ids, isLight, typed, truthy };
   if (typeof module === 'object' && module.exports) module.exports = api;

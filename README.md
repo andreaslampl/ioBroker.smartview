@@ -91,6 +91,10 @@ Kachel **„Alarmanlage“**: zeigt den Zustand (Text aus dem Datenpunkt, z. B. 
 bei „scharf“ hervorgehoben und blinkt rot bei **Alarm**. Antippen öffnet die Knöpfe **Unscharf / Scharf** (und
 „Intern scharf“, wenn ein Wert dafür eingetragen ist) und zeigt, warum das letzte Scharfschalten scheiterte.
 
+**Mitteilungen** (Push / Telegram / WhatsApp, wie unter „Allgemein“ eingerichtet): **„Mitteilung bei Alarm“** →
+„🚨 ALARM Wohnhaus – Ausgelöst: BWM Garage“ (je Bereich, mit den ausgelösten Meldern) und „Alarm beendet“;
+**„auch bei scharf / unscharf“** → „Garage: scharf“, egal ob von SmartView, Bedienteil oder Schlüsselschalter.
+
 Mit dem SPC-Adapter (ab 0.2.0) genauso mit z. B. `spc-edp.0.areas.1` (Unscharf 0, Teilscharf A 1 als „Intern scharf“,
 Scharf 3). Mit dem NOX-Adapter reicht das Feld **„Bereich“**, z. B. `nox_alarmzentrale.0.areas.1` – beim Übernehmen werden
 Zustand, Befehl (`setState`), Alarm, Fehler und die Werte 1 = unscharf / 5 = scharf eingetragen. Für andere Anlagen
@@ -372,7 +376,8 @@ in °C, Schritt 0,5), Betriebsart und Lüfterstufe als Knöpfe (Texte aus dem Da
 
 Kachel **„Brandmeldeanlage (FC20 / Cerberus PRO)“** für den Adapter
 [fc20-cerberus-bacnet](https://github.com/andreaslampl/ioBroker.fc20-cerberus-bacnet): FC20-Instanz wählen, die
-Datenpunkte füllen sich selbst.
+Datenpunkte füllen sich selbst. **„Mitteilung bei Brandalarm und Voralarm“** schickt „🔥 BRANDALARM“ bzw.
+„⚠️ Voralarm“ mit den Meldern, **„auch bei Störung“** zusätzlich Störungen.
 
 - **Kachel:** ALARM (rot, mit den Meldern) / Voralarm / Störung (orange, mit Text) / Abschaltung aktiv / keine
   Verbindung / Ruhe.
@@ -409,7 +414,10 @@ Antippen öffnet erst eine Übersicht: was geschaltet wird (mit Anzahl) und welc
 Knopf „Haus verlassen“ darin schaltet. Was schon aus ist, bekommt keinen Befehl. Geschaltet wird im Adapter – die Seite
 darf danach zugehen.
 
-- **Rollläden und Alarmanlage erst nach … Minuten:** Zeit zum Hinausgehen; Lichter, Heizung, Radio gehen sofort.
+- **Rollläden (und Alarmanlage) erst nach … Minuten:** Zeit zum Hinausgehen; Lichter, Heizung, Radio gehen sofort.
+- **Alarmanlage scharf nach … Minuten:** eigene Zeit nur für die Alarmanlage (leer = mit den Rollläden, 0 = sofort).
+- **Mitteilung, ob die Alarmanlage scharf ist:** 90 s nach dem Scharfschalten „Alarmanlage scharf ✓“ oder „Alarmanlage
+  NICHT scharf“ mit den Bereichen.
 - **Mitteilung senden:** was geschaltet wurde (Push / Telegram / WhatsApp, wie unter „Allgemein“ eingerichtet) – und
   eine Warnung „Alarmanlage NICHT scharf“, wenn sie 90 s nach dem Befehl nicht scharf ist (steht auch im Log).
 - **Auch von ioBroker / Alexa / Apple Home auslösbar:** legt `smartview.0.scenes.<Seite>_<Kachel>` an (Taste,

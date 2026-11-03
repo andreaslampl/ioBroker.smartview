@@ -371,6 +371,13 @@ switches/buttons on them.
 - 0.45.1: owner wants to switch off open detectors like in the fire tile (NOX works with showDetectors + control; SPC
   has no inhibit in spc-edp - EDP zone inhibit/isolate exists per HSYCO docs but the binary/XML command is not in spcedp's
   PROTOCOL.md; not guessed, asked the owner for the Vanderbilt EDP spec) -> `alarmDetectors()` sorts open first (row .open).
+- 0.46.0: owner asked for an own alarm delay on leave, a push when armed / not armed, and pushes for burglar and fire alarm ->
+  leave `alarmDelayMin` (empty = with delayMin, 0 = now; SceneLogic `alarmLater` map, ids() includes it, server PIN loop too;
+  main pending key `<key>#alarm`, check timer `<key>#check` after the alarm delay + sceneCheckMs), `alarmNotify` ("scharf ✓" /
+  "NICHT scharf", own tag). main `checkAlarmPush()` (on changes of `alarmPushIds`, initial after resubscribe = no messages):
+  alarm tiles `notify` (alarm rising per area -> "🚨 ALARM <area>" with alarmText after `alarmTextWait` 1.5 s, falling ->
+  "Alarm beendet"), `notifyMode` (scharf / intern scharf / unscharf changes); fire tiles `notify` (alarm, preAlarm),
+  `notifyFault`. Adapter tests.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

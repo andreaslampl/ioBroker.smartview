@@ -316,6 +316,7 @@ class SmartView extends utils.Adapter {
         this.checkClimate();
         this.checkGates();
         this.checkAppliances(true);
+        this.checkAlarmPush(true);
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
         this.checkDnd(); // the time window may have changed
     }
@@ -516,7 +517,7 @@ class SmartView extends utils.Adapter {
         this.scenePending = this.scenePending || new Map();
         // a new run of the same button, or coming home, ends what is still waiting
         for (const [k, timer] of this.scenePending) {
-            if (k === key || tile.type === 'arrive') {
+            if (k === key || k === `${key}#alarm` || tile.type === 'arrive') {
                 clearTimeout(timer);
                 this.scenePending.delete(k);
                 this.log.info(`${name}: verzögerte Befehle von ${k} abgebrochen`);
@@ -528,7 +529,8 @@ class SmartView extends utils.Adapter {
         const text = plan.groups.map(([g, n]) => `${g} (${n})`).join(', ') || 'nichts zu tun';
         this.log.info(`${name}${source ? ` (${source})` : ''}: ${text}${plan.warn.length ? ` - ${plan.warn.join('; ')}` : ''}`);
         await exec(plan.now);
-        const delay = plan.later.size ? tile.delayMin * (this.sceneMinute || 60000) : 0; // tests shorten the minute
+        const minute = this.sceneMinute || 60000; // tests shorten the minute
+        const delay = plan.later.size ? tile.delayMin * minute : 0;
         if (plan.later.size) {
             this.scenePending.set(key, setTimeout(() => {
                 this.scenePending.delete(key);
@@ -536,12 +538,23 @@ class SmartView extends utils.Adapter {
                 exec(plan.later).catch(() => {});
             }, delay));
         }
+        // own delay of the alarm system (pending under its own key, "Ankommen" cancels it like the rest)
+        const alarmDelay = plan.alarmLater.size ? Number(tile.alarmDelayMin) * minute : 0;
+        if (plan.alarmLater.size) {
+            this.scenePending.set(`${key}#alarm`, setTimeout(() => {
+                this.scenePending.delete(`${key}#alarm`);
+                this.log.info(`${name}: nach ${tile.alarmDelayMin} min - Alarmanlage scharf`);
+                exec(plan.alarmLater).catch(() => {});
+            }, alarmDelay));
+        }
         if (tile.notify) {
             this.notify(name, text + (plan.warn.length ? `\n${plan.warn.join('\n')}` : ''), pageId);
         }
         // did the alarm system arm? (90 s after the command, the NOX / SPC need a moment)
         if (tile.type === 'leave' && plan.alarm.length) {
-            setTimeout(() => {
+            const when = plan.alarmLater.size ? alarmDelay : plan.later.size && !(tile.alarmDelayMin > 0 || tile.alarmDelayMin === 0) ? delay : 0;
+            const timer = setTimeout(() => {
+                this.scenePending.delete(`${key}#check`);
                 const notArmed = plan.alarm.filter(a => {
                     const v = (this.liveStates.get(a.status) || {}).val;
                     return a.status && String(v) !== String(a.value);
@@ -549,13 +562,21 @@ class SmartView extends utils.Adapter {
                 if (notArmed.length) {
                     const what = notArmed.map(a => a.label).join(', ');
                     this.log.warn(`${name}: Alarmanlage NICHT scharf - ${what}`);
-                    if (tile.notify) {
-                        this.notify(`${name}: Alarmanlage NICHT scharf`, what, pageId);
+                    if (tile.notify || tile.alarmNotify) {
+                        this.notify(`${name}: Alarmanlage NICHT scharf`, what, pageId, `alarm-${key}`);
+                    }
+                } else {
+                    const what = plan.alarm.map(a => a.label).join(', ');
+                    this.log.info(`${name}: Alarmanlage scharf - ${what}`);
+                    if (tile.alarmNotify) {
+                        this.notify(`${name}: Alarmanlage scharf ✓`, what, pageId, `alarm-${key}`);
                     }
                 }
-            }, delay + (this.sceneCheckMs || 90000)).unref?.();
+            }, when + (this.sceneCheckMs || 90000));
+            timer.unref?.();
+            this.scenePending.set(`${key}#check`, timer);
         }
-        return { text, warn: plan.warn, delayed: plan.later.size ? tile.delayMin : 0 };
+        return { text, warn: plan.warn, delayed: plan.later.size ? tile.delayMin : 0, alarmDelayed: plan.alarmLater.size ? tile.alarmDelayMin : 0 };
     }
 
     /** smartview.N.scenes.<page>_<tile> (button) for leave / arrive tiles with "von außen auslösbar" */
@@ -734,6 +755,9 @@ class SmartView extends utils.Adapter {
         }
         if (this.appIds && this.appIds.has(id)) {
             this.checkAppliances();
+        }
+        if (this.alarmPushIds && this.alarmPushIds.has(id)) {
+            this.checkAlarmPush();
         }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.ring.dndQuiet && this.dndInfo().on) {
@@ -1232,6 +1256,71 @@ class SmartView extends utils.Adapter {
         }
         if (changed) {
             this.saveApps();
+        }
+    }
+
+    /**
+     * Messages of alarm tiles (intrusion: alarm per area, optionally armed / disarmed) and fire tiles (fire alarm,
+     * pre-alarm, optionally fault) - on the change only, nothing for what is already so at start.
+     */
+    checkAlarmPush(initial = false) {
+        this.alarmPushMem = initial || !this.alarmPushMem ? new Map() : this.alarmPushMem;
+        this.alarmPushIds = new Set();
+        const on = id => Boolean(id && SceneLogic.truthy((this.liveStates.get(id) || {}).val));
+        const val = id => (id ? (this.liveStates.get(id) || {}).val : undefined);
+        const same = (v, w) => v !== undefined && v !== null && w !== undefined && w !== '' && String(v) === String(w);
+        const edge = (key, now, send) => {
+            const before = this.alarmPushMem.get(key);
+            this.alarmPushMem.set(key, now);
+            if (!initial && before !== undefined && before !== now) {
+                send(before);
+            }
+        };
+        for (const page of this.store.layout.pages) {
+            for (const t of page.tiles) {
+                if (t.type === 'alarm' && (t.notify || t.notifyMode)) {
+                    [t, ...(t.areas || [])].forEach((a, i) => {
+                        const name = i === 0 ? t.areaLabel || t.label || 'Alarmanlage' : a.label || `Bereich ${i + 1}`;
+                        const key = `${page.id}/${t.id}/${i}`;
+                        [a.alarm, a.status, a.alarmText].filter(Boolean).forEach(id => this.alarmPushIds.add(id));
+                        if (t.notify && a.alarm) {
+                            edge(`${key}/alarm`, on(a.alarm), () => {
+                                if (on(a.alarm)) {
+                                    // the detector names usually come a moment after the alarm bit
+                                    setTimeout(() => {
+                                        const who = a.alarmText ? String(val(a.alarmText) || '') : '';
+                                        this.notify(`🚨 ALARM ${name}`, who ? `Ausgelöst: ${who}` : 'Die Alarmanlage hat ausgelöst!', page.id, `alarm-${key}`);
+                                    }, this.alarmTextWait ?? 1500);
+                                } else {
+                                    this.notify(`${name}: Alarm beendet`, 'Der Alarm ist zurückgesetzt.', page.id, `alarm-${key}`);
+                                }
+                            });
+                        }
+                        if (t.notifyMode && a.status) {
+                            const v = val(a.status);
+                            const mode = same(v, a.valueArm) ? 'scharf' : same(v, a.valueHome) ? 'intern scharf' : same(v, a.valueOff) ? 'unscharf' : '';
+                            if (mode) {
+                                edge(`${key}/mode`, mode, () => this.notify(`${name}: ${mode}`, `Alarmanlage ${name} ist jetzt ${mode}.`, page.id, `alarmmode-${key}`));
+                            }
+                        }
+                    });
+                }
+                if (t.type === 'fire' && (t.notify || t.notifyFault)) {
+                    const name = t.label || 'Brandmeldeanlage';
+                    const key = `${page.id}/${t.id}`;
+                    [t.alarm, t.alarmText, t.preAlarm, t.fault, t.faultText].filter(Boolean).forEach(id => this.alarmPushIds.add(id));
+                    const text = id => (id ? String(val(id) || '') : '');
+                    if (t.notify && t.alarm) {
+                        edge(`${key}/alarm`, on(t.alarm), () => on(t.alarm) && setTimeout(() => this.notify(`🔥 BRANDALARM ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Alarm!', page.id, `fire-${key}`), this.alarmTextWait ?? 1500));
+                    }
+                    if (t.notify && t.preAlarm) {
+                        edge(`${key}/pre`, on(t.preAlarm), () => on(t.preAlarm) && this.notify(`⚠️ Voralarm ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Voralarm.', page.id, `firepre-${key}`));
+                    }
+                    if (t.notifyFault && t.fault) {
+                        edge(`${key}/fault`, on(t.fault), () => on(t.fault) && this.notify(`Störung ${name}`, text(t.faultText) || 'Die Brandmeldeanlage meldet eine Störung.', page.id, `firefault-${key}`));
+                    }
+                }
+            }
         }
     }
 
