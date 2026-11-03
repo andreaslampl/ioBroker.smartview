@@ -401,6 +401,7 @@ switches/buttons on them.
 - 0.48.3: owner found no picker for the area field -> edit.js `areaSelect()` (kind `alarmarea`, also in alarmAreasField):
   options from `/api/objects` `states` (ids `(nox_alarmzentrale|spc-edp).N.areas.M.(state|mode)`, names from `folders`),
   unknown current value kept as "(nicht gefunden)". Playwright.
+  Field: owner confirmed the alarm tile with area picker + detectors works ("Perfekt Funktioniert").
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
