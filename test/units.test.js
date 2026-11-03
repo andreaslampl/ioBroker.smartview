@@ -498,3 +498,25 @@ test('links ("Verknüpfung"): resolved to the original with own position / label
     assert.equal(r.size, '1', 'own size');
     assert.equal(v.pages[1].tiles[1].type, 'ref', 'original missing');
 });
+
+test('scenes: only the chosen alarm areas; coming home from a data point does not disarm without the extra tick', () => {
+    const SL = require('../www/scenelogic');
+    const states = { 'nox.0.a1.status': 0, 'nox.0.a2.status': 0, 'nox.0.a3.status': 3 };
+    const st = id => (id in states ? { val: states[id], type: 'number' } : null);
+    const alarm = {
+        id: 'al', type: 'alarm', control: true, label: 'Haus', status: 'nox.0.a1.status', command: 'nox.0.a1.cmd', valueOff: 0, valueArm: 3,
+        areas: [
+            { label: 'Garage', status: 'nox.0.a2.status', command: 'nox.0.a2.cmd', valueOff: 0, valueArm: 3 },
+            { label: 'Keller', status: 'nox.0.a3.status', command: 'nox.0.a3.cmd', valueOff: 0, valueArm: 3 },
+        ],
+    };
+    const leave = { id: 'lv', type: 'leave', alarmArm: 'al', alarmAreas: [1] };
+    assert.deepEqual([...SL.plan(leave, [alarm, leave], st).now.keys()], ['nox.0.a2.cmd'], 'only Garage');
+    assert.deepEqual([...SL.plan({ ...leave, alarmAreas: [] }, [alarm], st).now.keys()], ['nox.0.a1.cmd', 'nox.0.a2.cmd'], 'empty = all (Keller already armed)');
+    const arrive = { id: 'ar', type: 'arrive', alarmOff: 'al', alarmAreas: [0, 2] };
+    assert.deepEqual([...SL.plan(arrive, [alarm], st).now.keys()], ['nox.0.a3.cmd'], 'Haus is already off, Keller gets disarmed');
+    const ext = SL.plan(arrive, [alarm], st, { external: true });
+    assert.equal(ext.now.size, 0, 'data point: no disarm');
+    assert.ok(ext.warn.some(w => /bleibt scharf/.test(w)));
+    assert.deepEqual([...SL.plan({ ...arrive, extAlarm: true }, [alarm], st, { external: true }).now.keys()], ['nox.0.a3.cmd']);
+});

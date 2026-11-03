@@ -391,8 +391,9 @@ Kacheln, die es schon gibt:
   im Kachel-Dialog). Steckdosen und andere Schalter bleiben an.
 - **Rollläden zu, Markisen ein** (gesperrte Rollläden – Wind/Regen – werden ausgelassen und angezeigt).
 - **Heizung auf Betriebsart:** z. B. `2` (KNX Standby) für alle Heizungs-Kacheln mit Betriebsart, auch alle Kreise.
-- **Alarmanlage scharf:** alle Bereiche der gewählten Alarm-Kachel (die braucht „Schalten erlauben“). Hat sie eine
-  PIN, wird sie **einmal** abgefragt. Nicht scharfschaltbereite Bereiche werden vorher angezeigt.
+- **Alarmanlage scharf:** die gewählte Alarm-Kachel (die braucht „Schalten erlauben“) – **„Diese Bereiche“**: nur die
+  angehakten Bereiche, nichts angehakt = alle. Hat sie eine PIN, wird sie **einmal** abgefragt. Nicht
+  scharfschaltbereite Bereiche werden vorher angezeigt.
 - **Radio aus**, **Luftentfeuchter / Klimageräte aus**.
 
 - **Lichter aus / Rollläden aus:** „Kacheln der Seite und zusätzliche Datenpunkte“ (Standard) oder „nur die
@@ -413,12 +414,14 @@ darf danach zugehen.
   eine Warnung „Alarmanlage NICHT scharf“, wenn sie 90 s nach dem Befehl nicht scharf ist (steht auch im Log).
 - **Auch von ioBroker / Alexa / Apple Home auslösbar:** legt `smartview.0.scenes.<Seite>_<Kachel>` an (Taste,
   `true` = auslösen) – z. B. als Schalter in homekit-easy (dann auch für Alexa), aus logik oder einem Skript.
-  **Achtung:** dort wird **keine PIN** abgefragt.
+  **Achtung:** dort wird **keine PIN** abgefragt. Scharf schalten geht so; **unscharf** schaltet „Ankommen“ über den
+  Datenpunkt nur mit dem eigenen Haken „Alarm auch über den Datenpunkt unscharf schalten (ohne PIN!)“ – sonst schaltet
+  es alles andere, die Alarmanlage bleibt scharf (Hinweis in der Mitteilung).
 
 ### Ankommen
 
-Kachel **„Ankommen (Alarm aus, Heizung, Licht)“** – das Gegenstück: Alarmanlage **unscharf** (alle Bereiche der
-gewählten Alarm-Kachel, PIN einmal), Heizung auf eine Betriebsart (z. B. `1` = Komfort), **gewählte Lichter an** – mit
+Kachel **„Ankommen (Alarm aus, Heizung, Licht)“** – das Gegenstück: Alarmanlage **unscharf** (die angehakten bzw.
+alle Bereiche der gewählten Alarm-Kachel, PIN einmal; über den Datenpunkt nur mit Extra-Haken, siehe oben), Heizung auf eine Betriebsart (z. B. `1` = Komfort), **gewählte Lichter an** – mit
 „nur wenn dunkel“ nach Sonnenauf-/-untergang (Standort aus den ioBroker-Systemeinstellungen; ohne Standort gehen sie
 immer an), **Rollläden auf** (Markisen bleiben ein). Ein noch wartendes „Haus verlassen“ (Verzögerung) wird
 abgebrochen. Mitteilung und Auslösen von außen wie oben.

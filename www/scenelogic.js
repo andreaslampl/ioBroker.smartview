@@ -147,13 +147,21 @@
       });
     }
     const alarmId = leave ? t.alarmArm : t.alarmOff;
-    if (alarmId) {
+    // coming home from a data point (ioBroker / Alexa / Apple Home) has no PIN: disarm only when explicitly allowed
+    const noDisarm = !leave && alarmId && o.external && !t.extAlarm;
+    if (noDisarm) {
+      warn.push('Alarmanlage bleibt scharf – unscharf nur mit PIN in SmartView (oder Haken „auch über den Datenpunkt“)');
+    }
+    // only the chosen areas (indexes of the alarm tile's areas, 0 = its own fields); none chosen = all
+    const pickArea = idx => !Array.isArray(t.alarmAreas) || !t.alarmAreas.length || t.alarmAreas.includes(idx);
+    if (alarmId && !noDisarm) {
       const a = tiles.find(x => x.type === 'alarm' && x.id === alarmId);
       if (!a || !a.control) {
         warn.push('Alarmanlage: Kachel fehlt oder „Schalten erlauben“ ist nicht gesetzt');
       } else {
         step(leave ? 'Alarmanlage scharf' : 'Alarmanlage unscharf', delayed ? later : now, add => {
-          for (const area of areasOf(a)) {
+          for (const [idx, area] of areasOf(a).entries()) {
+            if (!pickArea(idx)) continue;
             const value = leave ? area.valueArm : area.valueOff;
             if (!area.command || !known(value) || value === '') continue;
             const mode = areaMode(st, area);

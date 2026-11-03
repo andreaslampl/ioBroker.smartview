@@ -497,20 +497,20 @@ class SmartView extends utils.Adapter {
         return now < rise || now >= set;
     }
 
-    scenePlan(tile) {
+    scenePlan(tile, { external = false } = {}) {
         const tiles = this.store.layout.pages.flatMap(p => p.tiles);
         const locked = x => {
             const l = this.lockFor(x.state);
             return l ? l.reason : '';
         };
-        return SceneLogic.plan(tile, tiles, id => this.stateInfo(id), { locked, dark: this.isDark() });
+        return SceneLogic.plan(tile, tiles, id => this.stateInfo(id), { locked, dark: this.isDark(), external });
     }
 
     /**
      * Runs a leave / arrive tile: commands now, blinds + alarm after `delayMin` (leave), message, check that the alarm
      * armed. `allowed` limits the data points (the user's write rights), `source` is logged.
      */
-    async runScene(tile, pageId, { source = '', allowed = null } = {}) {
+    async runScene(tile, pageId, { source = '', allowed = null, external = false } = {}) {
         const key = `${pageId}/${tile.id}`;
         const name = tile.label || (tile.type === 'leave' ? 'Haus verlassen' : 'Ankommen');
         this.scenePending = this.scenePending || new Map();
@@ -522,7 +522,7 @@ class SmartView extends utils.Adapter {
                 this.log.info(`${name}: verzögerte Befehle von ${k} abgebrochen`);
             }
         }
-        const plan = this.scenePlan(tile);
+        const plan = this.scenePlan(tile, { external });
         const ok = id => !allowed || allowed.has(id);
         const exec = map => Promise.all([...map].filter(([id]) => ok(id)).map(([id, v]) => this.setValue(id, v).catch(err => this.log.warn(`${name}: ${id}: ${err.message}`))));
         const text = plan.groups.map(([g, n]) => `${g} (${n})`).join(', ') || 'nichts zu tun';
@@ -696,7 +696,7 @@ class SmartView extends utils.Adapter {
         if (this.sceneIds && this.sceneIds.has(id)) {
             if (state && !state.ack && SceneLogic.truthy(state.val)) {
                 const { page, tile } = this.sceneIds.get(id);
-                this.runScene(tile, page.id, { source: `ioBroker ${state.from || ''}`.trim() }).catch(err => this.log.warn(`${tile.label || id}: ${err.message}`));
+                this.runScene(tile, page.id, { source: `ioBroker ${state.from || ''}`.trim(), external: true }).catch(err => this.log.warn(`${tile.label || id}: ${err.message}`));
                 this.setForeignStateAsync(id, false, true).catch(() => {});
             }
             return;

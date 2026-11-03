@@ -363,6 +363,11 @@ switches/buttons on them.
   user's view), new run or doneHours; messages `notify(…, tag app-<key>)` (own tag so they do not replace each other); server
   init `apps` + broadcast {type:'apps'}. Client `appEntries()`/`appliancesHtml()` (rows reuse .win styles), `refreshApps()`,
   `tilePage()`. `appSec` shortens the second in tests. Adapter test + Playwright. Not yet with the owner's devices.
+- 0.45.0: owner asked to choose the alarm areas of leave/arrive, a cooler symbol, and noted the data point trigger has no
+  PIN -> option `alarmAreas` (indexes into [alarm tile, ...areas], empty = all; editor kind `alarmareas` = checkboxes
+  redrawn when the alarm tile select changes), arrive `extAlarm`: `SceneLogic.plan(..., {external})` skips disarming
+  unless ticked (warning text) - main `runScene(..., {external: true})` from the scenes.* state; arming via data point
+  stays allowed. Icons `leave` (house + arrow out), `arrive` (arrow in, now arrive's default), `away` (house + lock).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

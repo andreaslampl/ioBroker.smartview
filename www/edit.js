@@ -174,7 +174,8 @@ const TYPE_FIELDS = {
     ['blindsFrom', 'Rollläden aus', 'select:both=Kacheln der Seite und zusätzliche Datenpunkte;points=nur die zusätzlichen Datenpunkte (unten)'],
     ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
     ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'Wert für alle Heizungs-Kacheln mit Betriebsart, z. B. KNX 2 = Standby. Leer = Heizung bleibt.'],
-    ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel (braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt).'],
+    ['alarmArm', 'Alarmanlage scharf schalten (optional)', 'alarmtile', 'Braucht dort „Schalten erlauben“; ihre PIN wird einmal abgefragt.'],
+    ['alarmAreas', 'Diese Bereiche (nichts angehakt = alle)', 'alarmareas'],
     ['radioOff', 'Radio aus', 'check'],
     ['climateOff', 'Luftentfeuchter / Klimageräte aus', 'check'],
     ['extra', 'Zusätzliche Datenpunkte aus dem ioBroker', 'extra'],
@@ -183,7 +184,9 @@ const TYPE_FIELDS = {
     ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste, true = auslösen), z. B. für homekit-easy, logik oder ein Skript. Achtung: dort wird keine PIN abgefragt.'],
   ],
   arrive: [
-    ['alarmOff', 'Alarmanlage unscharf schalten (optional)', 'alarmtile', 'Alle Bereiche der gewählten Alarm-Kachel; ihre PIN wird einmal abgefragt.'],
+    ['alarmOff', 'Alarmanlage unscharf schalten (optional)', 'alarmtile', 'Ihre PIN wird einmal abgefragt.'],
+    ['alarmAreas', 'Diese Bereiche (nichts angehakt = alle)', 'alarmareas'],
+    ['extAlarm', 'Alarm auch über den Datenpunkt unscharf schalten (ohne PIN!)', 'check', 'Nur wichtig mit „Auch von ioBroker / Alexa / Apple Home auslösbar“: ohne diesen Haken schaltet der Datenpunkt alles andere, die Alarmanlage bleibt aber scharf (mit Hinweis in der Mitteilung). Scharf schalten über „Haus verlassen“ geht immer.'],
     ['heatMode', 'Heizung auf Betriebsart (optional)', 'text', 'z. B. KNX 1 = Komfort. Leer = Heizung bleibt.'],
     ['lights', 'Diese Lichter einschalten', 'lighttiles'],
     ['onlyDark', 'Lichter nur, wenn es dunkel ist', 'check', 'Nach Sonnenauf- und -untergang (Standort aus den ioBroker-Systemeinstellungen).'],
@@ -1338,6 +1341,31 @@ const Editor = (() => {
         } else if (kind === 'alarmtile') {
           const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
           inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
+        } else if (kind === 'alarmareas') {
+          // areas of the alarm tile chosen just above; redrawn when that choice changes
+          const wrap = document.createElement('div');
+          wrap.className = 'checks';
+          field(body, label, wrap, help);
+          const picked = new Set(Array.isArray(t[key]) ? t[key] : []);
+          const src = inputs.alarmArm || inputs.alarmOff;
+          const draw = () => {
+            const at = src && SV.draft.pages.flatMap(p => p.tiles).find(x => x.type === 'alarm' && x.id === src.value);
+            wrap.textContent = '';
+            const areas = at ? [at, ...(at.areas || [])] : [];
+            wrap.parentElement && (wrap.previousElementSibling.style.display = wrap.style.display = areas.length > 1 ? '' : 'none');
+            areas.forEach((a, i) => {
+              const c = check(i === 0 ? at.areaLabel || at.label || 'Bereich 1' : a.label || 'Bereich ' + (i + 1), picked.has(i));
+              c.input.dataset.idx = i;
+              c.input.onchange = () => (c.input.checked ? picked.add(i) : picked.delete(i));
+              wrap.appendChild(c);
+            });
+          };
+          if (src) src.addEventListener('change', () => {
+            picked.clear();
+            draw();
+          });
+          draw();
+          inputs[key] = { type: 'custom', get: () => [...picked].sort((x, y) => x - y) };
         } else if (kind === 'check') {
           // a new "Haus verlassen" tile starts with the lights ticked
           const c = check(label, t[key] === undefined && t.type === 'leave' && key === 'lightsOff' ? true : t[key]);

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.44.0",
+    "version": "0.45.0",
     "news": {
+      "0.45.0": {
+        "en": "Leave / arrive: choose the alarm areas to arm / disarm; arriving via the data point (no PIN) only disarms with an extra tick; new symbols for leave / arrive (and 'house secured')",
+        "de": "Haus verlassen / Ankommen: Alarmbereiche zum Scharf-/Unscharfschalten auswählbar; Ankommen über den Datenpunkt (ohne PIN) schaltet nur mit eigenem Haken unscharf; neue Symbole für Verlassen / Ankommen (und „Haus gesichert“)"
+      },
       "0.44.0": {
         "en": "New tile 'Haushaltsgeräte': several appliances in one tile with off / running / finished from a power data point (Shelly plug) or a status (Home Connect), remaining time, message when finished, tap = seen",
         "de": "Neue Kachel „Haushaltsgeräte“: mehrere Geräte in einer Kachel mit Aus / Läuft / Fertig aus einer Leistung (Shelly Plug) oder einem Status (Home Connect), Restzeit, Mitteilung wenn fertig, antippen = gesehen"
