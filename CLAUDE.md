@@ -395,6 +395,9 @@ switches/buttons on them.
 - 0.48.1: owner found two PINs for disarm + acknowledge tiresome -> `SV.sheetPin` {sheet, pin, until 60 s}: `withPin()` reuses
   the PIN only while the same sheet object is open; cleared by closeSheet() and any pin reply (wrong/locked). Still asked on
   every new opening (owner's 0.31.2 wish). Playwright.
+- 0.48.2: owner did not see any detector switches in the alarm tile -> detectors need showDetectors + `area` (nox_…areas.N)
+  + NOX `inputs.N.area` (export list) and a save; empty lists were silent. Now main `fillDetectors()` warns in the log and
+  `alarmDetectors()` shows the reason in the sheet (alarmCur copies `area` for it; not in ALARM_KEYS, not a data point).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

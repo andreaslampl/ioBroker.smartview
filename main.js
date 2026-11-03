@@ -1113,6 +1113,14 @@ class SmartView extends utils.Adapter {
                 }
                 for (const a of [t, ...(Array.isArray(t.areas) ? t.areas : [])]) {
                     a.detectors = t.showDetectors ? await this.detectorsOf(String(a.area || '')) : [];
+                    if (t.showDetectors && !a.detectors.length) {
+                        const what = a === t ? t.areaLabel || t.label || 'Alarmanlage' : a.label || 'Bereich';
+                        this.log.warn(
+                            a.area
+                                ? `${what}: keine Melder für ${a.area} gefunden - braucht im NOX-Adapter die Exportliste (inputs.N.area) bzw. im SPC-Adapter die Zonen`
+                                : `${what}: keine Melder - im Feld "Bereich aus NOX- oder SPC-Adapter" fehlt der Bereich (z. B. nox_alarmzentrale.0.areas.1)`,
+                        );
+                    }
                 }
             }
         }

@@ -906,6 +906,7 @@ function alarmCur(t) {
   const i = circIndex(t, list.length);
   const out = { ...t, _circ: i, _circs: list };
   for (const k of ALARM_KEYS) out[k] = list[i][k];
+  out.area = list[i].area; // only for hints (not a data point)
   return out;
 }
 
@@ -1117,7 +1118,13 @@ function alarmLine(t, c, a) {
 /** detectors of the chosen area: open / closed / switched off, with off/on buttons when switching is allowed */
 function alarmDetectors(c) {
   const list = Array.isArray(c.detectors) ? c.detectors : [];
-  if (!list.length) return '';
+  if (!list.length) {
+    // "Melder anzeigen" is ticked but nothing was found when saving: say why instead of showing nothing
+    if (!c.showDetectors) return '';
+    return '<h4 class="dethead">Melder</h4><div class="mrows sheetrows"><div class="mrow"><span class="muted">' +
+      (c.area ? 'Keine Melder für ' + esc(c.area) + ' gefunden. NOX: im NOX-Adapter muss die Exportliste eingefügt sein (dann gibt es inputs.N.area). Danach diese Kachel einmal neu speichern.'
+        : 'Im Feld „Bereich aus NOX- oder SPC-Adapter“ den Bereich eintragen (z. B. nox_alarmzentrale.0.areas.1) und speichern.') + '</span></div></div>';
+  }
   // open ones first (they block arming), then switched off, then closed; the index stays the one in the layout
   const rank = d => (d.open && truthy(val(d.open)) && !(d.deact && truthy(val(d.deact))) ? 0 : d.deact && truthy(val(d.deact)) ? 1 : 2);
   const order = list.map((d, i) => [d, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
