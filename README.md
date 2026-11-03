@@ -212,6 +212,24 @@ Plan tippen**, wo ein Taster, Licht, Kontakt, Rollladen oder eine Kamera sitzt �
 Antippen Schalter und Tasten direkt; Dimmer, Rollläden, Heizung und Werte öffnen ein Bedienfeld,
 Kameras das Vollbild. Leuchtende Symbole = ein, rot = Alarm. Mit **− / +** zoomen (am Handy).
 
+### Haushaltsgeräte (Aus / Läuft / Fertig)
+
+Eine Kachel für mehrere Geräte – Waschmaschine, Trockner, Geschirrspüler … –, je Gerät eine Zeile mit **Aus**,
+**Läuft** (mit „noch 0:43 h“, wenn es eine Restzeit gibt) oder **Fertig** (orange). Die Datenpunkte dürfen aus
+verschiedenen Adaptern kommen:
+
+| Erkennung | Datenpunkt | Wann |
+| --- | --- | --- |
+| **Leistung** (z. B. Shelly Plug) | Leistung in W (kW wird erkannt) | läuft ab „Läuft ab (W)“ (Standard 10 W) für mindestens 1 Minute – kurze Knitterschutz-Drehungen zählen nicht; **fertig**, wenn die Leistung so viele Minuten darunter bleibt (Standard 3, Trockner eher 5) |
+| **Status** (z. B. Home Connect) | z. B. `homeconnect.0.<Gerät>.status.BSH_Common_Status_OperationState` | läuft bei *Run / DelayedStart / Pause*, fertig bei *Finished*; Tür geöffnet (*Ready*) = wieder Aus; abgebrochen = keine Mitteilung. Eigene Werte mit `;` trennbar |
+
+- **Mitteilung, wenn fertig** (Haken): „Trockner ist fertig – Lief 1 h 35 min“ als Push / Telegram / WhatsApp – wie
+  in den Einstellungen eingerichtet. Mehrere Geräte überschreiben sich am Handy nicht.
+- **Fertig** bleibt stehen, bis man auf die Zeile **tippt** (= gesehen, auf allen Geräten) oder das Gerät wieder
+  startet – oder nach „„Fertig“ verschwindet nach (Stunden)“. Ein Neustart des Adapters vergisst es nicht.
+- **Nur laufende / fertige anzeigen** spart Platz.
+- Restzeit (optional): z. B. Home Connect `…RemainingProgramTime` (Sekunden; Einheit „min“ wird erkannt).
+
 ### Fensterübersicht für alles (z. B. „alle Lichter sind aus“)
 
 Die Fensterübersicht geht auch für andere Dinge, die an/aus sind: im Kachel-Dialog eigene **Wörter** für

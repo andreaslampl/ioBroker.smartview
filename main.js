@@ -1,6 +1,8 @@
 'use strict';
 
 const os = require('node:os');
+const fs = require('node:fs');
+const path = require('node:path');
 const http = require('node:http');
 const https = require('node:https');
 const utils = require('@iobroker/adapter-core');
@@ -14,6 +16,7 @@ const { Timers } = require('./lib/timers');
 const WinLogic = require('./www/winlogic');
 const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
+const AppLogic = require('./www/applogic');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
@@ -79,6 +82,16 @@ class SmartView extends utils.Adapter {
         this.store = new LayoutStore(dir);
         this.push = new Push(dir, { log: this.log, sender: this.pushSender });
         this.users = new UserStore(dir);
+        // household appliances: Aus / Läuft / Fertig survives restarts (laundry still in the drum)
+        this.appFile = path.join(dir, 'appliances.json');
+        this.appMem = new Map();
+        try {
+            for (const [k, v] of Object.entries(JSON.parse(fs.readFileSync(this.appFile, 'utf8')))) {
+                this.appMem.set(k, v);
+            }
+        } catch {
+            // first start
+        }
         if (this.config.usersOff && this.users.enabled) {
             this.log.warn('SmartView: users are switched off in the instance settings - everybody can open and edit SmartView');
         }
@@ -164,6 +177,8 @@ class SmartView extends utils.Adapter {
                 tileByKey: key => this.tileByKey(key),
                 scenePlan: tile => this.scenePlan(tile),
                 dnd: () => this.dndInfo(),
+                appliances: () => this.appStatus(),
+                appAck: key => this.appAck(key),
                 ringing: () => {
                     const st = this.liveStates.get(this.ringStateId());
                     return Boolean(st && SceneLogic.truthy(st.val));
@@ -215,6 +230,8 @@ class SmartView extends utils.Adapter {
             this.server.ping();
             // window tiles with messages: "longer open than" is a matter of time, not of a state change
             this.checkWindows();
+            // appliances: "below the threshold for x minutes" / "Fertig" timeout are matters of time too
+            this.checkAppliances();
         }, 30000);
     }
 
@@ -298,6 +315,7 @@ class SmartView extends utils.Adapter {
         this.checkProtection();
         this.checkClimate();
         this.checkGates();
+        this.checkAppliances(true);
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
         this.checkDnd(); // the time window may have changed
     }
@@ -714,6 +732,9 @@ class SmartView extends utils.Adapter {
         if (this.gateIds && this.gateIds.has(id)) {
             this.checkGates();
         }
+        if (this.appIds && this.appIds.has(id)) {
+            this.checkAppliances();
+        }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.ring.dndQuiet && this.dndInfo().on) {
                 this.log.info('Es läutet - Nicht stören: keine Mitteilung');
@@ -1126,10 +1147,134 @@ class SmartView extends utils.Adapter {
         return out;
     }
 
+    /**
+     * Household appliance tiles: state machine per device off -> run -> done (-> off). Power (Shelly): running at >= onW
+     * for 1 min, finished when below onW for offMin minutes. Status (Home Connect): running while the value matches runAt,
+     * finished when it then matches doneAt (else it was cancelled -> off), off again when it matches neither (door opened).
+     * "Fertig" also ends by a tap on the tile, a new run or after doneHours. Messages only for real transitions.
+     */
+    checkAppliances(initial = false) {
+        if (!this.appMem) {
+            return;
+        }
+        const sec = this.appSec || 1000; // tests shorten the second
+        const now = Date.now();
+        const st = id => this.stateInfo(id);
+        const seen = new Set();
+        let changed = false;
+        this.appIds = new Set();
+        for (const page of this.store.layout.pages) {
+            for (const t of page.tiles) {
+                if (t.type !== 'appliances') {
+                    continue;
+                }
+                (t.devices || []).forEach((d, i) => {
+                    [d.state, d.remain].filter(Boolean).forEach(id => this.appIds.add(id));
+                    const key = `${page.id}/${t.id}/${i}`;
+                    seen.add(key);
+                    const r = AppLogic.reading(d, st);
+                    let m = this.appMem.get(key);
+                    if (!m || m.state !== d.state) {
+                        // new device (or other data point): take what it does now, no message
+                        m = { state: d.state, status: r.run ? 'run' : 'off', since: now, runSince: r.run ? now : 0 };
+                        this.appMem.set(key, m);
+                        changed = true;
+                        return;
+                    }
+                    const set = (status, extra = {}) => {
+                        Object.assign(m, { status, since: now, high: 0, low: 0 }, extra);
+                        changed = true;
+                    };
+                    if (r.run === null) {
+                        return; // no value (adapter not running): keep what we know
+                    }
+                    const name = d.label || 'Gerät';
+                    if (r.run) {
+                        m.low = 0;
+                        if (m.status !== 'run') {
+                            // power: a minute above the threshold (a dryer's anti-crease turns do not start a run)
+                            m.high = m.high || now;
+                            if (d.kind === 'state' || now - m.high >= 60 * sec) {
+                                set('run', { runSince: d.kind === 'state' ? now : m.high });
+                            }
+                        }
+                    } else {
+                        m.high = 0;
+                        if (m.status === 'run') {
+                            const done = d.kind === 'state' ? r.done : (m.low = m.low || now) && now - m.low >= (d.offMin === undefined ? 3 : d.offMin) * 60 * sec;
+                            const stopped = d.kind === 'state' ? true : done;
+                            if (stopped) {
+                                const ranMs = (d.kind === 'state' ? now : m.low) - (m.runSince || now);
+                                if (done) {
+                                    set('done');
+                                    if (t.notify && !initial) {
+                                        this.notify(`${name} ist fertig`, ranMs > 60000 ? `Lief ${this.duration(ranMs)}` : 'Fertig', page.id, `app-${key}`);
+                                    }
+                                } else {
+                                    set('off'); // status kind: cancelled (no "Finished")
+                                }
+                            }
+                        } else if (m.status === 'done') {
+                            const hours = Number(t.doneHours) || 0;
+                            if ((d.kind === 'state' && !r.done) || (hours > 0 && now - m.since >= hours * 3600 * sec)) {
+                                set('off');
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        for (const k of [...this.appMem.keys()]) {
+            if (!seen.has(k)) {
+                this.appMem.delete(k);
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.saveApps();
+        }
+    }
+
+    /** "1 h 35 min" / "48 min" */
+    duration(ms) {
+        const min = Math.round(ms / 60000);
+        return min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`;
+    }
+
+    appStatus() {
+        const out = {};
+        for (const [k, m] of this.appMem || []) {
+            out[k] = { status: m.status, since: m.since, runSince: m.runSince || 0 };
+        }
+        return out;
+    }
+
+    /** tap on a finished device: back to "Aus" */
+    appAck(key) {
+        const m = this.appMem && this.appMem.get(key);
+        if (m && m.status === 'done') {
+            Object.assign(m, { status: 'off', since: Date.now() });
+            this.saveApps();
+        }
+    }
+
+    saveApps() {
+        try {
+            const tmp = `${this.appFile}.tmp`;
+            fs.writeFileSync(tmp, JSON.stringify(Object.fromEntries(this.appMem)));
+            fs.renameSync(tmp, this.appFile);
+        } catch (err) {
+            this.log.warn(`appliances.json: ${err.message}`);
+        }
+        if (this.server) {
+            this.server.appsChanged(this.appStatus());
+        }
+    }
+
     /** message on all configured ways (app push, Telegram, WhatsApp) */
-    notify(title, body, page = '') {
+    notify(title, body, page = '', tag = '') {
         this.log.info(`Mitteilung: ${title} - ${body}`);
-        this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
+        this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: tag || `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
         this.telegram({ title, body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
         this.whatsapp({ title, body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
     }

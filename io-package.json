@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.43.1",
+    "version": "0.44.0",
     "news": {
+      "0.44.0": {
+        "en": "New tile 'Haushaltsgeräte': several appliances in one tile with off / running / finished from a power data point (Shelly plug) or a status (Home Connect), remaining time, message when finished, tap = seen",
+        "de": "Neue Kachel „Haushaltsgeräte“: mehrere Geräte in einer Kachel mit Aus / Läuft / Fertig aus einer Leistung (Shelly Plug) oder einem Status (Home Connect), Restzeit, Mitteilung wenn fertig, antippen = gesehen"
+      },
       "0.43.1": {
         "en": "Wallbox tile: OCPP status texts (ocpp adapter) shown in German (Charging -> Lädt, SuspendedEV -> car does not charge, ...)",
         "de": "Wallbox-Kachel: OCPP-Status (ocpp-Adapter) auf Deutsch (Charging → Lädt, SuspendedEV → Auto lädt nicht …)"

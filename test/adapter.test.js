@@ -1154,3 +1154,62 @@ test('adapter: /api/ring for the monitor wake-up helper (ringing, do not disturb
     await until(async () => (await ring()).ringing === false);
     void api;
 });
+
+test('adapter: household appliances - Shelly power and Home Connect status, Fertig message, tap = seen, kept over restarts', async t => {
+    const { adapter, api, port, pushed } = await startAdapter(t, {}, a => {
+        a.add('shelly.0.Trockner.Power', { name: 'Trockner Leistung', type: 'number', role: 'value.power', unit: 'W' }, 1.2);
+        a.add('homeconnect.0.SIEMENS-SN1.status.BSH_Common_Status_OperationState', { name: 'Betriebszustand', type: 'string', role: 'value' }, 'BSH.Common.EnumType.OperationState.Ready');
+    });
+    adapter.appSec = 10; // one "second" = 10 ms: start after 600 ms above the threshold
+    await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: { endpoint: 'https://web.push.apple.com/app', keys: { p256dh: 'p', auth: 'a' } }, name: 'iPhone' }) });
+    const tile = {
+        id: 'hg', type: 'appliances', label: 'Geräte', notify: true, devices: [
+            { label: 'Trockner', icon: 'dryer', kind: 'power', state: 'shelly.0.Trockner.Power', onW: 20, offMin: 0.2 },
+            { label: 'Geschirrspüler', icon: 'dishwasher', kind: 'state', state: 'homeconnect.0.SIEMENS-SN1.status.BSH_Common_Status_OperationState' },
+        ],
+    };
+    await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ id: 'k', name: 'Küche', tiles: [tile] }] }) });
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    const status = () => adapter.appStatus();
+    await until(() => status()['k/hg/0'] && status()['k/hg/0'].status === 'off');
+    // dryer: a short anti-crease turn does not count, a real run does
+    adapter.change('shelly.0.Trockner.Power', 300);
+    await new Promise(r => setTimeout(r, 100));
+    adapter.change('shelly.0.Trockner.Power', 2);
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(status()['k/hg/0'].status, 'off');
+    adapter.change('shelly.0.Trockner.Power', 2100);
+    await new Promise(r => setTimeout(r, 650));
+    adapter.change('shelly.0.Trockner.Power', 2050);
+    await until(() => status()['k/hg/0'].status === 'run');
+    await until(() => c.msgs.some(m => m.type === 'apps' && m.apps['k/hg/0'].status === 'run'));
+    // below the threshold for offMin -> Fertig + message
+    adapter.change('shelly.0.Trockner.Power', 1.5);
+    await new Promise(r => setTimeout(r, 150));
+    adapter.change('shelly.0.Trockner.Power', 1.4);
+    await until(() => status()['k/hg/0'].status === 'done');
+    await until(() => pushed.some(p => p.title === 'Trockner ist fertig'));
+    // tap = seen
+    c.ws.send(JSON.stringify({ type: 'appAck', key: 'k/hg/0' }));
+    await until(() => status()['k/hg/0'].status === 'off');
+    // dishwasher: Run -> Finished = Fertig + message; door opened (Ready) = Aus; cancelled (Run -> Ready) = no message
+    const op = 'homeconnect.0.SIEMENS-SN1.status.BSH_Common_Status_OperationState';
+    adapter.change(op, 'BSH.Common.EnumType.OperationState.Run');
+    await until(() => status()['k/hg/1'].status === 'run');
+    adapter.change(op, 'BSH.Common.EnumType.OperationState.Finished');
+    await until(() => pushed.some(p => p.title === 'Geschirrspüler ist fertig'));
+    assert.equal(status()['k/hg/1'].status, 'done');
+    adapter.change(op, 'BSH.Common.EnumType.OperationState.Ready');
+    await until(() => status()['k/hg/1'].status === 'off');
+    adapter.change(op, 'BSH.Common.EnumType.OperationState.Run');
+    await until(() => status()['k/hg/1'].status === 'run');
+    adapter.change(op, 'BSH.Common.EnumType.OperationState.Ready');
+    await until(() => status()['k/hg/1'].status === 'off');
+    assert.equal(pushed.filter(p => p.title === 'Geschirrspüler ist fertig').length, 1);
+    // the two messages do not replace each other on the phone
+    const tags = pushed.filter(p => / ist fertig$/.test(p.title)).map(p => p.tag);
+    assert.notEqual(tags[0], tags[1]);
+});

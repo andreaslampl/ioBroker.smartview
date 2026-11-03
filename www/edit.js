@@ -15,6 +15,7 @@ const TYPE_LABELS = {
   multi: 'Mehrere Werte (z. B. 3 Temperaturen)',
   html: 'HTML-Anzeige (Text mit HTML aus einem Datenpunkt)',
   windows: 'Fensterübersicht (offen / gekippt / zu)',
+  appliances: 'Haushaltsgeräte (Waschmaschine, Trockner … – Aus / Läuft / Fertig)',
   heading: 'Überschrift',
   energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
   gate: 'Tor / Garagentor',
@@ -107,6 +108,12 @@ const TYPE_FIELDS = {
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
   page: [['target', 'Seite, die geöffnet wird', 'page']],
   multi: [['rows', 'Werte', 'rows']],
+  appliances: [
+    ['devices', 'Geräte', 'devices'],
+    ['notify', 'Mitteilung, wenn ein Gerät fertig ist (Push / Telegram / WhatsApp)', 'check', 'Über die Wege, die in den Einstellungen eingerichtet sind.'],
+    ['onlyActive', 'Nur laufende / fertige Geräte anzeigen', 'check', 'Platz sparen: Geräte, die aus sind, werden ausgeblendet.'],
+    ['doneHours', '„Fertig“ verschwindet nach (Stunden, optional)', 'number', 'Leer oder 0 = bis man auf die Zeile tippt (oder das Gerät wieder startet). Bei Home Connect auch, wenn die Tür geöffnet wird.'],
+  ],
   windows: [
     ['windows', 'Fenster', 'windows'],
     ['onlyOpen', 'Nur offene / gekippte anzeigen', 'check', 'Sind alle zu, steht nur die Überschrift mit „alle geschlossen“ da.'],
@@ -752,6 +759,100 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state) };
   }
 
+  /** Household appliances: name, symbol, power data point (Shelly) or status data point (Home Connect). */
+  function devicesField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Geräte', wrap, 'Leistung (z. B. Shelly Plug, W) oder Status (z. B. Home Connect „OperationState“) – aus beliebigen Adaptern.');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () =>
+      rowInputs.map(x => {
+        const o = { label: x.label.value.trim(), icon: x.icon.value, kind: x.kind.value, state: x.state.value.trim(), remain: x.remain.value.trim() };
+        if (o.kind === 'power') {
+          o.onW = Number(x.onW.value) || 10;
+          o.offMin = x.offMin.value === '' ? 3 : Number(x.offMin.value);
+        } else {
+          o.runAt = x.runAt.value.trim();
+          o.doneAt = x.doneAt.value.trim();
+        }
+        return o;
+      });
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name', textInput(r.label));
+        x.label.placeholder = 'z. B. Trockner';
+        x.icon = field(b, 'Symbol', select([['washer', 'Waschmaschine'], ['dryer', 'Trockner'], ['dishwasher', 'Geschirrspüler'], ['oven', 'Backofen'], ['socket', 'Steckdose'], ['bolt', 'Strom']], r.icon || 'washer'));
+        x.kind = field(b, 'Erkennung', select([['power', 'Leistung (z. B. Shelly Plug)'], ['state', 'Status (z. B. Home Connect)']], r.kind || 'power'));
+        x.state = stateField(b, 'Datenpunkt', r.state, false);
+        const pw = document.createElement('div');
+        x.onW = field(pw, 'Läuft ab (W)', textInput(r.onW === undefined ? '10' : String(r.onW)), 'Darüber gilt das Gerät als laufend (eine Minute lang, damit kurze Knitterschutz-Drehungen nicht zählen). Standby liegt meist unter 5 W.');
+        x.offMin = field(pw, 'Fertig, wenn so lange darunter (Minuten)', textInput(r.offMin === undefined ? '3' : String(r.offMin)), 'Pausen im Programm (Einweichen, Abkühlen) sollen nicht als „fertig“ zählen – beim Trockner eher 5.');
+        b.appendChild(pw);
+        const sp = document.createElement('div');
+        x.runAt = field(sp, 'Läuft bei (optional)', textInput(r.runAt || ''), 'Standard: Run;DelayedStart;Pause (Home Connect). Mehrere mit ; trennen, Text darf Teil des Werts sein, Zahlen genau.');
+        x.runAt.placeholder = 'Run;DelayedStart;Pause';
+        x.doneAt = field(sp, 'Fertig bei (optional)', textInput(r.doneAt || ''), 'Standard: Finished. Endet der Lauf mit einem anderen Wert (abgebrochen), gibt es keine Mitteilung.');
+        x.doneAt.placeholder = 'Finished';
+        b.appendChild(sp);
+        x.remain = stateField(b, 'Restzeit (optional)', r.remain, false);
+        const show = () => {
+          pw.style.display = x.kind.value === 'power' ? '' : 'none';
+          sp.style.display = x.kind.value === 'state' ? '' : 'none';
+        };
+        x.kind.addEventListener('change', show);
+        show();
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Gerät entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        for (const [txt, dir] of [['▲', -1], ['▼', 1]]) {
+          const mv = document.createElement('button');
+          mv.type = 'button';
+          mv.textContent = txt;
+          mv.onclick = () => {
+            const cur = read();
+            const j = i + dir;
+            if (j < 0 || j >= cur.length) return;
+            [cur[i], cur[j]] = [cur[j], cur[i]];
+            list.splice(0, list.length, ...cur);
+            draw();
+          };
+          tools.appendChild(mv);
+        }
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Gerät';
+      add.onclick = () => {
+        const cur = read();
+        cur.push({ label: '', icon: 'washer', kind: 'power', state: '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state) };
+  }
+
   /** Window overview: per window name, contact, optional tilt contact, inverted. */
   function windowsField(box, rows) {
     const wrap = document.createElement('div');
@@ -1259,6 +1360,7 @@ const Editor = (() => {
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');
         else if (kind === 'rows') inputs[key] = rowsField(body, t[key] || [{ label: '', state: '' }]);
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
+        else if (kind === 'devices') inputs[key] = devicesField(body, t[key] || [{ label: '', kind: 'power', state: '', icon: 'washer' }]);
         else if (kind === 'circuits') inputs[key] = circuitsField(body, t[key] || []);
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);

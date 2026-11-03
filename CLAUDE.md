@@ -353,6 +353,16 @@ switches/buttons on them.
   {ringing, dnd} (access key only, no user session; main `ringing()` from liveStates, ring state now always subscribed)
   + `tools/monitor-wecker.ps1/.cmd` (polls every 1 s, mouse_event +1/-1 px and SetThreadExecutionState on the rising
   edge, skipped while dnd unless `$WakeDuringDnd`). Not yet tried on the owner's touch PC.
+- 0.44.0: owner wanted a push when washer / dishwasher (Home Connect, cloud adapter is fine for them) and dryer (no Home
+  Connect -> Shelly plug) are finished, shown as Aus/Läuft/Fertig, several in one tile -> tile `appliances` {devices
+  [{label, icon washer|dryer|dishwasher|oven|socket|bolt, kind power|state, state, onW, offMin | runAt, doneAt, remain}],
+  notify, onlyActive, doneHours}. `www/applogic.js` (UMD: `reading()`, `matches()` like hpOff - texts contained, numbers exact,
+  `remaining()`); main `checkAppliances()` = state machine per `page/tile/index` in `appMem` (appliances.json in the data dir):
+  power needs 1 min >= onW to start (anti-crease turns), done after offMin below; state: run while runAt, done if then doneAt
+  else off (cancelled), done -> off when neither (door opened); done ends by tap (ws {type:'appAck', key}, only tiles of the
+  user's view), new run or doneHours; messages `notify(…, tag app-<key>)` (own tag so they do not replace each other); server
+  init `apps` + broadcast {type:'apps'}. Client `appEntries()`/`appliancesHtml()` (rows reuse .win styles), `refreshApps()`,
+  `tilePage()`. `appSec` shortens the second in tests. Adapter test + Playwright. Not yet with the owner's devices.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

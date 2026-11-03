@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { fire: 'fire', arrive: 'home', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { appliances: 'washer', fire: 'fire', arrive: 'home', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -149,6 +149,7 @@ function tileIds(t) {
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
     .concat((t.sensors || []).flatMap(r => [r.humidity, r.temp]))
     .concat((t.windows || []).flatMap(w => [w.state, w.tilt]))
+    .concat((t.devices || []).flatMap(d => [d.state, d.remain]))
     .filter(Boolean);
 }
 
@@ -622,6 +623,81 @@ function windowsWarn(t) {
   return WinLogic.warn(t, st, windowStates(t));
 }
 
+// ---------------- household appliances ----------------
+
+/** status of each device: from the adapter (it remembers "Fertig"), else what the data point says right now */
+/** id of the page a tile object belongs to (the tile may be shown elsewhere, e.g. in a side panel) */
+function tilePage(t) {
+  const pages = layout().pages;
+  const p = pages.find(x => x.tiles.includes(t)) || pages.find(x => x.tiles.some(y => y.id === t.id && y.type === t.type));
+  return p ? p.id : '';
+}
+
+function appEntries(t, pageId) {
+  pageId = tilePage(t) || pageId;
+  return (t.devices || []).map((d, i) => {
+    const key = pageId + '/' + (t._ref ? t._ref.split('/')[1] : t.id) + '/' + i;
+    const keyed = t._ref ? t._ref + '/' + i : key;
+    const a = (SV.apps || {})[keyed];
+    const r = AppLogic.reading(d, st);
+    const status = a ? a.status : r.run ? 'run' : r.run === null ? 'unknown' : 'off';
+    return { d, key: keyed, status, since: a ? a.since : 0, runSince: a ? a.runSince : 0, remain: AppLogic.remaining(d, st), w: r.w };
+  });
+}
+
+function appClock(ms) {
+  const min = Math.max(0, Math.round(ms / 60000));
+  return min >= 60 ? Math.floor(min / 60) + ':' + String(min % 60).padStart(2, '0') + ' h' : min + ' min';
+}
+
+function appliancesHtml(t, pageId) {
+  let list = appEntries(t, pageId);
+  const run = list.filter(e => e.status === 'run').length;
+  const done = list.filter(e => e.status === 'done').length;
+  const sum = run || done ? [run ? run + ' läuft' : '', done ? done + ' fertig – antippen = gesehen' : ''].filter(Boolean).join(' · ') : 'alle aus';
+  if (t.onlyActive) list = list.filter(e => e.status === 'run' || e.status === 'done');
+  const row = e => {
+    let detail = '';
+    if (e.status === 'run') detail = e.remain ? 'noch ' + appClock(e.remain) : e.runSince ? 'seit ' + since(e.runSince) : '';
+    else if (e.status === 'done' && e.since) detail = 'seit ' + since(e.since);
+    const text = e.status === 'unknown' ? '–' : AppLogic.TEXT[e.status];
+    return '<div class="win app ' + e.status + '"' + (e.status === 'done' ? ' data-appkey="' + esc(e.key) + '" title="Antippen = gesehen"' : '') + '>' +
+      '<span class="wic">' + icon(e.d.icon || 'washer') + '</span><span class="wname">' + esc(e.d.label || 'Gerät') + '</span>' +
+      '<span class="wst">' + esc(text) + (detail ? ' <small>' + esc(detail) + '</small>' : '') + '</span></div>';
+  };
+  return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Haushaltsgeräte') + '</span>' +
+    '<span class="wsum' + (done ? ' warn' : run ? ' onc' : '') + '">' + esc(sum) + '</span></div>' +
+    (list.length ? '<div class="wlist">' + list.map(row).join('') + '</div>' : '');
+}
+
+/** adapter sent new statuses: redraw appliance tiles, rows, markers and an open sheet */
+function refreshApps() {
+  for (const el of document.querySelectorAll('.tile.appliances, .lrow.appliances, .marker.appliances')) {
+    const t = findTile(el.dataset.page, el.dataset.tile);
+    if (!t) continue;
+    if (el.classList.contains('lrow')) fillRow(el, t);
+    else if (el.classList.contains('marker')) fillMarker(el, t);
+    else fillTile(el, t);
+  }
+  if (SV.sheet && SV.sheet.tile && SV.sheet.tile.type === 'appliances') {
+    const box = document.querySelector('.sheet .winsheet');
+    if (box) box.innerHTML = appliancesHtml(SV.sheet.tile);
+  }
+}
+
+// a tap on a finished device = seen (back to "Aus" on every device)
+document.addEventListener('click', ev => {
+  const row = ev.target.closest && ev.target.closest('[data-appkey]');
+  if (!row || SV.editing) return;
+  ev.stopPropagation();
+  if (SV.ws && SV.ws.readyState === 1) SV.ws.send(JSON.stringify({ type: 'appAck', key: row.dataset.appkey }));
+}, true);
+
+function appliancesState(t, pageId) {
+  const list = appEntries(t, pageId);
+  return list.some(e => e.status === 'done') ? 'warn' : list.some(e => e.status === 'run') ? 'on' : '';
+}
+
 function windowsHtml(t) {
   const list = windowStates(t);
   const open = list.filter(w => w.status === 'open').length;
@@ -651,7 +727,8 @@ function windowsHtml(t) {
     (entries.length ? '<div class="wlist">' + entries.map(row).join('') + '</div>' : '');
 }
 
-function tileState(t) {
+function tileState(t, pageId) {
+  if (t.type === 'appliances') return appliancesState(t, pageId);
   if (t.type === 'windows') {
     if (windowsWarn(t)) return 'alert';
     if (!windowStates(t).some(w => w.status === 'open')) return '';
@@ -1201,7 +1278,7 @@ function freeSpan(t, cols) {
 }
 
 /** tile types whose height follows their content (unless a height is set) */
-const AUTO_H = ['html', 'windows', 'energy', 'planview'];
+const AUTO_H = ['html', 'windows', 'appliances', 'energy', 'planview'];
 
 /** Columns/rows of a tile element; fixed height for normal tiles, minimum height for content tiles. */
 function sizeTile(el, t, w, h, withRow) {
@@ -1535,6 +1612,10 @@ function fillRow(el, t) {
       el.classList.add('htmlrow');
       el.innerHTML = windowsHtml(t);
       return;
+    case 'appliances':
+      el.classList.add('htmlrow');
+      el.innerHTML = appliancesHtml(t, el.dataset.page);
+      return;
     case 'html':
       el.classList.add('htmlrow');
       el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
@@ -1679,7 +1760,7 @@ function fillTile(el, t) {
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('warn', stt === 'warn');
   el.classList.toggle('missing', missing(t));
-  el.classList.toggle('tap', !['heading', 'html', 'windows'].includes(t.type));
+  el.classList.toggle('tap', !['heading', 'html', 'windows', 'appliances'].includes(t.type));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
   const ic = '<span class="tic">' + tileIc(t) + '</span>';
   let html = '';
@@ -1793,6 +1874,9 @@ function fillTile(el, t) {
       break;
     case 'windows':
       html = windowsHtml(t);
+      break;
+    case 'appliances':
+      html = appliancesHtml(t, el.dataset.page);
       break;
     case 'multi': {
       const rows = t.rows || [];
@@ -2237,6 +2321,10 @@ function fillMarker(el, t) {
   else if (t.type === 'windows') {
     const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
     v = n ? n + ' ' + WinLogic.words(t).open : '';
+  } else if (t.type === 'appliances') {
+    const l = appEntries(t, tilePage(t));
+    const n = l.filter(e => e.status === 'done').length;
+    v = n ? n + ' fertig' : l.some(e => e.status === 'run') ? 'läuft' : '';
   } else if (t.type === 'thermostat') {
     const c = thermoCur(t);
     const f = fmt({ decimals: 1, unit: c.unit }, c.status || c.state);
@@ -2503,6 +2591,8 @@ function fillSheet(sh, t) {
     body = '<div class="row"><button type="button" data-a="press" class="primary">Auslösen</button></div>';
   } else if (t.type === 'windows') {
     body = '<div class="winsheet">' + windowsHtml(t) + '</div>';
+  } else if (t.type === 'appliances') {
+    body = '<div class="winsheet">' + appliancesHtml(t, tilePage(t)) + '</div>';
   } else if (t.type === 'html') {
     body = '<div class="htmlhost sheethtml"></div>';
   } else if (t.type === 'multi') {
@@ -2775,13 +2865,17 @@ function connect() {
   };
   ws.onmessage = ev => {
     const msg = JSON.parse(ev.data);
-    if (msg.type === 'dnd') {
+    if (msg.type === 'apps') {
+      SV.apps = msg.apps || {};
+      refreshApps();
+    } else if (msg.type === 'dnd') {
       setDnd(msg.dnd);
     } else if (msg.type === 'locks') {
       SV.locks = clientLocks(msg.locks);
       refreshLocked();
     } else if (msg.type === 'init') {
       setDnd(msg.dnd);
+      SV.apps = msg.apps || {};
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
@@ -2898,7 +2992,7 @@ async function start() {
   setInterval(() => SV.locks && Object.values(SV.locks).some(l => l.until) && refreshLocked(), 1000);
   // window overview: keep the "seit …" times current
   setInterval(() => {
-    for (const el of document.querySelectorAll('.tile.windows, .lrow.windows')) {
+    for (const el of document.querySelectorAll('.tile.windows, .lrow.windows, .tile.appliances, .lrow.appliances')) {
       const t = findTile(el.dataset.page, el.dataset.tile);
       if (t) (el.classList.contains('lrow') ? fillRow : fillTile)(el, t);
     }

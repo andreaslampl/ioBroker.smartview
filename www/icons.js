@@ -65,6 +65,10 @@ const ICON_PATHS = {
   grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  washer: '<rect x="4" y="2.5" width="16" height="19" rx="2"/><path d="M4 7h16"/><circle cx="12" cy="14" r="4.5"/><path d="M9.5 14.5c1-.8 2-.8 3 0s2 .8 3 0"/><path d="M7 5h.01M10 5h.01"/>',
+  dryer: '<rect x="4" y="2.5" width="16" height="19" rx="2"/><path d="M4 7h16"/><circle cx="12" cy="14" r="4.5"/><path d="M10.5 12c.8.7.8 1.5 0 2.2s-.8 1.5 0 2.2M13.5 12c.8.7.8 1.5 0 2.2s-.8 1.5 0 2.2"/><path d="M7 5h.01"/>',
+  dishwasher: '<rect x="4" y="2.5" width="16" height="19" rx="2"/><path d="M4 7h16M7 5h.01M10 5h.01"/><path d="M8 11v6M11 11v6M14 11v6"/><path d="M16.5 11a1.5 1.5 0 1 1 0 3"/>',
+  oven: '<rect x="3.5" y="3" width="17" height="18" rx="2"/><path d="M3.5 8h17M7 5.5h.01M10 5.5h.01M13 5.5h.01"/><rect x="7" y="11" width="10" height="7" rx="1"/>',
   fullscreen: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
 };
 
@@ -74,7 +78,7 @@ const ICON_LABELS = {
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', leave: 'Verlassen', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
   scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', tree: 'Garten', info: 'Info',
-  star: 'Favorit', gauge: 'Anzeige',
+  star: 'Favorit', gauge: 'Anzeige', washer: 'Waschmaschine', dryer: 'Trockner', dishwasher: 'Geschirrspüler', oven: 'Backofen',
 };
 
 function icon(name, cls) {
