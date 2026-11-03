@@ -766,9 +766,28 @@ function tileState(t, pageId) {
   return '';
 }
 
-function missing(t) {
-  return tileIds(t).some(id => st(id) && st(id).missing);
+function missingIds(t) {
+  return [...new Set(tileIds(t).filter(id => st(id) && st(id).missing))];
 }
+
+function missing(t) {
+  return missingIds(t).length > 0;
+}
+
+/** ⚠ in the corner: which data points do not exist (tap shows them) */
+function warnMark(t) {
+  const ids = missingIds(t);
+  return ids.length ? '<span class="warnmark" data-missing="' + esc(ids.join('\n')) + '" title="Datenpunkt nicht gefunden:\n' + esc(ids.join('\n')) + '">⚠</span>' : '';
+}
+
+document.addEventListener('click', ev => {
+  const m = ev.target.closest && ev.target.closest('.warnmark[data-missing]');
+  if (!m) return;
+  ev.stopPropagation();
+  ev.preventDefault();
+  const ids = m.dataset.missing.split('\n');
+  toast((ids.length > 1 ? 'Diese Datenpunkte gibt es nicht' : 'Diesen Datenpunkt gibt es nicht') + ' (✎ Kachel → Feld neu wählen): ' + ids.join(', '), true);
+}, true);
 
 // ---------------- commands ----------------
 
@@ -1621,7 +1640,7 @@ function fillRow(el, t) {
       return;
     case 'html':
       el.classList.add('htmlrow');
-      el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
+      el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + warnMark(t);
       renderHtml(el.querySelector('.htmlhost'), val(t.state));
       return;
     case 'switch': {
@@ -1714,7 +1733,7 @@ function fillRow(el, t) {
       ctl = '<span class="lval">›</span>';
       break;
   }
-  el.innerHTML = head + '<span class="lctl">' + ctl + '</span>' + (missing(t) ? '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>' : '');
+  el.innerHTML = head + '<span class="lctl">' + ctl + '</span>' + warnMark(t);
   bindControls(el, t);
   Timers.mark(el, t);
   dragHandle(el);
@@ -1895,7 +1914,7 @@ function fillTile(el, t) {
       break;
     }
   }
-  if (missing(t)) html += '<span class="warnmark" title="Datenpunkt nicht gefunden">⚠</span>';
+  html += warnMark(t);
   if (t.pin) html += '<span class="pinmark" title="mit PIN geschützt">' + icon('lock') + '</span>';
   el.innerHTML = html;
   if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));

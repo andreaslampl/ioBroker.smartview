@@ -492,7 +492,15 @@ const Editor = (() => {
   /** Name (when picked) and current value of a data point under its field. */
   async function stateName(id, el) {
     el.textContent = '';
+    el.classList.remove('missing');
     if (!id) return;
+    // the adapter knows it does not exist (no object): say so clearly, the tile shows ⚠
+    const known = SV.states && SV.states[id];
+    if (known && known.missing) {
+      el.textContent = '⚠ Diesen Datenpunkt gibt es nicht – mit 📂 Auswählen neu wählen oder mit ✕ entfernen';
+      el.classList.add('missing');
+      return;
+    }
     let v;
     try {
       v = (await api('values', { method: 'POST', body: JSON.stringify([id]) }))[id];

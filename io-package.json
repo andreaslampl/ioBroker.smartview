@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.46.0",
+    "version": "0.46.1",
     "news": {
+      "0.46.1": {
+        "en": "The ⚠ (data point not found) names the missing data points when tapped; the edit dialog marks the field in red",
+        "de": "Das ⚠ (Datenpunkt nicht gefunden) nennt beim Antippen die fehlenden Datenpunkte; der Bearbeiten-Dialog markiert das Feld rot"
+      },
       "0.46.0": {
         "en": "Leave: own delay for the alarm system and a message whether it armed; messages for burglar alarm (per area, optionally armed / disarmed) and fire alarm / pre-alarm / fault",
         "de": "Haus verlassen: eigene Zeit für die Alarmanlage und Mitteilung, ob sie scharf ist; Mitteilungen bei Einbruchalarm (je Bereich, optional scharf / unscharf) und Brandalarm / Voralarm / Störung"

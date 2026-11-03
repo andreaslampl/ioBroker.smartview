@@ -173,6 +173,8 @@ html[data-theme="light"] #editBar { background: #fff1c7; color: #6b4e00; }
 .tile input[type=range] { width: 100%; margin: 8px 0 0; }
 .tile.missing { opacity: .55; }
 .tile .warnmark { position: absolute; right: 8px; bottom: 6px; font-size: 11px; color: var(--warn); }
+.warnmark[data-missing] { cursor: help; padding: 4px; margin: -4px; }
+.statename.missing { color: var(--bad); font-weight: 600; }
 
 /* camera tile */
 .tile.camera { padding: 0; background: #000; }

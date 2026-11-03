@@ -378,6 +378,9 @@ switches/buttons on them.
   alarm tiles `notify` (alarm rising per area -> "🚨 ALARM <area>" with alarmText after `alarmTextWait` 1.5 s, falling ->
   "Alarm beendet"), `notifyMode` (scharf / intern scharf / unscharf changes); fire tiles `notify` (alarm, preAlarm),
   `notifyFault`. Adapter tests.
+- 0.46.1: owner saw the ⚠ on a tile and could not tell which data point -> app.js `missingIds()` / `warnMark()` (title + tap
+  -> toast with the ids, capture listener so the tile does not switch), edit.js `stateName()` shows "gibt es nicht" in red
+  (`.statename.missing`) for ids the adapter reports missing. The adapter log already had "Data point … does not exist".
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
