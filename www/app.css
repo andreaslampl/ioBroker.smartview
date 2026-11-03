@@ -518,3 +518,6 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .mrow.det button { padding: 6px 10px; font-size: 13px; }
 .mrow.det.off > span { opacity: .7; }
 .warnc, .mrow b .warnc { color: var(--warn); }
+
+/* alarm sheet: open detectors on top, highlighted */
+.mrow.det.open { background: rgba(248, 81, 73, .14); border-radius: 8px; }

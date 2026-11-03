@@ -1092,12 +1092,15 @@ function alarmLine(t, c, a) {
 function alarmDetectors(c) {
   const list = Array.isArray(c.detectors) ? c.detectors : [];
   if (!list.length) return '';
-  const rows = list.map((d, i) => {
+  // open ones first (they block arming), then switched off, then closed; the index stays the one in the layout
+  const rank = d => (d.open && truthy(val(d.open)) && !(d.deact && truthy(val(d.deact))) ? 0 : d.deact && truthy(val(d.deact)) ? 1 : 2);
+  const order = list.map((d, i) => [d, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]);
+  const rows = order.map(([d, i]) => {
     const off = Boolean(d.deact && truthy(val(d.deact)));
     const open = Boolean(d.open && truthy(val(d.open)));
     const stx = off ? '<span class="warnc">abgeschaltet</span>' : open ? '<span class="bad">offen</span>' : '<span class="ok">zu</span>';
     const btn = c.control && d.deact ? '<button type="button" data-a="deact" data-v="' + i + '">' + (off ? 'Einschalten' : 'Abschalten') + '</button>' : '';
-    return '<div class="mrow det' + (off ? ' off' : '') + '"><span>' + esc(d.label) + '</span><b>' + stx + '</b>' + btn + '</div>';
+    return '<div class="mrow det' + (off ? ' off' : '') + (open && !off ? ' open' : '') + '"><span>' + esc(d.label) + '</span><b>' + stx + '</b>' + btn + '</div>';
   });
   return '<h4 class="dethead">Melder</h4><div class="mrows sheetrows detlist">' + rows.join('') + '</div>';
 }

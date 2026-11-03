@@ -368,6 +368,9 @@ switches/buttons on them.
   redrawn when the alarm tile select changes), arrive `extAlarm`: `SceneLogic.plan(..., {external})` skips disarming
   unless ticked (warning text) - main `runScene(..., {external: true})` from the scenes.* state; arming via data point
   stays allowed. Icons `leave` (house + arrow out), `arrive` (arrow in, now arrive's default), `away` (house + lock).
+- 0.45.1: owner wants to switch off open detectors like in the fire tile (NOX works with showDetectors + control; SPC
+  has no inhibit in spc-edp - EDP zone inhibit/isolate exists per HSYCO docs but the binary/XML command is not in spcedp's
+  PROTOCOL.md; not guessed, asked the owner for the Vanderbilt EDP spec) -> `alarmDetectors()` sorts open first (row .open).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

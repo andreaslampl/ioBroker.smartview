@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.45.0",
+    "version": "0.45.1",
     "news": {
+      "0.45.1": {
+        "en": "Alarm tile: open detectors are listed first (highlighted) so they can be switched off at once",
+        "de": "Alarmanlagen-Kachel: offene Melder stehen oben (markiert) und lassen sich gleich abschalten"
+      },
       "0.45.0": {
         "en": "Leave / arrive: choose the alarm areas to arm / disarm; arriving via the data point (no PIN) only disarms with an extra tick; new symbols for leave / arrive (and 'house secured')",
         "de": "Haus verlassen / Ankommen: Alarmbereiche zum Scharf-/Unscharfschalten auswählbar; Ankommen über den Datenpunkt (ohne PIN) schaltet nur mit eigenem Haken unscharf; neue Symbole für Verlassen / Ankommen (und „Haus gesichert“)"
