@@ -385,6 +385,10 @@ switches/buttons on them.
   side +4 %, else x/y/gx/gy dropped; numbered labels "Licht 3" -> 4, 5 …; hkId dropped). Found on the way: copies lost the
   PIN (resolvePins looked up the new id) -> copies send `pinFrom: 'page/tile'`, `resolvePins()` uses it first. Unit test +
   Playwright.
+- 0.47.1: owner: leave sent push + Telegram + WhatsApp, wants to choose -> tile option `channels` {app, telegram, whatsapp}
+  (layout: leave, arrive, windows, gate, appliances, alarm, fire; missing = all), `main.notify(title, body, page, tag, ch)`
+  sends only the ticked ways; every call site passes its tile's `channels`. Editor kind `channels` (row like the push
+  rules). Adapter test + Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

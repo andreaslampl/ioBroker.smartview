@@ -454,7 +454,7 @@ class SmartView extends utils.Adapter {
                 try {
                     await this.gateClose(tile);
                     if (tile.autoNotify) {
-                        this.notify(name, `War ${tile.autoClose} min offen – wird automatisch geschlossen`, page.id);
+                        this.notify(name, `War ${tile.autoClose} min offen – wird automatisch geschlossen`, page.id, '', tile.channels);
                     }
                 } catch (err) {
                     this.log.warn(`${name}: ${err.message}`);
@@ -463,7 +463,7 @@ class SmartView extends utils.Adapter {
                     if (this.gateStatus(tile) !== 'closed') {
                         this.log.warn(`${name}: automatisch schließen - ist nach 2 min nicht zu`);
                         if (tile.autoNotify) {
-                            this.notify(`${name}: schließt nicht`, 'Nach dem automatischen Schließen ist es nicht zu – bitte nachsehen.', page.id);
+                            this.notify(`${name}: schließt nicht`, 'Nach dem automatischen Schließen ist es nicht zu – bitte nachsehen.', page.id, '', tile.channels);
                         }
                     }
                 }, this.gateCheckMs || 120000);
@@ -548,7 +548,7 @@ class SmartView extends utils.Adapter {
             }, alarmDelay));
         }
         if (tile.notify) {
-            this.notify(name, text + (plan.warn.length ? `\n${plan.warn.join('\n')}` : ''), pageId);
+            this.notify(name, text + (plan.warn.length ? `\n${plan.warn.join('\n')}` : ''), pageId, '', tile.channels);
         }
         // did the alarm system arm? (90 s after the command, the NOX / SPC need a moment)
         if (tile.type === 'leave' && plan.alarm.length) {
@@ -563,13 +563,13 @@ class SmartView extends utils.Adapter {
                     const what = notArmed.map(a => a.label).join(', ');
                     this.log.warn(`${name}: Alarmanlage NICHT scharf - ${what}`);
                     if (tile.notify || tile.alarmNotify) {
-                        this.notify(`${name}: Alarmanlage NICHT scharf`, what, pageId, `alarm-${key}`);
+                        this.notify(`${name}: Alarmanlage NICHT scharf`, what, pageId, `alarm-${key}`, tile.channels);
                     }
                 } else {
                     const what = plan.alarm.map(a => a.label).join(', ');
                     this.log.info(`${name}: Alarmanlage scharf - ${what}`);
                     if (tile.alarmNotify) {
-                        this.notify(`${name}: Alarmanlage scharf ✓`, what, pageId, `alarm-${key}`);
+                        this.notify(`${name}: Alarmanlage scharf ✓`, what, pageId, `alarm-${key}`, tile.channels);
                     }
                 }
             }, when + (this.sceneCheckMs || 90000));
@@ -1082,14 +1082,14 @@ class SmartView extends utils.Adapter {
                         } else if (e.ts && Date.now() - e.ts >= t.warnMin * 60000 && !mem.long.has(e.label)) {
                             mem.long.add(e.label);
                             if (!initial) {
-                                this.notify(`${title}: zu lange ${WinLogic.words(t).open}`, `${what(e)} seit mehr als ${t.warnMin} Min.`, page.id);
+                                this.notify(`${title}: zu lange ${WinLogic.words(t).open}`, `${what(e)} seit mehr als ${t.warnMin} Min.`, page.id, '', t.channels);
                             }
                         }
                     }
                 }
                 const warn = WinLogic.warn(t, st, list);
                 if (warn && !mem.warn && !initial) {
-                    this.notify(`${title}: ${t.warnText || 'Achtung'}`, `Offen: ${entries.filter(WinLogic.active).map(what).join(', ')}`, page.id);
+                    this.notify(`${title}: ${t.warnText || 'Achtung'}`, `Offen: ${entries.filter(WinLogic.active).map(what).join(', ')}`, page.id, '', t.channels);
                 }
                 mem.warn = warn;
             }
@@ -1232,7 +1232,7 @@ class SmartView extends utils.Adapter {
                                 if (done) {
                                     set('done');
                                     if (t.notify && !initial) {
-                                        this.notify(`${name} ist fertig`, ranMs > 60000 ? `Lief ${this.duration(ranMs)}` : 'Fertig', page.id, `app-${key}`);
+                                        this.notify(`${name} ist fertig`, ranMs > 60000 ? `Lief ${this.duration(ranMs)}` : 'Fertig', page.id, `app-${key}`, t.channels);
                                     }
                                 } else {
                                     set('off'); // status kind: cancelled (no "Finished")
@@ -1289,10 +1289,10 @@ class SmartView extends utils.Adapter {
                                     // the detector names usually come a moment after the alarm bit
                                     setTimeout(() => {
                                         const who = a.alarmText ? String(val(a.alarmText) || '') : '';
-                                        this.notify(`🚨 ALARM ${name}`, who ? `Ausgelöst: ${who}` : 'Die Alarmanlage hat ausgelöst!', page.id, `alarm-${key}`);
+                                        this.notify(`🚨 ALARM ${name}`, who ? `Ausgelöst: ${who}` : 'Die Alarmanlage hat ausgelöst!', page.id, `alarm-${key}`, t.channels);
                                     }, this.alarmTextWait ?? 1500);
                                 } else {
-                                    this.notify(`${name}: Alarm beendet`, 'Der Alarm ist zurückgesetzt.', page.id, `alarm-${key}`);
+                                    this.notify(`${name}: Alarm beendet`, 'Der Alarm ist zurückgesetzt.', page.id, `alarm-${key}`, t.channels);
                                 }
                             });
                         }
@@ -1300,7 +1300,7 @@ class SmartView extends utils.Adapter {
                             const v = val(a.status);
                             const mode = same(v, a.valueArm) ? 'scharf' : same(v, a.valueHome) ? 'intern scharf' : same(v, a.valueOff) ? 'unscharf' : '';
                             if (mode) {
-                                edge(`${key}/mode`, mode, () => this.notify(`${name}: ${mode}`, `Alarmanlage ${name} ist jetzt ${mode}.`, page.id, `alarmmode-${key}`));
+                                edge(`${key}/mode`, mode, () => this.notify(`${name}: ${mode}`, `Alarmanlage ${name} ist jetzt ${mode}.`, page.id, `alarmmode-${key}`, t.channels));
                             }
                         }
                     });
@@ -1311,13 +1311,13 @@ class SmartView extends utils.Adapter {
                     [t.alarm, t.alarmText, t.preAlarm, t.fault, t.faultText].filter(Boolean).forEach(id => this.alarmPushIds.add(id));
                     const text = id => (id ? String(val(id) || '') : '');
                     if (t.notify && t.alarm) {
-                        edge(`${key}/alarm`, on(t.alarm), () => on(t.alarm) && setTimeout(() => this.notify(`🔥 BRANDALARM ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Alarm!', page.id, `fire-${key}`), this.alarmTextWait ?? 1500));
+                        edge(`${key}/alarm`, on(t.alarm), () => on(t.alarm) && setTimeout(() => this.notify(`🔥 BRANDALARM ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Alarm!', page.id, `fire-${key}`, t.channels), this.alarmTextWait ?? 1500));
                     }
                     if (t.notify && t.preAlarm) {
-                        edge(`${key}/pre`, on(t.preAlarm), () => on(t.preAlarm) && this.notify(`⚠️ Voralarm ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Voralarm.', page.id, `firepre-${key}`));
+                        edge(`${key}/pre`, on(t.preAlarm), () => on(t.preAlarm) && this.notify(`⚠️ Voralarm ${name}`, text(t.alarmText) || 'Die Brandmeldeanlage meldet Voralarm.', page.id, `firepre-${key}`, t.channels));
                     }
                     if (t.notifyFault && t.fault) {
-                        edge(`${key}/fault`, on(t.fault), () => on(t.fault) && this.notify(`Störung ${name}`, text(t.faultText) || 'Die Brandmeldeanlage meldet eine Störung.', page.id, `firefault-${key}`));
+                        edge(`${key}/fault`, on(t.fault), () => on(t.fault) && this.notify(`Störung ${name}`, text(t.faultText) || 'Die Brandmeldeanlage meldet eine Störung.', page.id, `firefault-${key}`, t.channels));
                     }
                 }
             }
@@ -1361,11 +1361,19 @@ class SmartView extends utils.Adapter {
     }
 
     /** message on all configured ways (app push, Telegram, WhatsApp) */
-    notify(title, body, page = '', tag = '') {
+    notify(title, body, page = '', tag = '', ch = null) {
+        // ch: the tile's choice {app, telegram, whatsapp}; not set = every way that is set up
+        const via = ch && typeof ch === 'object' ? ch : { app: true, telegram: true, whatsapp: true };
         this.log.info(`Mitteilung: ${title} - ${body}`);
-        this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: tag || `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
-        this.telegram({ title, body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
-        this.whatsapp({ title, body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+        if (via.app) {
+            this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: tag || `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
+        }
+        if (via.telegram) {
+            this.telegram({ title, body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
+        }
+        if (via.whatsapp) {
+            this.whatsapp({ title, body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+        }
     }
 
     async sendMessage(val) {

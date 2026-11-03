@@ -74,6 +74,7 @@ const TYPE_FIELDS = {
     ['barrier', 'Lichtschranke (optional)', 'state-r', 'true = unterbrochen: dann wird nicht geschlossen, sondern gewartet, bis sie frei ist.'],
     ['barrierInvert', 'Lichtschranke umgekehrt (true = frei)', 'check'],
     ['autoNotify', 'Mitteilung beim automatischen Schließen', 'check', 'Push / Telegram / WhatsApp – und eine Warnung, wenn das Tor 2 Minuten danach noch nicht zu ist.'],
+    ['channels', 'Mitteilung senden an', 'channels'],
   ],
   value: [
     ['state', 'Datenpunkt', 'state-r'],
@@ -111,6 +112,7 @@ const TYPE_FIELDS = {
   appliances: [
     ['devices', 'Geräte', 'devices'],
     ['notify', 'Mitteilung, wenn ein Gerät fertig ist (Push / Telegram / WhatsApp)', 'check', 'Über die Wege, die in den Einstellungen eingerichtet sind.'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['onlyActive', 'Nur laufende / fertige Geräte anzeigen', 'check', 'Platz sparen: Geräte, die aus sind, werden ausgeblendet.'],
     ['doneHours', '„Fertig“ verschwindet nach (Stunden, optional)', 'number', 'Leer oder 0 = bis man auf die Zeile tippt (oder das Gerät wieder startet). Bei Home Connect auch, wenn die Tür geöffnet wird.'],
   ],
@@ -121,6 +123,7 @@ const TYPE_FIELDS = {
     ['warnWhen', 'Warnen, wenn (optional)', 'state-r', 'z. B. Regen, Alarmanlage scharf oder Heizung an: Ist dieser Datenpunkt true und etwas offen, wird es rot markiert und der Warntext erscheint.'],
     ['warnText', 'Warntext (optional)', 'text', 'z. B. „Regen!“ – Standard „Achtung“'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Wenn ein Fenster länger als die Minuten oben offen ist und wenn „Warnen, wenn“ eintritt, während etwas offen ist – über die Wege, die in den Einstellungen eingerichtet sind.'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['wordOpen', 'Wort für „offen“ (optional)', 'text', 'Die Übersicht geht auch für anderes, z. B. Lichter: „an“ / „aus“ und „alle Lichter sind aus“. Leer = Fenster-Wörter.'],
     ['wordTilt', 'Wort für „gekippt“ (optional)', 'text'],
     ['wordClosed', 'Wort für „geschlossen“ (optional)', 'text'],
@@ -146,6 +149,7 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['notify', 'Mitteilung bei Alarm (Push / Telegram / WhatsApp)', 'check', '„🚨 ALARM Wohnhaus“ mit den ausgelösten Meldern, für jeden Bereich – über die Wege aus den Einstellungen.'],
     ['notifyMode', 'Mitteilung auch bei scharf / unscharf', 'check', 'z. B. „Garage: scharf“, wenn ein Bereich umschaltet – egal ob von SmartView, Bedienteil oder Schlüsselschalter.'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['areaLabel', 'Name dieses Bereichs (nur bei mehreren Bereichen)', 'text', 'z. B. Wohnhaus'],
     ['areas', 'Weitere Bereiche (optional)', 'areas'],
   ],
@@ -158,6 +162,7 @@ const TYPE_FIELDS = {
     ['showDetectors', 'Melder anzeigen', 'check', 'Beim Speichern werden die Melder der Zentrale geholt (Ordner „Melder“). Im Bedienfenster: Zustand, mit „Schalten erlauben“ Abschalten / Einschalten. Neue Melder: Kachel nochmal speichern.'],
     ['notify', 'Mitteilung bei Brandalarm und Voralarm (Push / Telegram / WhatsApp)', 'check', '„🔥 BRANDALARM“ mit den Meldern – über die Wege aus den Einstellungen.'],
     ['notifyFault', 'Mitteilung auch bei Störung', 'check'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['alarm', 'Alarm', 'state-r'],
     ['alarmText', 'Melder im Alarm (Text)', 'state-r'],
     ['preAlarm', 'Voralarm', 'state-r'],
@@ -187,6 +192,7 @@ const TYPE_FIELDS = {
     ['alarmDelayMin', 'Alarmanlage scharf nach (Minuten, optional)', 'number', 'Eigene Zeit nur für die Alarmanlage, z. B. 3 – leer = mit den Rollläden (Zeile darüber), 0 = sofort.'],
     ['alarmNotify', 'Mitteilung, ob die Alarmanlage scharf ist', 'check', '90 s nach dem Scharfschalten: „Alarmanlage scharf ✓“ oder „Alarmanlage NICHT scharf“ mit den Bereichen – auch ohne den Haken „Mitteilung senden“ unten.'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check', 'Was geschaltet wurde – und eine Warnung, wenn die Alarmanlage 90 s danach nicht scharf ist.'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste, true = auslösen), z. B. für homekit-easy, logik oder ein Skript. Achtung: dort wird keine PIN abgefragt.'],
   ],
   arrive: [
@@ -201,6 +207,7 @@ const TYPE_FIELDS = {
     ['blindTiles', 'Nur diese Rollläden (nichts angehakt = alle)', 'blindtiles'],
     ['extra', 'Zusätzliche Datenpunkte aus dem ioBroker', 'extra'],
     ['notify', 'Mitteilung senden (Push / Telegram / WhatsApp)', 'check'],
+    ['channels', 'Mitteilung senden an', 'channels'],
     ['external', 'Auch von ioBroker / Alexa / Apple Home auslösbar (ohne PIN!)', 'check', 'Legt smartview.0.scenes.<Seite>_<Kachel> an (Taste). Achtung: ohne PIN – z. B. Alarm unscharf per Sprachbefehl nur, wenn du das wirklich willst.'],
   ],
   contact: [
@@ -1355,6 +1362,19 @@ const Editor = (() => {
         } else if (kind === 'alarmtile') {
           const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
           inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
+        } else if (kind === 'channels') {
+          // which ways this tile's messages take (not set = all that are set up under "Allgemein")
+          const ch = t[key] || { app: true, telegram: true, whatsapp: true };
+          const row = document.createElement('div');
+          row.className = 'chanrow';
+          const boxes = {};
+          for (const [k, txt] of [['app', 'App-Push'], ['telegram', 'Telegram'], ['whatsapp', 'WhatsApp']]) {
+            const c = check(txt, ch[k] !== false);
+            row.appendChild(c);
+            boxes[k] = c.input;
+          }
+          field(body, label, row, 'Nur was unter ⚙ Allgemein eingerichtet ist, kommt auch an.');
+          inputs[key] = { type: 'custom', get: () => ({ app: boxes.app.checked, telegram: boxes.telegram.checked, whatsapp: boxes.whatsapp.checked }) };
         } else if (kind === 'alarmareas') {
           // areas of the alarm tile chosen just above; redrawn when that choice changes
           const wrap = document.createElement('div');

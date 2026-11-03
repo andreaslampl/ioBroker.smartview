@@ -1282,3 +1282,27 @@ test('adapter: messages for burglar alarm (per area, armed / disarmed) and fire 
     assert.ok(!titles().some(x => /Störung/.test(x)), 'fault only with notifyFault');
     assert.ok(!titles().includes('🚨 ALARM Haus'), 'nothing for the area that did not trigger');
 });
+
+test('adapter: the ways of a tile\'s messages can be chosen (here "Haus verlassen" only via Telegram)', async t => {
+    const { adapter, api, port, pushed } = await startAdapter(t);
+    adapter.objects['system.adapter.telegram.0'] = { type: 'instance', common: { name: 'telegram' } };
+    adapter.push.subscribe({ endpoint: 'https://push.example/ch', keys: { p256dh: 'x', auth: 'y' } }, 'iPhone');
+    const layout = {
+        pages: [{ id: 'u', name: 'Übersicht', tiles: [
+            { id: 'l1', type: 'switch', label: 'Küche', state: 'knx.0.EG.Licht.Kueche' },
+            { id: 'go', type: 'leave', label: 'Weg', lightsOff: true, notify: true, channels: { app: false, telegram: true, whatsapp: false } },
+        ] }],
+        telegram: { instance: 'telegram.0', users: 'Andi' },
+    };
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    assert.deepEqual(saved.body.pages[0].tiles[1].channels, { app: false, telegram: true, whatsapp: false });
+    adapter.sent = [];
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go' }));
+    await until(() => adapter.sent.some(s => /Weg/.test(s.message.text)));
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(pushed.filter(p => p.title === 'Weg').length, 0, 'no app push');
+});

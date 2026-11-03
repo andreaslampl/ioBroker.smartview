@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.47.0",
+    "version": "0.47.1",
     "news": {
+      "0.47.1": {
+        "en": "Each tile with messages (leave / arrive, windows, gate, appliances, alarm, fire) chooses its ways: app push, Telegram, WhatsApp",
+        "de": "Jede Kachel mit Mitteilungen (Verlassen / Ankommen, Fenster, Tor, Haushaltsgeräte, Alarm, Brand) wählt ihre Wege: App-Push, Telegram, WhatsApp"
+      },
       "0.47.0": {
         "en": "Copy tiles: how many, onto which page (also a floor plan), numbered labels; copies keep the original's PIN (it was lost before)",
         "de": "Kacheln kopieren: wie viele, auf welche Seite (auch Lageplan), fortlaufend nummeriert; Kopien behalten die PIN des Originals (ging vorher verloren)"

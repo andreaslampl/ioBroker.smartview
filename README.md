@@ -434,6 +434,12 @@ alle Bereiche der gewählten Alarm-Kachel, PIN einmal; über den Datenpunkt nur 
 immer an), **Rollläden auf** (Markisen bleiben ein). Ein noch wartendes „Haus verlassen“ (Verzögerung) wird
 abgebrochen. Mitteilung und Auslösen von außen wie oben.
 
+### Wohin gehen die Mitteilungen einer Kachel?
+
+Jede Kachel mit Mitteilungen (Haus verlassen / Ankommen, Fensterübersicht, Tor, Haushaltsgeräte, Alarmanlage,
+Brandmeldeanlage) hat **„Mitteilung senden an“: App-Push · Telegram · WhatsApp** zum Ankreuzen. Ohne Auswahl
+(ältere Kacheln) geht sie wie bisher über alle Wege, die unter ⚙ Allgemein eingerichtet sind.
+
 ### Kacheln kopieren
 
 Im Bearbeiten-Modus Kachel antippen → **„Kopieren …“**: **wie viele** Kopien (1–30), **auf welche Seite** (auch auf einen
