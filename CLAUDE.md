@@ -423,6 +423,9 @@ switches/buttons on them.
   Page commands via ws {type:'color', key, action} (server `_color`: tile in the user's view, write right on state, PIN).
   Leave/arrive treat color tiles as lights. Shelly data points from iobroker.shelly 12.0.0 (Gen1 lights.*, Gen2 RGBW0.*).
   Unit tests + Playwright. Not tried with the owner's Shelly / KNX (format of DPT 3 in their KNX adapter unknown - warns).
+- 0.50.1 field: tile works, KNX button does nothing. Bus monitor (owner) looks right: switch 0/1/42 DPT 1.001 Ein/Aus, dim 0/1/43
+  DPT 3.007 $01/$00/$09/$08 (raw values dimDir understands). Full path works with fake states -> info log of the watched KNX
+  ids per tile and of every knxSwitch/knxDim event (value, ack, from) to see what reaches SmartView.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
