@@ -1397,6 +1397,22 @@ function layoutFree(tiles, cols, keep) {
   return used;
 }
 
+/** Tiles follow each other in one simple order (phone, or a free grid too narrow): the page's own phone order applies. */
+function phoneOrdered(box, page) {
+  return page.type !== 'plan' && page.type !== 'list' && (device() === 'phone' || Boolean(page.free && freeNarrow(box, page)));
+}
+
+/** Tiles in the page's phone order; tiles not in it (new ones) keep their place relative to the normal order, at the end. */
+function byPhoneOrder(tiles, page) {
+  const order = page.phoneOrder || [];
+  if (!order.length) return tiles;
+  const pos = id => {
+    const i = order.indexOf(id);
+    return i < 0 ? order.length : i;
+  };
+  return tiles.map((t, i) => [t, i]).sort((a, b) => pos(a[0].id) - pos(b[0].id) || a[1] - b[1]).map(x => x[0]);
+}
+
 /** Free grid only where the columns are wide enough; on the phone the tiles just follow each other. */
 function freeNarrow(box, page) {
   return (fitWidth(page) || box.clientWidth || innerWidth) / (page.cols || 6) < 105;
@@ -1446,6 +1462,11 @@ function renderPageInto(box, page) {
     }
     grid.dataset.cols = cols;
     grid._used = used;
+  }
+  const phone = phoneOrdered(box, page);
+  if (phone) {
+    tiles = byPhoneOrder(tiles, page);
+    grid.dataset.phone = '1';
   }
   const measure = [];
   for (const t of tiles) {

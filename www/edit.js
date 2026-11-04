@@ -1661,6 +1661,9 @@ const Editor = (() => {
     const ms = field(msBox, 'Symbolgröße auf dem Grundriss', select([['xs', 'sehr klein'], ['s', 'klein'], ['m', 'normal'], ['l', 'groß']], p.markerSize || 'm'), 'Für Lagepläne mit vielen Symbolen „klein“ oder „sehr klein“ wählen.');
     const hid = check('In der Seitenleiste ausblenden (z. B. Grundriss nur als Kachel verwenden)', p.hidden);
     body.appendChild(hid);
+    // own phone order (set by moving tiles on the phone): can be dropped here
+    const phr = p.phoneOrder && p.phoneOrder.length ? check('Eigene Handy-Reihenfolge zurücksetzen (Handy zeigt wieder die Reihenfolge des großen Bildschirms)', false) : null;
+    if (phr) body.appendChild(phr);
     // tile page: free grid (place tiles anywhere, gaps allowed)
     const frBox = document.createElement('div');
     body.appendChild(frBox);
@@ -1668,7 +1671,7 @@ const Editor = (() => {
     frBox.appendChild(fr);
     const colsBox = document.createElement('div');
     frBox.appendChild(colsBox);
-    const cols = field(colsBox, 'Spalten im Raster', select([3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => [String(n), String(n)]), String(p.cols || 6)), 'Im Bearbeiten-Modus Kachel auf ein leeres Feld oder auf eine andere Kachel ziehen (tauschen). Am Handy stehen die Kacheln einfach untereinander.');
+    const cols = field(colsBox, 'Spalten im Raster', select([3, 4, 5, 6, 7, 8, 9, 10, 12].map(n => [String(n), String(n)]), String(p.cols || 6)), 'Im Bearbeiten-Modus Kachel auf ein leeres Feld oder auf eine andere Kachel ziehen (tauschen). Am Handy stehen die Kacheln einfach untereinander – ihre Reihenfolge dort lässt sich am Handy eigens verschieben.');
     // tile page: scaled to the screen (any browser / resolution looks the same)
     const fitBox = document.createElement('div');
     body.appendChild(fitBox);
@@ -1744,6 +1747,7 @@ const Editor = (() => {
       p.fit = fit.value;
       p.designW = Math.round(Number(dw.value)) || mainW();
       p.cols = Number(cols.value);
+      if (phr && phr.input.checked) delete p.phoneOrder;
       const i = l.pages.findIndex(x => x.id === p.id);
       const cur = i >= 0 ? l.pages[i] : null;
       const next = { ...p, tiles: cur ? cur.tiles : [], image: cur ? cur.image : '' };
@@ -1989,6 +1993,19 @@ const Editor = (() => {
       const ids = [...box.querySelectorAll(selector)].map(el => el.dataset.tile);
       drag = null;
       droppedAt = Date.now();
+      if (box.dataset.phone) {
+        // phone: own order, the big screens keep theirs (hidden tiles of other devices stay at their place)
+        const shown = new Set(ids);
+        const prev = byPhoneOrder(page.free ? page.tiles.slice().sort((a, b) => a.gy - b.gy || a.gx - b.gx) : page.tiles, page).map(t => t.id);
+        let k = 0;
+        const next = prev.map(id => (shown.has(id) ? ids[k++] : id));
+        if (next.join() !== prev.join()) {
+          page.phoneOrder = next;
+          toast('Reihenfolge am Handy geändert – „Speichern“ nicht vergessen. Am großen Bildschirm bleibt alles, wie es ist.');
+        }
+        render();
+        return;
+      }
       const old = page.tiles.map(t => t.id).join();
       page.tiles.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
       if (page.tiles.map(t => t.id).join() !== old) toast('Reihenfolge geändert – „Speichern“ nicht vergessen.');

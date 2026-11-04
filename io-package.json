@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.48.6",
+    "version": "0.49.0",
     "news": {
+      "0.49.0": {
+        "en": "Tile pages: tiles moved on the phone get an own phone order; the big screens keep theirs (on free grid pages moving on the phone did not work before)",
+        "de": "Kachelseiten: Am Handy verschobene Kacheln bekommen eine eigene Handy-Reihenfolge, große Bildschirme bleiben unverändert (bei frei platzierten Seiten ging Verschieben am Handy bisher nicht)"
+      },
       "0.48.6": {
         "en": "Appliances tile: with its own size the rows shrink (compact, then two columns) so the running devices fit",
         "de": "Haushaltsgeräte-Kachel: Bei eigener Kachelgröße werden die Zeilen kleiner (kompakt, dann zweispaltig), damit die laufenden Geräte hineinpassen"

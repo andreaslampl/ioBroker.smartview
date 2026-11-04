@@ -409,6 +409,10 @@ switches/buttons on them.
   every appliance status change and on the first reading (value + kind) to diagnose.
 - 0.48.6: owner asked that the running devices (onlyActive) fit into the tile -> app.js `fitApps()` (only tiles with own height,
   class fixh): adds c1 (compact rows), c2 (no "seit/noch" line), c3 (two columns, names ellipsized) until the list fits. Playwright.
+- 0.49.0: owner could not move tiles on the phone (free page: narrow fallback sorted page.tiles, render re-sorted by gy/gx) and
+  wanted the browser layout untouched -> page `phoneOrder` (tile pages): app.js `phoneOrdered()` (phone device or free + narrow)
+  / `byPhoneOrder()` (unknown tiles at the end), grid `data-phone`; edit.js sortable writes phoneOrder there, page dialog can
+  reset it. List pages still share one order. Playwright (scratchpad sv/phord-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

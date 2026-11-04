@@ -34,6 +34,12 @@ test('layout: cleaning keeps known fields, plan markers get x/y, ids are unique'
     assert.equal(l.pages[1].tiles[0].x, undefined);
 });
 
+test('layout: own phone order keeps only existing tiles, once each', () => {
+    const l = cleanLayout({ pages: [{ id: 'a', name: 'A', tiles: [{ id: 't1', type: 'switch' }, { id: 't2', type: 'switch' }], phoneOrder: ['t2', 'x', 't2', 't1'] }, { id: 'b', name: 'B', tiles: [] }] });
+    assert.deepEqual(l.pages[0].phoneOrder, ['t2', 't1']);
+    assert.equal(l.pages[1].phoneOrder, undefined);
+});
+
 test('layout: only control data points are writable', () => {
     const l = cleanLayout({
         pages: [

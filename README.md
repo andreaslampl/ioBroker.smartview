@@ -27,6 +27,8 @@ Oben rechts **✎** antippen:
 - **+ Kachel** – Art wählen, Beschriftung, Datenpunkt mit **📂 Auswählen** (Objektbaum mit Suche),
   Symbol, Größe, und ob die Kachel überall, nur am Handy oder nur am Touch-PC erscheint.
 - Kachel antippen = bearbeiten, ◀ ▶ verschieben, Kopieren, Löschen.
+- **Handy-Reihenfolge:** Am Handy (Bearbeiten-Modus, Kachel am Griff ziehen) verschobene Kacheln ändern nur die
+  Reihenfolge am Handy – Touch-PC und Browser bleiben, wie sie sind. Zurücksetzen im Seiten-Dialog.
 - **Größe:** Jede Kachel startet in ihrer Standardgröße. Im Bearbeiten-Modus am Griff **◢** unten rechts ziehen
   (Spalten × Reihen) oder im Kachel-Dialog „Breite“ / „Höhe“ wählen; „Standard“ stellt sie zurück. Am Handy wird
   eine Kachel nie breiter als der Bildschirm.
