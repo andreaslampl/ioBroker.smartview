@@ -426,6 +426,8 @@ switches/buttons on them.
 - 0.50.1 field: tile works, KNX button does nothing. Bus monitor (owner) looks right: switch 0/1/42 DPT 1.001 Ein/Aus, dim 0/1/43
   DPT 3.007 $01/$00/$09/$08 (raw values dimDir understands). Full path works with fake states -> info log of the watched KNX
   ids per tile and of every knxSwitch/knxDim event (value, ack, from) to see what reaches SmartView.
+- 0.50.1 field, solved: cause was the KNX IP router (N 146/02) filter table - group telegrams used only inside line 1.1
+  never reached openKNX (routing). Owner set the router to "weiterleiten" and re-programmed it: KNX button works.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
