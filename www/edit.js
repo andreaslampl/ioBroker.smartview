@@ -5,6 +5,7 @@
 const TYPE_LABELS = {
   switch: 'Schalter / Taster (Ein/Aus)',
   dimmer: 'Dimmer',
+  color: 'Farblicht / RGBW (z. B. Shelly RGBW, mit KNX-Taster)',
   blind: 'Rollladen / Jalousie',
   value: 'Anzeige (Wert, Text, Kontakt)',
   button: 'Taste (schreibt einen Wert, z. B. Szene)',
@@ -42,6 +43,21 @@ const TYPE_FIELDS = {
     ['state', 'Helligkeit 0–100 % (Datenpunkt)', 'state-w'],
     ['switchState', 'Ein/Aus (optional)', 'state-w', 'Wenn der Dimmer einen eigenen Schalt-Datenpunkt hat'],
     ['status', 'Rückmeldung Helligkeit (optional)', 'state-r'],
+  ],
+  color: [
+    ['state', 'Ein/Aus (Datenpunkt)', 'state-w', 'Shelly RGBW2: …lights.Switch – Shelly Plus RGBW PM: …RGBW0.Switch'],
+    ['bright', 'Helligkeit 0–100 %', 'state-w', 'Shelly RGBW2: …lights.gain – Shelly Plus RGBW PM: …RGBW0.Brightness. Nötig zum Dimmen.'],
+    ['rgb', 'Farbe (Text)', 'state-w', 'Shelly Plus RGBW PM: …RGBW0.Color (#rrggbb) – Shelly RGBW2: …lights.rgbw (#rrggbbww). Oder unten die einzelnen Kanäle.'],
+    ['white', 'Weiß-Kanal (optional)', 'state-w', 'Shelly Plus RGBW PM: …RGBW0.White – Shelly RGBW2: …lights.white. Für Warmweiß über den W-Kanal.'],
+    ['red', 'Rot-Kanal (optional, statt Farbe als Text)', 'state-w', 'z. B. Shelly RGBW2 …lights.red (0–255) oder ein KNX-Kanal (0–100 %, nach dem Höchstwert des Datenpunkts)'],
+    ['green', 'Grün-Kanal (optional)', 'state-w'],
+    ['blue', 'Blau-Kanal (optional)', 'state-w'],
+    ['colors', 'Farben zum Blättern', 'text', 'Name=Farbe, mit ; getrennt. Farbe: #rrggbb, w = Weiß-Kanal (w50 = halb), fx = Farbwechsel. Leer = ' + 'Warmweiß=w;Kaltweiß=#ffffff;Rot=#ff0000;Orange=#ff5000;Grün=#00ff00;Blau=#0000ff;Lila=#8000ff;Farbwechsel=fx'],
+    ['fxTime', 'Farbwechsel: Sekunden für eine Runde', 'number', 'Standard 60 – kleiner = schneller. Läuft im Adapter, auch ohne offene Seite; dimmbar.'],
+    ['knxSwitch', 'KNX-Taster: Schalten (optional)', 'state-r', 'Gruppenadresse des Tastenpaars (Schalten/Dimmen). Oben kurz: ein – wenn schon an: nächste Farbe. Unten kurz: aus.'],
+    ['knxDim', 'KNX-Taster: Dimmen (optional)', 'state-r', 'Dimm-Gruppenadresse (DPT 3.007) des gleichen Tastenpaars. Lang drücken: heller / dunkler, loslassen = Stopp.'],
+    ['knxStatus', 'Rückmeldung an KNX: Ein/Aus (optional)', 'state-r', 'Eigene Gruppenadresse für die Status-LED des Tasters – nicht die Schalt-Adresse von oben. SmartView schreibt sie.'],
+    ['knxBright', 'Rückmeldung an KNX: Helligkeit (optional)', 'state-r', 'Eigene Gruppenadresse (DPT 5.001), SmartView schreibt sie.'],
   ],
   blind: [
     ['state', 'Position % oder Auf/Ab (Datenpunkt)', 'state-w', 'Positions-Datenpunkt (0–100 %) oder Auf/Ab-Objekt (true/false)'],
@@ -1376,7 +1392,7 @@ const Editor = (() => {
           box.className = 'checks';
           const chosen = new Set(t[key] || []);
           const boxes = [];
-          const want = kind === 'blindtiles' ? ['blind'] : ['switch', 'dimmer'];
+          const want = kind === 'blindtiles' ? ['blind'] : ['switch', 'dimmer', 'color'];
           for (const p of SV.draft.pages) {
             for (const x of p.tiles.filter(y => want.includes(y.type))) {
               const c = check((x.label || x.state || x.id) + ' (' + p.name + ')', chosen.has(x.id));

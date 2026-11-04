@@ -51,6 +51,7 @@ ausschalten.
 | --- | --- | --- |
 | Schalter / Taster | Schalten, optional Rückmeldung (z. B. KNX-Status) | antippen = ein/aus |
 | Dimmer | Helligkeit 0–100, optional Ein/Aus, Rückmeldung | antippen = ein/aus, Schieberegler |
+| Farblicht / RGBW | Ein/Aus, Helligkeit, Farbe (z. B. Shelly RGBW), optional KNX-Taster | antippen = Farben, Farbwechsel, Helligkeit (siehe unten) |
 | Rollladen | Position, optional Stopp, Rückmeldung; „100 % = geschlossen“ für KNX | ▲ ■ ▼, antippen = Schieberegler |
 | Anzeige | beliebiger Wert mit Einheit, Texte (`true=Offen;false=Zu`), rot hervorheben | antippen = Details |
 | Taste | schreibt einen festen Wert (Szene, Tor-Impuls), optional mit Rückfrage | antippen |
@@ -86,6 +87,37 @@ der Adapter die Markise bzw. den Rollladen selbst in die sichere Position (Auf/E
 – auch wenn kein Gerät offen ist. Solange der Alarm ansteht und danach noch die eingestellte **Sperrzeit**
 (Sekunden oder Minuten) gehen keine Befehle durch, auch keine Zeitschaltuhr. Die Kachel zeigt 🔒 mit Grund
 bzw. Restzeit.
+
+### Farblicht (RGBW, z. B. Shelly) mit KNX-Taster
+
+Datenpunkte des Shelly-Adapters:
+
+| | Shelly Plus RGBW PM | Shelly RGBW2 |
+| --- | --- | --- |
+| Ein/Aus | `…RGBW0.Switch` | `…lights.Switch` |
+| Helligkeit | `…RGBW0.Brightness` | `…lights.gain` |
+| Farbe (Text) | `…RGBW0.Color` | `…lights.rgbw` |
+| Weiß-Kanal | `…RGBW0.White` | `…lights.white` |
+
+Statt der Farbe als Text gehen auch einzelne Kanäle (Rot / Grün / Blau, z. B. ein KNX-RGB-Aktor mit 0–100 %).
+
+**Farben zum Blättern** (leer = Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila, Farbwechsel), selbst festlegen z. B.
+`Warmweiß=w;Rot=#ff0000;Blau=#0000ff;Farbwechsel=fx` – `w` = Weiß-Kanal (`w50` = halb), `fx` = Farbwechsel.
+Der **Farbwechsel** läuft im Adapter (auch ohne offene Seite) und bleibt dimmbar; „Sekunden für eine Runde“ = Tempo.
+
+**Ein Tastenpaar am KNX-Taster** reicht. Im ETS das Tastenpaar auf **„Schalten/Dimmen“** stellen (kurz = Schalten,
+lang = Dimmen) und zwei eigene Gruppenadressen vergeben (Schalten DPT 1.001, Dimmen DPT 3.007). Beide im KNX-Adapter
+anlegen und in der Kachel bei „KNX-Taster: Schalten“ / „Dimmen“ wählen.
+
+| Taster | Wirkung |
+| --- | --- |
+| oben kurz | Licht aus: einschalten (letzte Farbe) – Licht an: **nächste Farbe** (nach der letzten wieder die erste, Farbwechsel ist eine davon) |
+| unten kurz | aus |
+| oben lang | heller (vom ausgeschalteten Licht: von dunkel herauf) |
+| unten lang | dunkler (bis 1 %, bleibt an) |
+
+Für die Status-LED des Tasters: „Rückmeldung an KNX“ mit einer **eigenen** Gruppenadresse (nicht die Schalt-Adresse).
+Kommt ein Dimm-Telegramm in einem unbekannten Format an, steht das im Log.
 
 ### Alarmanlage
 

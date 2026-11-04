@@ -28,9 +28,9 @@
   }
 
   function isLight(t) {
-    if (t.type !== 'switch' && t.type !== 'dimmer') return false;
+    if (t.type !== 'switch' && t.type !== 'dimmer' && t.type !== 'color') return false;
     if (t.layer) return t.layer === 'licht';
-    return t.type === 'dimmer' || LIGHT_ICONS.includes(t.icon || 'bulb');
+    return t.type === 'dimmer' || t.type === 'color' || LIGHT_ICONS.includes(t.icon || 'bulb');
   }
 
   function valOf(st, id) {
@@ -39,6 +39,11 @@
   }
 
   function isOn(st, t) {
+    if (t.type === 'color') {
+      if (t.state) return known(valOf(st, t.state)) ? truthy(valOf(st, t.state)) : null;
+      const b = Number(valOf(st, t.bright));
+      return Number.isFinite(b) ? b > 0 : null;
+    }
     if (t.type === 'dimmer') {
       if (t.switchState && known(valOf(st, t.switchState)) && !truthy(valOf(st, t.switchState))) return false;
       const lvl = Number(valOf(st, t.status || t.state));
@@ -101,9 +106,10 @@
           // "nur diese Lichter": every ticked switch / dimmer; else all lights
           if (t.lightsFrom === 'points') break; // only the extra data points
           const sel = Array.isArray(t.lightTiles) && t.lightTiles.length;
-          if (sel ? !t.lightTiles.includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') : !isLight(x)) continue;
+          if (sel ? !t.lightTiles.includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer' && x.type !== 'color') : !isLight(x)) continue;
           if (isOn(st, x) === false) continue;
-          if (x.type === 'switch') add(x.state, Boolean(x.invert));
+          if (x.type === 'color') add(x.state || x.bright, x.state ? false : 0);
+          else if (x.type === 'switch') add(x.state, Boolean(x.invert));
           else if (x.switchState) add(x.switchState, false);
           else add(x.state, 0);
         }
@@ -116,8 +122,9 @@
       } else {
         step('Licht an' + (t.onlyDark && o.dark === undefined ? ' (wenn dunkel)' : ''), now, add => {
           for (const x of tiles) {
-            if (!(t.lights || []).includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer') || isOn(st, x)) continue;
-            if (x.type === 'switch') add(x.state, !x.invert);
+            if (!(t.lights || []).includes(x.id) || (x.type !== 'switch' && x.type !== 'dimmer' && x.type !== 'color') || isOn(st, x)) continue;
+            if (x.type === 'color') add(x.state || x.bright, x.state ? true : 100);
+            else if (x.type === 'switch') add(x.state, !x.invert);
             else if (x.switchState) add(x.switchState, true);
             else add(x.state, 100);
           }

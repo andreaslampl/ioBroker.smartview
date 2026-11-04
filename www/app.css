@@ -535,3 +535,13 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.appliances .win.app .wname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile.appliances.c3 .win.app { padding: 3px 6px; gap: 6px; }
 .tile.appliances.c3 .win.app .wname { font-size: 13px; }
+
+/* color light: presets in the sheet, rainbow symbol while the color changer runs */
+.cpresets { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.cpresets .cpre { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.cpresets .cpre.active { outline: 2px solid var(--accent, #4a9eff); }
+.cdot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, .5); flex: none; }
+.cown { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; }
+.cown input[type=color] { width: 48px; height: 34px; border: none; background: none; padding: 0; }
+.tic.cfx { animation: cfx 6s linear infinite; }
+@keyframes cfx { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }

@@ -17,6 +17,7 @@ const WinLogic = require('./www/winlogic');
 const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
 const AppLogic = require('./www/applogic');
+const { ColorLights } = require('./lib/colorlight');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
@@ -179,6 +180,8 @@ class SmartView extends utils.Adapter {
                 dnd: () => this.dndInfo(),
                 appliances: () => this.appStatus(),
                 appAck: key => this.appAck(key),
+                colors: () => this.colorLights().status(),
+                colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
                 ringing: () => {
                     const st = this.liveStates.get(this.ringStateId());
                     return Boolean(st && SceneLogic.truthy(st.val));
@@ -317,6 +320,7 @@ class SmartView extends utils.Adapter {
         this.checkGates();
         this.checkAppliances(true);
         this.checkAlarmPush(true);
+        this.colorLights().update(this.colorTiles());
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
         this.checkDnd(); // the time window may have changed
     }
@@ -759,6 +763,10 @@ class SmartView extends utils.Adapter {
         if (this.alarmPushIds && this.alarmPushIds.has(id)) {
             this.checkAlarmPush();
         }
+        if (this.colors) {
+            // own writes (feedback, color changer) are no button presses
+            this.colors.onState(id, state, Boolean(state && state.from === `system.adapter.${this.namespace}`));
+        }
         if (id === this.ringStateId() && val && !prev) {
             if (this.store.layout.ring.dndQuiet && this.dndInfo().on) {
                 this.log.info('Es läutet - Nicht stören: keine Mitteilung');
@@ -772,6 +780,37 @@ class SmartView extends utils.Adapter {
                 this.whatsapp({ title: '🔔 Es läutet', body: time }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
             }
         }
+    }
+
+    // ---------------- color lights (KNX push button, color changer) ----------------
+
+    colorLights() {
+        if (!this.colors) {
+            this.colors = new ColorLights(
+                {
+                    get: id => (this.liveStates.get(id) || {}).val,
+                    max: id => (this.meta.get(id) || {}).max,
+                    set: (id, val) => this.setValue(id, val, { force: true }),
+                    log: this.log,
+                    changed: status => this.server && this.server.colorsChanged && this.server.colorsChanged(status),
+                },
+                this.colorOpts || {},
+            );
+        }
+        return this.colors;
+    }
+
+    /** color tiles of the saved layout (links are no tiles of their own: they act through the original) */
+    colorTiles() {
+        const list = [];
+        for (const page of this.store.layout.pages) {
+            for (const tile of page.tiles) {
+                if (tile.type === 'color') {
+                    list.push({ key: `${page.id}/${tile.id}`, tile });
+                }
+            }
+        }
+        return list;
     }
 
     /** Data point that says "it rings": from the layout, or the intercom's livecam instance. */
@@ -1761,6 +1800,9 @@ class SmartView extends utils.Adapter {
                 clearTimeout(g.timer);
             }
             clearInterval(this.dndTimer);
+            if (this.colors) {
+                this.colors.stop();
+            }
             if (this.timers) {
                 this.timers.stop();
             }

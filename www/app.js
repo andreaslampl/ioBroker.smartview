@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -144,6 +144,7 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
+    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white'].map(k => t[k]))
     .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan', 'preAlarm', 'faultText', 'disabledText', 'lastMsg', 'connection', 'fault', 'disabled'].map(k => t[k]))
     .concat(t.type === 'fire' ? (t.detectors || []).flatMap(d => [d.state, d.alarm, d.fault, d.off, d.mode]) : [])
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
@@ -623,6 +624,74 @@ function windowsWarn(t) {
   return WinLogic.warn(t, st, windowStates(t));
 }
 
+// ---------------- color light (RGBW) ----------------
+
+/** key the adapter knows the tile by (a link acts through its original) */
+function colorKey(t) {
+  return t._ref || tilePage(t) + '/' + t.id;
+}
+
+/** what the light shows: on, brightness, css color, name of the preset (or Farbwechsel / Farbe) */
+function colorInfo(t) {
+  const cur = ColorLogic.current(t, val, id => (st(id) || {}).max);
+  const colors = ColorLogic.parseColors(t.colors);
+  const s = (SV.colors || {})[colorKey(t)] || {};
+  const hasW = Boolean(t.white) || Boolean(t.rgb && (ColorLogic.parseColor(val(t.rgb)) || {}).w !== undefined);
+  const idx = s.fx ? colors.findIndex(c => c.fx) : ColorLogic.matchPreset(colors, cur, hasW);
+  const name = s.fx ? (idx >= 0 ? colors[idx].label : 'Farbwechsel') : idx >= 0 ? colors[idx].label : 'Farbe';
+  return { ...cur, colors, idx, fx: Boolean(s.fx), name };
+}
+
+function colorText(t, c) {
+  c = c || colorInfo(t);
+  return c.on ? c.name + (c.bright !== null ? ' · ' + Math.round(c.bright) + ' %' : '') : 'Aus';
+}
+
+/** symbol in the light's color while on (color changer: rainbow) */
+function colorIc(t, c) {
+  const style = c.on ? (c.fx ? ' style="color:#e040fb"' : c.css ? ' style="color:' + c.css + '"' : '') : '';
+  return '<span class="tic' + (c.fx && c.on ? ' cfx' : '') + '"' + style + '>' + tileIc(t) + '</span>';
+}
+
+/** css of a preset button */
+function presetCss(c) {
+  if (c.fx) return 'background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)';
+  const rgb = ColorLogic.rgbOnly(c);
+  return 'background:' + ColorLogic.rgbHex(rgb);
+}
+
+function colorSheet(t) {
+  const c = colorInfo(t);
+  const presets = c.colors.map((p, i) => '<button type="button" class="cpre' + (i === c.idx && c.on ? ' active' : '') + '" data-a="cpre" data-v="' + i + '">' +
+    '<span class="cdot" style="' + presetCss(p) + '"></span>' + esc(p.label) + '</button>').join('');
+  const own = t.rgb || t.red ? '<label class="cown">Eigene Farbe <input type="color" data-kind="rgb" value="' + ColorLogic.rgbHex(c.rgb) + '"></label>' : '';
+  return '<div class="bigval" data-out>' + esc(colorText(t, c)) + '</div>' +
+    (t.bright ? '<input type="range" data-kind="bright" min="1" max="100" step="1" value="' + Math.round(c.bright || 0) + '" aria-label="Helligkeit">' : '') +
+    '<div class="cpresets">' + presets + '</div>' + own +
+    '<div class="row"><button type="button" data-a="coff">Aus</button><button type="button" data-a="con" class="primary">Ein</button></div>';
+}
+
+function colorCmd(t, action, arg) {
+  if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
+  if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
+  withPin(t.state || t.bright || t.rgb, pin => SV.ws.send(JSON.stringify({ type: 'color', key: colorKey(t), action, arg, pin })));
+}
+
+/** the adapter's color changer started / stopped */
+function refreshColors() {
+  for (const el of document.querySelectorAll('.tile.color, .lrow.color, .marker.color')) {
+    const t = findTile(el.dataset.page, el.dataset.tile);
+    if (!t) continue;
+    if (el.classList.contains('lrow')) fillRow(el, t);
+    else if (el.classList.contains('marker')) fillMarker(el, t);
+    else fillTile(el, t);
+  }
+  if (SV.sheet && SV.sheet.tile && SV.sheet.tile.type === 'color') {
+    const sh = document.querySelector('.sheet');
+    if (sh) fillSheet(sh, SV.sheet.tile);
+  }
+}
+
 // ---------------- household appliances ----------------
 
 /** status of each device: from the adapter (it remembers "Fertig"), else what the data point says right now */
@@ -771,6 +840,7 @@ function tileState(t, pageId) {
   }
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
+  if (t.type === 'color') return colorInfo(t).on ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
   if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
   if (t.type === 'wallbox') return wbFault(t) ? 'alert' : wbCharging(t) ? 'on' : '';
@@ -1618,7 +1688,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1709,6 +1779,12 @@ function fillRow(el, t) {
       const lvl = Math.round(dimOn(t) ? dimLevel(t) : 0);
       ctl = '<button type="button" data-a="dimdown" aria-label="dunkler">' + icon('minus') + '</button><button type="button" data-a="dimup" aria-label="heller">' + icon('plus') + '</button>' +
         '<span class="lbar"><span style="width:' + lvl + '%"></span></span><span class="lval">' + lvl + ' %</span>';
+      break;
+    }
+    case 'color': {
+      const c = colorInfo(t);
+      ctl = '<button type="button" class="lon" data-a="con">EIN</button><button type="button" class="loff" data-a="coff">AUS</button>' +
+        '<span class="lval">' + esc(colorText(t, c)) + '</span><span class="lamp' + (c.on ? ' on' : ' off') + '"' + (c.on && c.css ? ' style="background:' + c.css + '"' : '') + '></span>';
       break;
     }
     case 'blind':
@@ -1827,7 +1903,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1853,6 +1929,12 @@ function fillTile(el, t) {
       const on = dimOn(t);
       html = '<div class="row1">' + ic + '<span class="tval">' + (on ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</span></div>' + label;
       if (t.state) html += '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '" aria-label="Helligkeit">';
+      break;
+    }
+    case 'color': {
+      const c = colorInfo(t);
+      html = '<div class="row1">' + colorIc(t, c) + '<span class="tval">' + (c.on ? (c.bright !== null ? Math.round(c.bright) + ' %' : 'Ein') : 'Aus') + '</span></div>' +
+        (c.on ? '<div class="tsub">' + esc(c.name) + '</div>' : '') + label;
       break;
     }
     case 'blind':
@@ -2003,6 +2085,10 @@ function bindControls(el, t) {
         else if (t.switchState) send(t.switchState, next > 0);
         return;
       }
+      if (t.type === 'color' && ['con', 'coff', 'cpre', 'cnext'].includes(a)) {
+        if (a === 'cpre') return colorCmd(t, 'preset', Number(b.dataset.v));
+        return colorCmd(t, a === 'con' ? 'on' : a === 'coff' ? 'off' : 'next');
+      }
       if ((a === 'up' || a === 'down' || a === 'stop') && blindBlocked(t)) return;
       if (a === 'gopen') gateCmd(t, 'open');
       else if (a === 'gclose') gateCmd(t, 'close');
@@ -2063,6 +2149,13 @@ function bindControls(el, t) {
       else if (a === 'open') openCam(t.camera, t.label);
     };
   }
+  // color light: own color from the browser's color picker
+  for (const ci of el.querySelectorAll('input[type=color][data-kind=rgb]')) {
+    ci.addEventListener('click', e => e.stopPropagation());
+    ci.addEventListener('change', () => {
+      if (!SV.editing) colorCmd(t, 'rgb', ci.value);
+    });
+  }
   for (const r of el.querySelectorAll('input[type=range]')) {
     const out = el.querySelector('[data-out]');
     r.addEventListener('pointerdown', e => {
@@ -2071,6 +2164,7 @@ function bindControls(el, t) {
     });
     r.addEventListener('click', e => e.stopPropagation());
     r.addEventListener('input', () => {
+      if (r.dataset.kind === 'bright') return;
       if (out) out.textContent = r.dataset.kind === 'blind' ? r.value + ' % offen' : r.value + ' %';
     });
     r.addEventListener('change', () => {
@@ -2078,6 +2172,7 @@ function bindControls(el, t) {
       if (SV.editing) return;
       const v = Number(r.value);
       if (r.dataset.kind === 'blind') blindWrite(t, v);
+      else if (r.dataset.kind === 'bright') send(t.bright, Math.max(1, v));
       else {
         rememberLevel(t, v);
         send(t.state, v);
@@ -2247,7 +2342,7 @@ const LAYERS = [
   ['energie', 'Energie', 'bolt'],
   ['sonstiges', 'Sonstiges', 'info'],
 ];
-const LAYER_TYPE = { fire: 'brand', contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht' };
+const LAYER_TYPE = { fire: 'brand', contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht', color: 'licht' };
 const LAYER_ICON = {
   bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
   blind: 'beschattung', awning: 'beschattung',
@@ -2386,6 +2481,7 @@ function fillMarker(el, t) {
     const f = fmt(t, t.state);
     v = f.text + (f.unit ? ' ' + f.unit : '');
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
+  else if (t.type === 'color') v = colorInfo(t).on ? colorText(t) : '';
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
@@ -2548,6 +2644,8 @@ function fillSheet(sh, t) {
     body = '<div class="bigval" data-out>' + (dimOn(t) ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</div>' +
       (t.state ? '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '">' : '') +
       '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';
+  } else if (t.type === 'color') {
+    body = colorSheet(t);
   } else if (t.type === 'blind') {
     const w = blindWords(t);
     body = '<div class="bigval" data-out>' + blindText(t) + '</div>' +
@@ -2952,6 +3050,9 @@ function connect() {
     if (msg.type === 'apps') {
       SV.apps = msg.apps || {};
       refreshApps();
+    } else if (msg.type === 'colors') {
+      SV.colors = msg.colors || {};
+      refreshColors();
     } else if (msg.type === 'dnd') {
       setDnd(msg.dnd);
     } else if (msg.type === 'locks') {
@@ -2960,6 +3061,7 @@ function connect() {
     } else if (msg.type === 'init') {
       setDnd(msg.dnd);
       SV.apps = msg.apps || {};
+      SV.colors = msg.colors || {};
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);

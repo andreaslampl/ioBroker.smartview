@@ -413,6 +413,16 @@ switches/buttons on them.
   wanted the browser layout untouched -> page `phoneOrder` (tile pages): app.js `phoneOrdered()` (phone device or free + narrow)
   / `byPhoneOrder()` (unknown tiles at the end), grid `data-phone`; edit.js sortable writes phoneOrder there, page dialog can
   reset it. List pages still share one order. Playwright (scratchpad sv/phord-ui.js).
+- 0.50.0: owner has a Shelly RGBW in the bathroom, wants it in SmartView and on ONE KNX rocker (browse colors, dim, color
+  changer, dimmable) -> tile `color` {state, bright, rgb (text #rrggbb / #rrggbbww / r,g,b, format kept from the current value),
+  red/green/blue (scaled by object max, else 255), white, knxSwitch, knxDim (DPT 3.007), knxStatus, knxBright (feedback, never
+  the button's own GA - cleanLayout drops it); colors "Name=#rrggbb|w50|fx;…", fxTime}. `www/colorlogic.js` (UMD: presets,
+  formats, `dimDir()` raw 4 bit / {decr_incr,data} / JSON / signed, `current()`, `matchPreset()`), `lib/colorlight.js`
+  `ColorLights` (main `colorLights()`; short top = on, when on = next preset; bottom = off; dim steps 5 % / 300 ms until stop,
+  1-100 %, 15 s cap; software color changer = hue round, paused by off and resumed by on; own echoes ignored via state.from).
+  Page commands via ws {type:'color', key, action} (server `_color`: tile in the user's view, write right on state, PIN).
+  Leave/arrive treat color tiles as lights. Shelly data points from iobroker.shelly 12.0.0 (Gen1 lights.*, Gen2 RGBW0.*).
+  Unit tests + Playwright. Not tried with the owner's Shelly / KNX (format of DPT 3 in their KNX adapter unknown - warns).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
