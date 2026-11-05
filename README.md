@@ -74,6 +74,18 @@ Kontakte, Bewegungsmelder und Alarme zeigen automatisch „Offen/Zu“, „Beweg
 „Alarm/OK“ (nach der Rolle des Datenpunkts). Werte mit Texten im Objekt (z. B. 0 = Unscharf)
 erscheinen als Text.
 
+### Mehrere Datenpunkte, Ein-/Ausschaltverzögerung, automatisch aus
+
+Bei **Schalter**, **Dimmer** und **Rollladen** im Kachel-Dialog:
+
+- **Weitere Datenpunkte** – bekommen denselben Befehl (mehrere Lichter, Steckdosen oder Rollläden mit einer Kachel;
+  auch über Zeitschaltuhr, „Haus verlassen“ und Wind-/Regenschutz).
+- **Einschaltverzögerung / Ausschaltverzögerung** (Sekunden, Schalter und Dimmer) – der Befehl wird erst später
+  ausgeführt, die Kachel zeigt „⏱ Ein in 0:30 min“. Ein neuer Befehl bricht das Warten ab.
+- **Automatisch aus nach** (Minuten) – Treppenhauslicht: nach dem Einschalten wieder aus.
+
+Das läuft im Adapter, also auch ohne offene Seite.
+
 ### Jalousien / Rollläden
 
 Datenpunkt: Position in % oder ein Auf/Ab-Objekt (true/false, z. B. KNX 1-Bit: false = auf, true = ab).

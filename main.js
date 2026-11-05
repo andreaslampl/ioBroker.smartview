@@ -18,6 +18,7 @@ const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
 const AppLogic = require('./www/applogic');
 const { ColorLights } = require('./lib/colorlight');
+const { SwitchCtl } = require('./lib/switchctl');
 const RobotLogic = require('./www/robotlogic');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
@@ -184,6 +185,7 @@ class SmartView extends utils.Adapter {
                 appliances: () => this.appStatus(),
                 appAck: key => this.appAck(key),
                 colors: () => this.colorLights().status(),
+                pending: () => this.switchCtl().status(),
                 webInfo: () => this.webInfo(),
                 colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
                 ringing: () => {
@@ -325,6 +327,7 @@ class SmartView extends utils.Adapter {
         this.checkAppliances(true);
         this.checkAlarmPush(true);
         this.colorLights().update(this.colorTiles());
+        this.switchCtl().update(this.ctlTiles());
         await this.sceneStates().catch(err => this.log.warn(`Szenen-Datenpunkte: ${err.message}`));
         this.checkDnd(); // the time window may have changed
     }
@@ -685,17 +688,46 @@ class SmartView extends utils.Adapter {
         return st ? { ...st, ...common } : { val: null, ...common, missing: !this.meta.has(id) || !m.type };
     }
 
+    switchCtl() {
+        if (!this.swCtl) {
+            this.swCtl = new SwitchCtl({
+                write: (id, val) => this.setValue(id, val, { force: true, raw: true }),
+                log: this.log,
+                changed: status => this.server && this.server.pendingChanged && this.server.pendingChanged(status),
+            });
+        }
+        return this.swCtl;
+    }
+
+    /** switch / dimmer / blind tiles of the saved layout (extras: also, delays, auto off) */
+    ctlTiles() {
+        const list = [];
+        for (const page of this.store.layout.pages) {
+            for (const tile of page.tiles) {
+                if (['switch', 'dimmer', 'blind'].includes(tile.type)) {
+                    list.push({ key: `${page.id}/${tile.id}`, tile });
+                }
+            }
+        }
+        return list;
+    }
+
     /** Command from the page: write with the type of the data point, as a command (ack = false). */
-    async setValue(id, val, { force = false } = {}) {
+    async setValue(id, val, { force = false, raw = false } = {}) {
         // blinds locked by wind/rain: no commands from the page or the time switch
         const lock = force ? null : this.lockFor(id);
         if (lock) {
             throw new Error(`Gesperrt (${lock.reason}${lock.until ? `, noch ${Math.ceil((lock.until - Date.now()) / 60000)} min` : ''})`);
         }
+        // tiles with more data points / delays / auto off: carried out by SwitchCtl (which writes back with raw)
+        if (!raw && this.swCtl && this.swCtl.handles(id)) {
+            return this.swCtl.command(id, val);
+        }
         const { type } = await this.metaOf(id);
         let v = val;
         if (type === 'boolean') {
-            v = val === true || val === 1 || val === 'true' || val === '1' || val === 'on';
+            // a level (dimmer) to an on/off data point: on above 0
+            v = typeof val === 'number' ? val > 0 : val === true || val === 'true' || val === '1' || val === 'on';
         } else if (type === 'number') {
             v = typeof val === 'boolean' ? (val ? 1 : 0) : Number(val);
             if (!Number.isFinite(v)) {
@@ -1856,6 +1888,9 @@ class SmartView extends utils.Adapter {
             clearInterval(this.dndTimer);
             if (this.colors) {
                 this.colors.stop();
+            }
+            if (this.swCtl) {
+                this.swCtl.stop();
             }
             if (this.timers) {
                 this.timers.stop();

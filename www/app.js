@@ -626,6 +626,52 @@ function windowsWarn(t) {
   return WinLogic.warn(t, st, windowStates(t));
 }
 
+/** data points of tiles with an on / off delay (no optimistic display for them) */
+function delayedIds() {
+  const l = layout();
+  if (SV._delayed && SV._delayed.layout === l) return SV._delayed.ids;
+  const ids = new Set();
+  for (const p of l.pages) for (const t of p.tiles) {
+    if ((t.type === 'switch' || t.type === 'dimmer') && (t.onDelay > 0 || t.offDelay > 0)) [t.state, t.switchState].filter(Boolean).forEach(id => ids.add(id));
+  }
+  SV._delayed = { layout: l, ids };
+  return ids;
+}
+
+// ---------------- delayed switching (on / off delay, auto off; runs in the adapter) ----------------
+
+function pendInfo(t) {
+  const p = (SV.pending || {})[t._ref || tilePage(t) + '/' + t.id];
+  return p && p.at > Date.now() ? p : null;
+}
+
+function pendText(p) {
+  const s = Math.max(0, Math.ceil((p.at - Date.now()) / 1000));
+  const clock = s >= 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' min' : s + ' s';
+  return (p.on ? 'Ein in ' : 'Aus in ') + clock;
+}
+
+function pendHtml(t) {
+  const p = pendInfo(t);
+  return p ? '<div class="pend" data-pend="' + p.at + '" data-on="' + (p.on ? 1 : 0) + '">⏱ ' + pendText(p) + '</div>' : '';
+}
+
+function refreshPending() {
+  for (const el of document.querySelectorAll('.tile.switch, .tile.dimmer, .tile.blind')) {
+    const t = findTile(el.dataset.page, el.dataset.tile);
+    if (t) fillTile(el, t);
+  }
+}
+
+// count down every second; a finished one disappears with the next redraw
+setInterval(() => {
+  for (const el of document.querySelectorAll('.pend[data-pend]')) {
+    const p = { at: Number(el.dataset.pend), on: el.dataset.on === '1' };
+    if (p.at <= Date.now()) el.remove();
+    else el.textContent = '⏱ ' + pendText(p);
+  }
+}, 1000);
+
 // ---------------- robot (vacuum / lawn mower) ----------------
 
 /** status line, battery, error for tile / row / marker */
@@ -965,6 +1011,8 @@ function send(id, value) {
 
 function sendNow(id, value, pin) {
   SV.ws.send(JSON.stringify({ type: 'set', id, val: value, pin }));
+  // switched with a delay: the tile shows "Ein in …" instead of the new value
+  if (delayedIds().has(id)) return;
   // show the new value right away; the confirmed value replaces it (or the old one comes back after a wrong PIN)
   const s = SV.states[id] || {};
   SV.prevStates[id] = s;
@@ -2139,6 +2187,7 @@ function fillTile(el, t) {
   }
   html += warnMark(t);
   if (t.pin) html += '<span class="pinmark" title="mit PIN geschützt">' + icon('lock') + '</span>';
+  if (t.type === 'switch' || t.type === 'dimmer' || t.type === 'blind') html += pendHtml(t);
   el.innerHTML = html;
   if (t.type === 'appliances') fitApps(el);
   if (t.type === 'html') renderHtml(el.querySelector('.htmlhost'), val(t.state));
@@ -3155,6 +3204,9 @@ function connect() {
     if (msg.type === 'apps') {
       SV.apps = msg.apps || {};
       refreshApps();
+    } else if (msg.type === 'pending') {
+      SV.pending = msg.pending || {};
+      refreshPending();
     } else if (msg.type === 'colors') {
       SV.colors = msg.colors || {};
       refreshColors();
@@ -3168,6 +3220,7 @@ function connect() {
       SV.apps = msg.apps || {};
       SV.colors = msg.colors || {};
       SV.web = msg.web || null;
+      SV.pending = msg.pending || {};
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);

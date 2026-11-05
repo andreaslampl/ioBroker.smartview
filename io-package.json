@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.52.2",
+    "version": "0.53.0",
     "news": {
+      "0.53.0": {
+        "en": "Switch / dimmer / blind tiles: more data points switched together, on / off delay, auto off (run in the adapter, countdown on the tile)",
+        "de": "Schalter-, Dimmer- und Rollladen-Kacheln: weitere Datenpunkte mitschalten, Ein-/Ausschaltverzögerung, automatisch aus (läuft im Adapter, Countdown auf der Kachel)"
+      },
       "0.52.2": {
         "en": "Robot tile: Dreame map also for tiles saved with 'none' by 0.52.0; error shown with its text (e.g. remove mop) below the status",
         "de": "Roboter-Kachel: Dreame-Karte auch bei Kacheln, die 0.52.0 mit „keine“ gespeichert hat; Fehler mit Text (z. B. Wischpad entfernen) unter dem Zustand"

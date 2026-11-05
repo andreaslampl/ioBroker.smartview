@@ -455,6 +455,13 @@ switches/buttons on them.
   sheet shows status + ⚠ error line.
 - 0.52.2 field: map still missing - 0.52.0 had stored mapUrl (template) but mapMode "none", so the migration (no mapUrl)
   did not apply; owner set "Kartenseite" by hand -> confirmed: Dreame map shows in the robot tile ("Perfekt Funktioniert").
+- 0.53.0: owner asked to switch several data points with one tile and for on/off delays -> switch/dimmer option `also`
+  [ids], `onDelay`/`offDelay` (s), `autoOff` (min, staircase light); blind `also` only. `lib/switchctl.js` `SwitchCtl` (main
+  `switchCtl()`/`ctlTiles()`): main.setValue routes ids of such tiles through it unless `raw` (so page, timers, scenes,
+  wind protection all get it); also ids are not page-writable (only main writes them); pending {key: {at, on}} broadcast
+  {type:'pending'} + init, tile line "⏱ Ein in …" (`pendHtml`, 1 s countdown); dimmer tap = switch + level commands are
+  collected into one pending; no optimistic display for delayed ids (`delayedIds()`). setValue: number -> boolean target
+  is now `> 0`. Unit tests + Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

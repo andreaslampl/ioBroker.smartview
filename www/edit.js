@@ -39,11 +39,19 @@ const TYPE_FIELDS = {
     ['state', 'Schalten (Datenpunkt)', 'state-w'],
     ['status', 'Rückmeldung (optional)', 'state-r', 'Status-Datenpunkt, z. B. KNX-Rückmelde-Adresse'],
     ['invert', 'Umgekehrt (true = aus)', 'check'],
+    ['also', 'Weitere Datenpunkte (werden gleich mitgeschaltet)', 'statelist', 'z. B. mehrere Lichter oder Steckdosen mit einer Kachel – sie bekommen denselben Befehl (auch von Zeitschaltuhr und „Haus verlassen“).'],
+    ['onDelay', 'Einschaltverzögerung (Sekunden, optional)', 'number', 'Ein wird erst nach dieser Zeit ausgeführt. Ein neuer Befehl bricht das Warten ab. Die Kachel zeigt „Ein in …“.'],
+    ['offDelay', 'Ausschaltverzögerung (Sekunden, optional)', 'number', 'Aus wird erst nach dieser Zeit ausgeführt, z. B. Lüfter-Nachlauf.'],
+    ['autoOff', 'Automatisch aus nach (Minuten, optional)', 'number', 'Treppenhauslicht: nach dem Einschalten geht es nach dieser Zeit wieder aus. Neues Ein startet die Zeit neu.'],
   ],
   dimmer: [
     ['state', 'Helligkeit 0–100 % (Datenpunkt)', 'state-w'],
     ['switchState', 'Ein/Aus (optional)', 'state-w', 'Wenn der Dimmer einen eigenen Schalt-Datenpunkt hat'],
     ['status', 'Rückmeldung Helligkeit (optional)', 'state-r'],
+    ['also', 'Weitere Datenpunkte (werden gleich mitgeschaltet)', 'statelist', 'z. B. mehrere Lichter oder Steckdosen mit einer Kachel – sie bekommen denselben Befehl (auch von Zeitschaltuhr und „Haus verlassen“).'],
+    ['onDelay', 'Einschaltverzögerung (Sekunden, optional)', 'number', 'Ein wird erst nach dieser Zeit ausgeführt. Ein neuer Befehl bricht das Warten ab. Die Kachel zeigt „Ein in …“.'],
+    ['offDelay', 'Ausschaltverzögerung (Sekunden, optional)', 'number', 'Aus wird erst nach dieser Zeit ausgeführt, z. B. Lüfter-Nachlauf.'],
+    ['autoOff', 'Automatisch aus nach (Minuten, optional)', 'number', 'Treppenhauslicht: nach dem Einschalten geht es nach dieser Zeit wieder aus. Neues Ein startet die Zeit neu.'],
   ],
   robot: [
     ['robotKind', 'Gerät', 'select:vacuum=Saugroboter;mower=Mähroboter'],
@@ -101,6 +109,7 @@ const TYPE_FIELDS = {
     ['protect', 'Bei Wind- oder Regenalarm', 'select:up=automatisch Auf / Einfahren;down=automatisch Ab;none=nicht fahren, nur sperren'],
     ['lockTime', 'Sperre nach dem Alarm', 'number', 'Solange ein Alarm ansteht, ist immer gesperrt. Danach noch so lange (0 = sofort frei).'],
     ['lockUnit', 'Einheit der Sperre', 'select:min=Minuten;s=Sekunden'],
+    ['also', 'Weitere Rollläden (fahren gleich mit)', 'statelist', 'Position bzw. Auf/Ab-Objekt weiterer Rollläden – sie bekommen denselben Befehl, auch beim Wind- / Regenschutz.'],
   ],
   planview: [['target', 'Grundriss-Seite', 'planpage']],
   gate: [
@@ -1298,6 +1307,29 @@ const Editor = (() => {
     };
   }
 
+  /** list of data points (one picker per row, + adds one) */
+  function stateListField(box, label, help, ids) {
+    const wrap = document.createElement('div');
+    field(box, label, wrap, help);
+    const list = ids.slice();
+    let inputs = [];
+    const read = () => inputs.map(i => i.value.trim()).filter(Boolean);
+    function draw() {
+      wrap.textContent = '';
+      inputs = list.map(id => stateField(wrap, '', id, true));
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Datenpunkt';
+      add.onclick = () => {
+        list.splice(0, list.length, ...read(), '');
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: read };
+  }
+
   function sensorsField(box, rows) {
     const wrap = document.createElement('div');
     wrap.className = 'rules';
@@ -1597,6 +1629,7 @@ const Editor = (() => {
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);
         else if (kind === 'sensors') inputs[key] = sensorsField(body, t[key] || []);
+        else if (kind === 'statelist') inputs[key] = stateListField(body, label, help, t[key] || []);
         else if (kind === 'robotmap') {
           const r = robotMapField(body, t);
           inputs.mapImg = r.img;
