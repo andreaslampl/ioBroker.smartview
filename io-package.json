@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.52.1",
+    "version": "0.52.2",
     "news": {
+      "0.52.2": {
+        "en": "Robot tile: Dreame map also for tiles saved with 'none' by 0.52.0; error shown with its text (e.g. remove mop) below the status",
+        "de": "Roboter-Kachel: Dreame-Karte auch bei Kacheln, die 0.52.0 mit „keine“ gespeichert hat; Fehler mit Text (z. B. Wischpad entfernen) unter dem Zustand"
+      },
       "0.52.1": {
         "en": "Robot tile: map defaults to 'automatic' (new tiles stayed on 'none', so the Dreame map was missing)",
         "de": "Roboter-Kachel: Karte steht anfangs auf „automatisch“ (neue Kacheln blieben auf „keine“, dadurch fehlte die Dreame-Karte)"

@@ -635,9 +635,12 @@ function robotInfo(t) {
   const b = Number(val(t.battery));
   const off = t.connected && val(t.connected) === false;
   let line = RobotLogic.statusText(t, s) || '–';
-  if (err) line = 'Störung (' + val(t.error) + ')';
-  else if (off) line = 'Keine Verbindung';
-  return { line, error: err, battery: t.battery && Number.isFinite(b) ? Math.round(b) : null, working: RobotLogic.working(t, s) };
+  if (off) line = 'Keine Verbindung';
+  // error text from the data point's states (dreame: 68 = "Wischpad entfernen"), else the code
+  const e = st(t.error);
+  const errText = err ? (e && e.states && e.states[String(e.val)] !== undefined ? String(e.states[String(e.val)]) : 'Störung ' + val(t.error)) : '';
+  if (err) line = errText;
+  return { line, status: RobotLogic.statusText(t, s) || '', errText, error: err, battery: t.battery && Number.isFinite(b) ? Math.round(b) : null, working: RobotLogic.working(t, s) };
 }
 
 /** web:/path -> the web adapter on the host SmartView was opened from */
@@ -686,7 +689,8 @@ function robotSheet(t) {
       const on = truthy(val(z.state));
       return '<div class="mrow"><span>' + esc(z.label) + '</span><button type="button" data-a="robzone" data-v="' + i + '"' + (on ? ' class="primary"' : '') + '>' + (on ? 'aktiv' : 'aus') + '</button></div>';
     }).join('') + '</div>' : '';
-  return '<div class="bigval' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</div>' +
+  return '<div class="bigval">' + esc(r.status || r.line) + '</div>' +
+    (r.error ? '<div class="robwarn">⚠ ' + esc(r.errText) + '</div>' : '') +
     (canConfirm ? '<div class="row"><button type="button" data-a="rob" data-v="confirm" class="primary">Fehler quittieren</button></div>' : '') +
     (r.battery !== null ? '<div class="mrow"><span>Akku</span><b>' + r.battery + ' %</b></div>' : '') +
     '<div class="row robbtns">' + btn('start', mower ? 'Mähen' : 'Saugen', !r.working) + btn('resume', 'Nach Plan') + btn('pause', 'Pause') +

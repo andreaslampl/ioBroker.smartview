@@ -449,6 +449,10 @@ switches/buttons on them.
   confirmable), zone rows aktiv/aus (toast while dirty). Playwright; not with the real mower.
 - 0.52.1 field: owner saw no Dreame map - the mapMode select sent its first option "none" for new tiles, so the template
   never set "url". Editor now has "automatisch" (empty) first; existing tiles: choose "Kartenseite" by hand.
+- 0.52.2 field: map still missing (tile saved with "none" by 0.52.0) -> fillRobot turns mapMode none + no mapUrl into the template
+  map (mapUrl is always stored now, so a later "keine" sticks). Dreame map works in the adapter after updating it to 0.4.12
+  (was 0.4.1). Tile showed "Störung (68)" = dreame "Wischpad entfernen" -> error text from the error data point's states,
+  sheet shows status + ⚠ error line.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

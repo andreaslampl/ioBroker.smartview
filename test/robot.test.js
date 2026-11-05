@@ -8,7 +8,7 @@ const { cleanLayout, stateIds } = require('../lib/layout');
 test('robot: templates fill the data points of dreame / husqvarna devices, own fields stay', () => {
     const l = cleanLayout({ pages: [{ id: 'g', name: 'Garten', tiles: [
         { id: 'm', type: 'robot', robotSrc: 'husqvarna-automower.0.abc-1.capabilities.position' },
-        { id: 'v', type: 'robot', robotSrc: 'dreame.0.123.status.state', start: 'javascript.0.meinStart', mapMode: 'none' },
+        { id: 'v', type: 'robot', robotSrc: 'dreame.0.123.status.state', start: 'javascript.0.meinStart', mapMode: 'none', mapUrl: 'web:/dreame/?did=123' },
         { id: 'x', type: 'robot', status: 'roborock.0.s.state', mapUrl: 'javascript:alert(1)' },
     ] }] });
     const [m, v, x] = l.pages[0].tiles;
@@ -21,6 +21,8 @@ test('robot: templates fill the data points of dreame / husqvarna devices, own f
     assert.equal(v.mapMode, 'none', 'own choice kept');
     assert.equal(v.mapUrl, 'web:/dreame/?did=123');
     assert.equal(x.mapUrl, '', 'only http(s) / web: addresses');
+    const old = cleanLayout({ pages: [{ id: 'g', name: 'G', tiles: [{ id: 'v', type: 'robot', robotSrc: 'dreame.0.123', mapMode: 'none' }] }] }).pages[0].tiles[0];
+    assert.equal(old.mapMode, 'url', '"keine" saved by 0.52.0 without an address becomes the Dreame map');
     assert.equal(x.robotKind, undefined, 'not set = vacuum');
     const { write } = stateIds(l);
     assert.ok(write.includes('husqvarna-automower.0.abc-1.ACTIONS.PAUSE'));
