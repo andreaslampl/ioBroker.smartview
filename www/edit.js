@@ -65,7 +65,7 @@ const TYPE_FIELDS = {
     ['confirm', 'Taste: Fehler quittieren (optional)', 'state-w'],
     ['confirmable', 'Fehler quittierbar (optional)', 'state-r', 'true = Knopf „Fehler quittieren“ erscheint (ohne Datenpunkt: bei jedem Fehler)'],
     ['dirty', 'Sperrzonen nicht synchron (optional)', 'state-r', 'true = Sperrzonen können gerade nicht umgeschaltet werden (Husqvarna stayOutZones.dirty)'],
-    ['mapMode', 'Karte im Bedienfenster', 'select:none=keine;url=Kartenseite eines Adapters (z. B. Dreame);image=Kartenbild aus einem Datenpunkt;gps=GPS-Position auf eigenem Bild (z. B. Automower)'],
+    ['mapMode', 'Karte im Bedienfenster', 'select:=automatisch (vom Roboter: Dreame = Kartenseite, Automower = GPS);none=keine;url=Kartenseite eines Adapters (z. B. Dreame);image=Kartenbild aus einem Datenpunkt;gps=GPS-Position auf eigenem Bild (z. B. Automower)'],
     ['mapUrl', 'Kartenseite (Adresse)', 'text', 'Dreame: web:/dreame/?did=<Geräte-ID> (wird mit der Vorlage gesetzt). web:/… = web-Adapter auf dem gleichen Rechner; sonst http(s)://…'],
     ['mapImage', 'Kartenbild (Datenpunkt)', 'state-r', 'Datenpunkt mit Bild (data:image… / Base64 / Adresse)'],
     ['lat', 'GPS Breite', 'state-r'],

@@ -447,6 +447,8 @@ switches/buttons on them.
   STARTINWORKAREA path case + area 0). Tile fields confirm (w), confirmable (r), dirty (r), option `zones` [{label, state}]
   (filled in `fillRobotAreas()`, read+write in stateIds/tileWriteIds). Sheet: "Fehler quittieren" while an error (and
   confirmable), zone rows aktiv/aus (toast while dirty). Playwright; not with the real mower.
+- 0.52.1 field: owner saw no Dreame map - the mapMode select sent its first option "none" for new tiles, so the template
+  never set "url". Editor now has "automatisch" (empty) first; existing tiles: choose "Kartenseite" by hand.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

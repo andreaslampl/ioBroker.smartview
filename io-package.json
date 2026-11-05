@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.52.0",
+    "version": "0.52.1",
     "news": {
+      "0.52.1": {
+        "en": "Robot tile: map defaults to 'automatic' (new tiles stayed on 'none', so the Dreame map was missing)",
+        "de": "Roboter-Kachel: Karte steht anfangs auf „automatisch“ (neue Kacheln blieben auf „keine“, dadurch fehlte die Dreame-Karte)"
+      },
       "0.52.0": {
         "en": "Robot tile: pick the robot from a list (dreame / husqvarna-automower devices), stay-out zones on/off and confirm error (extended husqvarna-automower adapter)",
         "de": "Roboter-Kachel: Roboter aus einer Liste wählen (Geräte von dreame / husqvarna-automower), Sperrzonen ein/aus und Fehler quittieren (erweiterter Husqvarna-Adapter)"
