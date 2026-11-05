@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.51.0",
+    "version": "0.52.0",
     "news": {
+      "0.52.0": {
+        "en": "Robot tile: pick the robot from a list (dreame / husqvarna-automower devices), stay-out zones on/off and confirm error (extended husqvarna-automower adapter)",
+        "de": "Roboter-Kachel: Roboter aus einer Liste wählen (Geräte von dreame / husqvarna-automower), Sperrzonen ein/aus und Fehler quittieren (erweiterter Husqvarna-Adapter)"
+      },
       "0.51.0": {
         "en": "New tile vacuum / lawn mower robot (any brand; templates for dreame and husqvarna-automower): status, battery, buttons, work areas, map (adapter page, image or GPS on an own picture with track)",
         "de": "Neue Kachel Saug- / Mähroboter (jede Marke; Vorlagen für dreame und husqvarna-automower): Zustand, Akku, Tasten, Arbeitsbereiche, Karte (Kartenseite des Adapters, Bild oder GPS auf eigenem Gartenbild mit Spur)"

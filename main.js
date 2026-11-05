@@ -172,6 +172,7 @@ class SmartView extends utils.Adapter {
                 energyInstances: () => this.instancesOf('energie'),
                 chargerInstances: () => this.instancesOf('versicharge'),
                 fc20Instances: () => this.instancesOf('fc20-cerberus-bacnet'),
+                robotDevices: () => this.robotDevices(),
                 energyDay: (instance, date) => this.energyDay(instance, date),
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
@@ -1143,12 +1144,38 @@ class SmartView extends utils.Adapter {
      * from its export list, switch off/on via inputs.N.deactivated) or SPC (zones.N.area, no switching). Done on
      * saving the layout, so the data points are known (and writable) like any other.
      */
+    /** robots of the dreame / husqvarna-automower adapters for the tile dialog: [{id (device prefix), label, kind}] */
+    async robotDevices() {
+        const out = [];
+        const hq = await this.getForeignStatesAsync('husqvarna-automower.*.system.name').catch(() => ({}));
+        for (const [id, st] of Object.entries(hq || {})) {
+            const prefix = id.replace(/\.system\.name$/, '');
+            out.push({ id: prefix, label: `${(st && st.val) || 'Automower'} (${prefix.split('.').slice(0, 2).join('.')})`, kind: 'mower' });
+        }
+        for (const [suffix, kind] of [['remote.start-clean', 'vacuum'], ['remote.start-mow', 'mower']]) {
+            const objs = await this.getForeignObjectsAsync(`dreame.*.${suffix}`, 'state').catch(() => ({}));
+            for (const id of Object.keys(objs || {})) {
+                const prefix = id.slice(0, -suffix.length - 1);
+                const dev = await this.getForeignObjectAsync(prefix).catch(() => null);
+                const name = dev && dev.common && dev.common.name;
+                const text = typeof name === 'object' && name ? name.de || name.en || '' : name || '';
+                out.push({ id: prefix, label: `${text || 'Dreame'} (${prefix})`, kind });
+            }
+        }
+        return out;
+    }
+
     /** robot (husqvarna-automower): work areas with their names for "Bereich mähen" buttons */
     async fillRobotAreas(t) {
         const tpl = RobotLogic.template(t.robotSrc, t.robotKind);
         if (!tpl || tpl.adapter !== 'husqvarna') {
             return;
         }
+        // stay-out zones (extended adapter): switch per zone
+        const zoneStates = await this.getForeignStatesAsync(`${tpl.prefix}.stayOutZones.*.name`).catch(() => ({}));
+        t.zones = Object.entries(zoneStates || {})
+            .map(([id, st]) => ({ state: id.replace(/\.name$/, '.enable'), label: st && st.val ? String(st.val) : id.split('.').slice(-2, -1)[0] }))
+            .sort((a, b) => a.label.localeCompare(b.label, 'de'));
         const states = await this.getForeignStatesAsync(`${tpl.prefix}.workAreas.*.name`).catch(() => ({}));
         t.areas = Object.entries(states || {})
             .map(([id, st]) => ({ id: id.split('.').slice(-2, -1)[0], label: st && st.val ? String(st.val) : '' }))

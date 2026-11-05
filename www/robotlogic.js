@@ -36,6 +36,10 @@
                     track: `${p}.positions.positions`,
                     areaId: `${p}.ACTIONS.startInWorkArea.workAreaId`,
                     areaStart: `${p}.ACTIONS.startInWorkArea.STARTINWORKAREA`,
+                    // from the extended adapter (andreaslampl/ioBroker.husqvarna-automower 0.6.0-beta.13)
+                    confirm: `${p}.ACTIONS.CONFIRMERROR`,
+                    confirmable: `${p}.mower.isErrorConfirmable`,
+                    dirty: `${p}.stayOutZones.dirty`,
                 },
                 options: { robotKind: 'mower', texts: MOWER_TEXTS, runAt: 'MOWING;LEAVING;GOING_HOME', mapMode: 'gps' },
             };

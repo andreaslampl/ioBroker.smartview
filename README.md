@@ -91,9 +91,14 @@ bzw. Restzeit.
 
 ### Saug- und Mähroboter (jede Marke)
 
-Kachel-Art **„Saugroboter / Mähroboter“**. Bei **Dreame** oder **Husqvarna Automower** genügt im Feld „Vorlage“ irgendein
-Datenpunkt des Geräts – beim Übernehmen füllt SmartView Zustand, Akku, Fehler, Tasten (Start, Nach Plan, Pause, Parken …),
-Texte und bei Husqvarna die Arbeitsbereiche („Mähen: Vorgarten“) selbst aus. Andere Marken: Felder selbst wählen.
+Kachel-Art **„Saugroboter / Mähroboter“**. Bei **Dreame** oder **Husqvarna Automower** im Feld „Roboter“ das Gerät
+wählen (Liste aus den installierten Adaptern) – beim Übernehmen füllt SmartView Zustand, Akku, Fehler, Tasten (Start,
+Nach Plan, Pause, Parken …), Texte und bei Husqvarna die Arbeitsbereiche („Mähen: Vorgarten“) selbst aus. Andere Marken:
+„keiner“ und die Felder selbst wählen.
+
+**Sperrzonen und „Fehler quittieren“** (Husqvarna) brauchen den erweiterten Adapter
+`iobroker url https://github.com/andreaslampl/ioBroker.husqvarna-automower` (0.6.0-beta.13): danach die Kachel einmal
+öffnen und speichern – die Sperrzonen erscheinen als Schalter im Bedienfenster, „Fehler quittieren“ bei einem Fehler.
 
 Karte im Bedienfenster:
 

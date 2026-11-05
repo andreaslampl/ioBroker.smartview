@@ -439,6 +439,14 @@ switches/buttons on them.
   two points, prompt coordinates, mower position suggested). Dreame live map = adapter's own page via web (socket.io).
   Stay-out zones / error confirm not built (no ACTIONS in husqvarna-automower 0.5.0). Unit tests + Playwright; not with
   the real devices.
+- 0.52.0: owner wanted the robot picked like the alarm / fire instance -> editor kind `robotdev` (`robotField()`, list from
+  `/api/energy` `robots` = main `robotDevices()`: husqvarna `*.system.name`, dreame `*.remote.start-clean|start-mow`, value =
+  device prefix, sets robotKind; old data point values map to their device). Stay-out zones + confirm error: owner's fork
+  andreaslampl/ioBroker.husqvarna-automower 0.6.0-beta.13 (upstream main + `stayOutZones.<zone>.name/enable` -> PATCH
+  stayOutZones/<id>, `ACTIONS.CONFIRMERROR` -> POST errors/confirm, endpoints as in openHAB's automower binding; also fixed
+  STARTINWORKAREA path case + area 0). Tile fields confirm (w), confirmable (r), dirty (r), option `zones` [{label, state}]
+  (filled in `fillRobotAreas()`, read+write in stateIds/tileWriteIds). Sheet: "Fehler quittieren" while an error (and
+  confirmable), zone rows aktiv/aus (toast while dirty). Playwright; not with the real mower.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

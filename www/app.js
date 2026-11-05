@@ -145,7 +145,8 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white', 'battery', 'connected', 'lat', 'lon', 'track', 'mapImage'].map(k => t[k]))
+    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white', 'battery', 'connected', 'lat', 'lon', 'track', 'mapImage', 'confirmable', 'dirty'].map(k => t[k]))
+    .concat(t.type === 'robot' ? (t.zones || []).map(z => z.state) : [])
     .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan', 'preAlarm', 'faultText', 'disabledText', 'lastMsg', 'connection', 'fault', 'disabled'].map(k => t[k]))
     .concat(t.type === 'fire' ? (t.detectors || []).flatMap(d => [d.state, d.alarm, d.fault, d.off, d.mode]) : [])
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
@@ -679,10 +680,17 @@ function robotSheet(t) {
   const mower = t.robotKind === 'mower';
   const btn = (k, text, primary) => (t[k] ? '<button type="button" data-a="rob" data-v="' + k + '"' + (primary ? ' class="primary"' : '') + '>' + text + '</button>' : '');
   const areas = (t.areas || []).length && t.areaId && t.areaStart ? '<div class="robareas">' + t.areas.map(a => '<button type="button" data-a="robarea" data-v="' + esc(a.id) + '">' + (mower ? 'Mähen: ' : 'Reinigen: ') + esc(a.label) + '</button>').join('') + '</div>' : '';
+  const canConfirm = t.confirm && r.error && (!t.confirmable || truthy(val(t.confirmable)));
+  const zones = (t.zones || []).length ? '<div class="robzones"><div class="mrow"><span>Sperrzonen' + (truthy(val(t.dirty)) ? ' (werden abgeglichen)' : '') + '</span></div>' +
+    t.zones.map((z, i) => {
+      const on = truthy(val(z.state));
+      return '<div class="mrow"><span>' + esc(z.label) + '</span><button type="button" data-a="robzone" data-v="' + i + '"' + (on ? ' class="primary"' : '') + '>' + (on ? 'aktiv' : 'aus') + '</button></div>';
+    }).join('') + '</div>' : '';
   return '<div class="bigval' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</div>' +
+    (canConfirm ? '<div class="row"><button type="button" data-a="rob" data-v="confirm" class="primary">Fehler quittieren</button></div>' : '') +
     (r.battery !== null ? '<div class="mrow"><span>Akku</span><b>' + r.battery + ' %</b></div>' : '') +
     '<div class="row robbtns">' + btn('start', mower ? 'Mähen' : 'Saugen', !r.working) + btn('resume', 'Nach Plan') + btn('pause', 'Pause') +
-    btn('stop', 'Stopp') + btn('home', mower ? 'Parken' : 'Zur Station', r.working) + btn('homeNext', 'Parken bis Plan') + '</div>' + areas + robotMap(t);
+    btn('stop', 'Stopp') + btn('home', mower ? 'Parken' : 'Zur Station', r.working) + btn('homeNext', 'Parken bis Plan') + '</div>' + areas + zones + robotMap(t);
 }
 
 // ---------------- color light (RGBW) ----------------
@@ -2159,6 +2167,12 @@ function bindControls(el, t) {
         return;
       }
       if (t.type === 'robot' && a === 'rob') return send(t[b.dataset.v], true);
+      if (t.type === 'robot' && a === 'robzone') {
+        const z = (t.zones || [])[Number(b.dataset.v)];
+        if (z && truthy(val(t.dirty))) return toast('Sperrzonen werden gerade mit der Husqvarna-Cloud abgeglichen – später nochmal versuchen', true);
+        if (z) send(z.state, !truthy(val(z.state)));
+        return;
+      }
       if (t.type === 'robot' && a === 'robarea') {
         // husqvarna: work area id first, then the start button
         send(t.areaId, typedVal(b.dataset.v));

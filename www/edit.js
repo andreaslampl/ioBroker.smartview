@@ -47,7 +47,7 @@ const TYPE_FIELDS = {
   ],
   robot: [
     ['robotKind', 'Gerät', 'select:vacuum=Saugroboter;mower=Mähroboter'],
-    ['robotSrc', 'Vorlage: Datenpunkt des Geräts (optional)', 'state-r', 'Irgendeinen Datenpunkt des Roboters im Adapter dreame oder husqvarna-automower wählen – beim Übernehmen füllt SmartView die Felder unten selbst aus (leere Felder bzw. die dieses Adapters). Andere Marken: Felder selbst wählen.'],
+    ['robotSrc', 'Roboter (Adapter dreame / husqvarna-automower)', 'robotdev', 'Füllt beim Übernehmen die Felder unten selbst aus (leere Felder bzw. die dieses Adapters). Andere Marken: „keiner“ und die Felder selbst wählen.'],
     ['status', 'Zustand', 'state-r'],
     ['texts', 'Texte für den Zustand (optional)', 'text', 'z. B. 1=Saugt;2=Bereit;6=Lädt – leer = Texte des Datenpunkts'],
     ['runAt', 'Arbeitet bei (optional)', 'text', 'Werte oder Texte mit ; getrennt, bei denen die Kachel „aktiv“ leuchtet, z. B. MOWING;LEAVING oder 1;5'],
@@ -62,6 +62,9 @@ const TYPE_FIELDS = {
     ['homeNext', 'Taste: Parken bis zum nächsten Plan (optional)', 'state-w'],
     ['areaId', 'Arbeitsbereich: Nummer (optional)', 'state-w', 'Husqvarna: Bereiche werden beim Übernehmen aus dem Adapter geholt (Knöpfe „Mähen: …“).'],
     ['areaStart', 'Arbeitsbereich: Start-Taste (optional)', 'state-w'],
+    ['confirm', 'Taste: Fehler quittieren (optional)', 'state-w'],
+    ['confirmable', 'Fehler quittierbar (optional)', 'state-r', 'true = Knopf „Fehler quittieren“ erscheint (ohne Datenpunkt: bei jedem Fehler)'],
+    ['dirty', 'Sperrzonen nicht synchron (optional)', 'state-r', 'true = Sperrzonen können gerade nicht umgeschaltet werden (Husqvarna stayOutZones.dirty)'],
     ['mapMode', 'Karte im Bedienfenster', 'select:none=keine;url=Kartenseite eines Adapters (z. B. Dreame);image=Kartenbild aus einem Datenpunkt;gps=GPS-Position auf eigenem Bild (z. B. Automower)'],
     ['mapUrl', 'Kartenseite (Adresse)', 'text', 'Dreame: web:/dreame/?did=<Geräte-ID> (wird mit der Vorlage gesetzt). web:/… = web-Adapter auf dem gleichen Rechner; sonst http(s)://…'],
     ['mapImage', 'Kartenbild (Datenpunkt)', 'state-r', 'Datenpunkt mit Bild (data:image… / Base64 / Adresse)'],
@@ -777,6 +780,36 @@ const Editor = (() => {
       s.appendChild(o);
     }
     s.value = value === undefined ? list[0] || '' : value || '';
+    return s;
+  }
+
+  /** robot device of the dreame / husqvarna-automower adapters (value = device prefix); also sets "Gerät" */
+  async function robotField(box, value, label, help, kindInput) {
+    const s = select([['', '(keiner – Datenpunkte selbst wählen)']], value || '');
+    field(box, label, s, help);
+    let list = [];
+    try {
+      list = (await api('energy')).robots || [];
+    } catch (e) {
+      // adapters not installed
+    }
+    // older tiles stored any data point of the device: select the device it belongs to
+    const owner = list.find(r => value && value.startsWith(r.id + '.'));
+    if (owner) value = owner.id;
+    const known = list.some(r => r.id === value);
+    for (const r of list.concat(value && !known ? [{ id: value, label: value + ' (nicht gefunden)' }] : [])) {
+      const o = document.createElement('option');
+      o.value = r.id;
+      o.textContent = r.label;
+      o.dataset.kind = r.kind || '';
+      s.appendChild(o);
+    }
+    s.value = value || '';
+    s.onchange = () => {
+      const k = s.selectedOptions[0] && s.selectedOptions[0].dataset.kind;
+      const ki = kindInput();
+      if (k && ki) ki.value = k;
+    };
     return s;
   }
 
@@ -1553,6 +1586,7 @@ const Editor = (() => {
           inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);
         } else if (kind === 'energy') energyField(body, t[key], t.type === 'wallbox' ? [label, help] : null).then(s => (inputs[key] = s));
         else if (kind === 'charger') chargerField(body, t[key], label, help).then(s => (inputs[key] = s));
+        else if (kind === 'robotdev') robotField(body, t[key], label, help, () => inputs.robotKind).then(s => (inputs[key] = s));
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'planpage') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.type === 'plan').map(p => [p.id, p.name])), t[key] || ''), 'Zuerst eine Seite der Art „Grundriss“ anlegen. Beschriftung leer = Name der Seite. In den Seiten-Einstellungen kann die Grundriss-Seite aus der Seitenleiste ausgeblendet werden.');
         else if (kind === 'page') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.id !== page.id).map(p => [p.id, p.name])), t[key] || ''), 'Beschriftung leer = Name der Seite');

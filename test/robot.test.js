@@ -25,6 +25,10 @@ test('robot: templates fill the data points of dreame / husqvarna devices, own f
     const { write } = stateIds(l);
     assert.ok(write.includes('husqvarna-automower.0.abc-1.ACTIONS.PAUSE'));
     assert.ok(!write.includes('husqvarna-automower.0.abc-1.positions.latitude'));
+    assert.equal(m.confirm, 'husqvarna-automower.0.abc-1.ACTIONS.CONFIRMERROR');
+    const z = cleanLayout({ pages: [{ id: 'g', name: 'G', tiles: [{ id: 'm', type: 'robot', robotSrc: 'husqvarna-automower.0.abc-1', zones: [{ label: 'Beet', state: 'husqvarna-automower.0.abc-1.stayOutZones.z1.enable' }, { label: 'leer' }] }] }] });
+    assert.equal(z.pages[0].tiles[0].zones.length, 1);
+    assert.ok(stateIds(z).write.includes('husqvarna-automower.0.abc-1.stayOutZones.z1.enable'), 'zone switch writable');
 });
 
 test('robot: status texts, working, errors', () => {

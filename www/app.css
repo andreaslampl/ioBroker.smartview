@@ -561,3 +561,5 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .bigval.bad, .tsub.bad, .lval.bad { color: var(--bad); }
 .robmap.calib { cursor: crosshair; margin-top: 8px; }
 .robmap.calib .robdot { font-weight: 700; font-size: 14px; }
+.robzones { margin: 8px 0; }
+.robzones .mrow button { padding: 4px 12px; min-width: 70px; }
