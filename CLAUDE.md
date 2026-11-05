@@ -428,6 +428,17 @@ switches/buttons on them.
   ids per tile and of every knxSwitch/knxDim event (value, ack, from) to see what reaches SmartView.
 - 0.50.1 field, solved: cause was the KNX IP router (N 146/02) filter table - group telegrams used only inside line 1.1
   never reached openKNX (routing). Owner set the router to "weiterleiten" and re-programmed it: KNX button works.
+- 0.51.0: owner asked for a tile for the dreame adapter (L10/L20) and Husqvarna Automower 320 (GPS true, workAreas, stayOutZones,
+  canConfirmError; no headlights), open for other brands, with the map in the sheet -> tile `robot` {status, battery, error,
+  connected, start, resume, pause, home, homeNext, stop (buttons, true), lat, lon, track, mapImage, areaId, areaStart; options
+  robotSrc (any data point of the device -> `fillRobot()` via `www/robotlogic.js` `template()`; NOT `device`, that is the
+  tile's all/phone/touch field), robotKind, texts, runAt, mapMode none|url|image|gps, mapUrl (http(s) or web:/path = web
+  adapter, port/https from main `webInfo()` in the ws init), mapImg + cal "x,y=lat,lon;x,y=lat,lon" (north up, linear),
+  areas (husqvarna workAreas.*.name, main `fillRobotAreas()` in fillDetectors on save)}. Sheet keeps the map iframe over
+  re-renders (`iframe.robframe` data-src); http map inside https page -> link instead. Editor `robotMapField()` (upload, tap
+  two points, prompt coordinates, mower position suggested). Dreame live map = adapter's own page via web (socket.io).
+  Stay-out zones / error confirm not built (no ACTIONS in husqvarna-automower 0.5.0). Unit tests + Playwright; not with
+  the real devices.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

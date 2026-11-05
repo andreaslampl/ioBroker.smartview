@@ -6,6 +6,7 @@ const TYPE_LABELS = {
   switch: 'Schalter / Taster (Ein/Aus)',
   dimmer: 'Dimmer',
   color: 'Farblicht / RGBW (z. B. Shelly RGBW, mit KNX-Taster)',
+  robot: 'Saugroboter / Mähroboter (jede Marke)',
   blind: 'Rollladen / Jalousie',
   value: 'Anzeige (Wert, Text, Kontakt)',
   button: 'Taste (schreibt einen Wert, z. B. Szene)',
@@ -43,6 +44,31 @@ const TYPE_FIELDS = {
     ['state', 'Helligkeit 0–100 % (Datenpunkt)', 'state-w'],
     ['switchState', 'Ein/Aus (optional)', 'state-w', 'Wenn der Dimmer einen eigenen Schalt-Datenpunkt hat'],
     ['status', 'Rückmeldung Helligkeit (optional)', 'state-r'],
+  ],
+  robot: [
+    ['robotKind', 'Gerät', 'select:vacuum=Saugroboter;mower=Mähroboter'],
+    ['robotSrc', 'Vorlage: Datenpunkt des Geräts (optional)', 'state-r', 'Irgendeinen Datenpunkt des Roboters im Adapter dreame oder husqvarna-automower wählen – beim Übernehmen füllt SmartView die Felder unten selbst aus (leere Felder bzw. die dieses Adapters). Andere Marken: Felder selbst wählen.'],
+    ['status', 'Zustand', 'state-r'],
+    ['texts', 'Texte für den Zustand (optional)', 'text', 'z. B. 1=Saugt;2=Bereit;6=Lädt – leer = Texte des Datenpunkts'],
+    ['runAt', 'Arbeitet bei (optional)', 'text', 'Werte oder Texte mit ; getrennt, bei denen die Kachel „aktiv“ leuchtet, z. B. MOWING;LEAVING oder 1;5'],
+    ['battery', 'Akku %', 'state-r'],
+    ['error', 'Fehler (optional)', 'state-r', '0 / leer = kein Fehler, sonst rot'],
+    ['connected', 'Verbunden (optional)', 'state-r'],
+    ['start', 'Taste: Start (Mähen / Saugen)', 'state-w', 'Bekommt true'],
+    ['resume', 'Taste: Nach Plan (optional)', 'state-w'],
+    ['pause', 'Taste: Pause (optional)', 'state-w'],
+    ['stop', 'Taste: Stopp (optional)', 'state-w'],
+    ['home', 'Taste: Zur Station / Parken', 'state-w'],
+    ['homeNext', 'Taste: Parken bis zum nächsten Plan (optional)', 'state-w'],
+    ['areaId', 'Arbeitsbereich: Nummer (optional)', 'state-w', 'Husqvarna: Bereiche werden beim Übernehmen aus dem Adapter geholt (Knöpfe „Mähen: …“).'],
+    ['areaStart', 'Arbeitsbereich: Start-Taste (optional)', 'state-w'],
+    ['mapMode', 'Karte im Bedienfenster', 'select:none=keine;url=Kartenseite eines Adapters (z. B. Dreame);image=Kartenbild aus einem Datenpunkt;gps=GPS-Position auf eigenem Bild (z. B. Automower)'],
+    ['mapUrl', 'Kartenseite (Adresse)', 'text', 'Dreame: web:/dreame/?did=<Geräte-ID> (wird mit der Vorlage gesetzt). web:/… = web-Adapter auf dem gleichen Rechner; sonst http(s)://…'],
+    ['mapImage', 'Kartenbild (Datenpunkt)', 'state-r', 'Datenpunkt mit Bild (data:image… / Base64 / Adresse)'],
+    ['lat', 'GPS Breite', 'state-r'],
+    ['lon', 'GPS Länge', 'state-r'],
+    ['track', 'Spur (Liste der Positionen, optional)', 'state-r', 'Husqvarna: positions.positions'],
+    ['mapImg', 'Gartenbild für GPS', 'robotmap'],
   ],
   color: [
     ['state', 'Ein/Aus (Datenpunkt)', 'state-w', 'Shelly RGBW2: …lights.Switch – Shelly Plus RGBW PM: …RGBW0.Switch'],
@@ -1175,6 +1201,70 @@ const Editor = (() => {
   }
 
   /** Rooms of a dehumidifier / air conditioner tile: name, humidity, temperature (read only, mean for the automatic). */
+  /**
+   * Garden picture for the GPS position: upload, then tap two places and give their coordinates (Google Maps: right
+   * click -> the first line copies them). The mower's current position is offered, e.g. for the charging station.
+   */
+  function robotMapField(box, t) {
+    const wrap = document.createElement('div');
+    field(box, 'Gartenbild für GPS', wrap, 'Satelliten-Screenshot (z. B. Google Maps, Norden oben) oder Plan hochladen. Dann zwei weit auseinander liegende Stellen antippen und deren Koordinaten eingeben – z. B. die Ladestation (Mäher steht dort: Vorschlag übernehmen) und eine Hausecke (Google Maps: Rechtsklick auf die Stelle → oberste Zeile = Koordinaten kopiert).');
+    let img = t.mapImg || '';
+    let pts = (RobotLogic.parseCal(t.cal) || []).map(p => ({ ...p }));
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'image/png,image/jpeg,image/webp';
+    file.hidden = true;
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    const info = document.createElement('div');
+    info.className = 'muted';
+    const frame = document.createElement('div');
+    frame.className = 'robmap calib';
+    const draw = () => {
+      pick.textContent = img ? 'Anderes Bild wählen' : 'Bild wählen';
+      frame.innerHTML = img ? '<img class="robimg" src="files/' + encodeURIComponent(img) + '" alt="">' + pts.map((p, i) => '<span class="robdot" style="left:' + p.x + '%;top:' + p.y + '%">' + (i + 1) + '</span>').join('') : '';
+      info.textContent = !img ? 'Noch kein Bild.' : pts.length < 2 ? 'Jetzt Punkt ' + (pts.length + 1) + ' auf dem Bild antippen.' : 'Eingemessen (Punkt 1 und 2). Antippen setzt Punkt 1 neu.';
+    };
+    frame.addEventListener('click', ev => {
+      const im = frame.querySelector('img');
+      if (!im) return;
+      const r = im.getBoundingClientRect();
+      const x = Math.round(((ev.clientX - r.left) / r.width) * 1000) / 10;
+      const y = Math.round(((ev.clientY - r.top) / r.height) * 1000) / 10;
+      const gv = id => (id && SV.states[id] && SV.states[id].val !== null && SV.states[id].val !== '' ? Number(SV.states[id].val) : NaN);
+      const cur = Number.isFinite(gv(t.lat)) && Number.isFinite(gv(t.lon)) ? gv(t.lat) + ', ' + gv(t.lon) : '';
+      const txt = prompt('Koordinaten dieser Stelle (Breite, Länge) – z. B. 46.52, 14.30' + (cur ? '\nVorschlag = aktuelle Position des Mähers' : ''), cur);
+      const m = /(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)/.exec(txt || '');
+      if (!m) return;
+      const p = { x, y, lat: Number(m[1].replace(',', '.')), lon: Number(m[2].replace(',', '.')) };
+      pts = pts.length >= 2 ? [p] : [...pts, p];
+      draw();
+    });
+    file.onchange = async () => {
+      const f = file.files[0];
+      file.value = '';
+      if (!f) return;
+      try {
+        toast('Bild wird hochgeladen …');
+        const res = await fetch('api/upload?name=' + encodeURIComponent(f.name), { method: 'POST', body: f, credentials: 'same-origin' });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error || res.status);
+        img = j.file;
+        pts = [];
+        draw();
+      } catch (e) {
+        toast('Hochladen fehlgeschlagen: ' + e.message, true);
+      }
+    };
+    pick.onclick = () => file.click();
+    wrap.append(pick, file, info, frame);
+    draw();
+    return {
+      img: { type: 'custom', get: () => img },
+      cal: { type: 'custom', get: () => (pts.length === 2 ? pts.map(p => p.x + ',' + p.y + '=' + p.lat + ',' + p.lon).join(';') : '') },
+    };
+  }
+
   function sensorsField(box, rows) {
     const wrap = document.createElement('div');
     wrap.className = 'rules';
@@ -1473,6 +1563,11 @@ const Editor = (() => {
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);
         else if (kind === 'sensors') inputs[key] = sensorsField(body, t[key] || []);
+        else if (kind === 'robotmap') {
+          const r = robotMapField(body, t);
+          inputs.mapImg = r.img;
+          inputs.cal = r.cal;
+        }
         else inputs[key] = field(body, label, textInput(t[key]), help);
       }
       if (t.type !== 'heading') {

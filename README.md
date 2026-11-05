@@ -51,6 +51,7 @@ ausschalten.
 | --- | --- | --- |
 | Schalter / Taster | Schalten, optional Rückmeldung (z. B. KNX-Status) | antippen = ein/aus |
 | Dimmer | Helligkeit 0–100, optional Ein/Aus, Rückmeldung | antippen = ein/aus, Schieberegler |
+| Saug- / Mähroboter | jede Marke: Zustand, Akku, Fehler, Tasten; Vorlagen für dreame und husqvarna-automower | antippen = Start / Pause / Heim, Bereiche, Karte (siehe unten) |
 | Farblicht / RGBW | Ein/Aus, Helligkeit, Farbe (z. B. Shelly RGBW), optional KNX-Taster | antippen = Farben, Farbwechsel, Helligkeit (siehe unten) |
 | Rollladen | Position, optional Stopp, Rückmeldung; „100 % = geschlossen“ für KNX | ▲ ■ ▼, antippen = Schieberegler |
 | Anzeige | beliebiger Wert mit Einheit, Texte (`true=Offen;false=Zu`), rot hervorheben | antippen = Details |
@@ -87,6 +88,22 @@ der Adapter die Markise bzw. den Rollladen selbst in die sichere Position (Auf/E
 – auch wenn kein Gerät offen ist. Solange der Alarm ansteht und danach noch die eingestellte **Sperrzeit**
 (Sekunden oder Minuten) gehen keine Befehle durch, auch keine Zeitschaltuhr. Die Kachel zeigt 🔒 mit Grund
 bzw. Restzeit.
+
+### Saug- und Mähroboter (jede Marke)
+
+Kachel-Art **„Saugroboter / Mähroboter“**. Bei **Dreame** oder **Husqvarna Automower** genügt im Feld „Vorlage“ irgendein
+Datenpunkt des Geräts – beim Übernehmen füllt SmartView Zustand, Akku, Fehler, Tasten (Start, Nach Plan, Pause, Parken …),
+Texte und bei Husqvarna die Arbeitsbereiche („Mähen: Vorgarten“) selbst aus. Andere Marken: Felder selbst wählen.
+
+Karte im Bedienfenster:
+
+- **Kartenseite eines Adapters** – Dreame: die Live-Karte des dreame-Adapters (`web:/dreame/?did=…`, kommt mit der
+  Vorlage; im dreame-Adapter „Get Map“ einschalten). Läuft der web-Adapter nur mit http, SmartView aber mit https
+  (iPhone-App), zeigt das Fenster einen Link „Karte groß öffnen“ statt der eingebetteten Karte.
+- **Kartenbild aus einem Datenpunkt** – für Adapter, die ein Bild liefern.
+- **GPS auf eigenem Bild** – Automower: Gartenbild hochladen (z. B. Google-Maps-Satellit, Norden oben), zwei weit
+  auseinander liegende Stellen antippen und ihre Koordinaten eingeben (Google Maps: Rechtsklick → oberste Zeile kopiert
+  sie; steht der Mäher in der Station, wird seine Position vorgeschlagen). Danach: Mäher als Punkt mit Spur.
 
 ### Farblicht (RGBW, z. B. Shelly) mit KNX-Taster
 

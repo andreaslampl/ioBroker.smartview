@@ -2,6 +2,8 @@
 
 /* Line icons (24x24, stroke), drawn for SmartView. */
 const ICON_PATHS = {
+  vacuum: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="8" r="2"/><path d="M7 15.5h10"/><path d="M5 12h2M17 12h2"/>',
+  mower: '<path d="M3 15h14l3-4h-5l-2-3H6l-3 4z"/><circle cx="7" cy="17" r="2"/><circle cx="16" cy="17" r="2"/><path d="M2 21h20"/>',
   bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
   lamp: '<path d="M8 3h8l3 8H5z"/><path d="M12 11v8M8 21h8"/>',
   awning: '<path d="M3 3v18M3 5h15l3 7H6z"/><path d="M6 12c0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0 0 1.6 2.5 1.6 2.5 0"/>',
@@ -79,7 +81,7 @@ const ICON_LABELS = {
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', leave: 'Verlassen', arrive: 'Ankommen', away: 'Haus gesichert', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
-  scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', tree: 'Garten', info: 'Info',
+  scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', vacuum: 'Saugroboter', mower: 'Mähroboter', tree: 'Garten', info: 'Info',
   star: 'Favorit', gauge: 'Anzeige', washer: 'Waschmaschine', dryer: 'Trockner', dishwasher: 'Geschirrspüler', oven: 'Backofen',
 };
 

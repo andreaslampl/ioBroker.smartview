@@ -18,6 +18,7 @@ const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
 const AppLogic = require('./www/applogic');
 const { ColorLights } = require('./lib/colorlight');
+const RobotLogic = require('./www/robotlogic');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
@@ -163,7 +164,8 @@ class SmartView extends utils.Adapter {
                 cameraUrl: (id, kind) => this.cameraUrl(id, kind),
                 webBase: () => this.webBase(),
                 layoutChanged: async () => {
-                    await this.resubscribe();
+                    await this.webBase().catch(() => '');
+        await this.resubscribe();
                     await this.syncHomekit();
                 },
                 homekit: () => this.homekitInfo(),
@@ -181,6 +183,7 @@ class SmartView extends utils.Adapter {
                 appliances: () => this.appStatus(),
                 appAck: key => this.appAck(key),
                 colors: () => this.colorLights().status(),
+                webInfo: () => this.webInfo(),
                 colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
                 ringing: () => {
                     const st = this.liveStates.get(this.ringStateId());
@@ -1140,11 +1143,29 @@ class SmartView extends utils.Adapter {
      * from its export list, switch off/on via inputs.N.deactivated) or SPC (zones.N.area, no switching). Done on
      * saving the layout, so the data points are known (and writable) like any other.
      */
+    /** robot (husqvarna-automower): work areas with their names for "Bereich mähen" buttons */
+    async fillRobotAreas(t) {
+        const tpl = RobotLogic.template(t.robotSrc, t.robotKind);
+        if (!tpl || tpl.adapter !== 'husqvarna') {
+            return;
+        }
+        const states = await this.getForeignStatesAsync(`${tpl.prefix}.workAreas.*.name`).catch(() => ({}));
+        t.areas = Object.entries(states || {})
+            .map(([id, st]) => ({ id: id.split('.').slice(-2, -1)[0], label: st && st.val ? String(st.val) : '' }))
+            .filter(a => a.id !== '')
+            .map(a => ({ ...a, label: a.label || `Bereich ${a.id}` }))
+            .sort((a, b) => a.label.localeCompare(b.label, 'de'));
+    }
+
     async fillDetectors(layout) {
         for (const p of (layout && Array.isArray(layout.pages) ? layout.pages : [])) {
             for (const t of (p && Array.isArray(p.tiles) ? p.tiles : [])) {
                 if (t && t.type === 'fire') {
                     t.detectors = t.showDetectors ? await this.fireDetectorsOf(String(t.panel || '')) : [];
+                    continue;
+                }
+                if (t && t.type === 'robot') {
+                    await this.fillRobotAreas(t);
                     continue;
                 }
                 if (!t || t.type !== 'alarm') {
@@ -1616,6 +1637,12 @@ class SmartView extends utils.Adapter {
         }
         this.webCache = { at: Date.now(), base };
         return base;
+    }
+
+    /** port / https of the web adapter for pages it serves (robot maps, web:/… links); from the cache of webBase() */
+    webInfo() {
+        const m = /^(https?):\/\/[^:]+:(\d+)/.exec((this.webCache && this.webCache.base) || '');
+        return m ? { port: Number(m[2]), secure: m[1] === 'https' } : null;
     }
 
     async cameraUrl(id, kind) {

@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -129,6 +129,7 @@ function tileIcon(t) {
     return t.icon || (o && o.type !== 'ref' ? tileIcon(o) : 'link');
   }
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
+  if (!t.icon && t.type === 'robot' && t.robotKind === 'mower') return 'mower';
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
@@ -144,7 +145,7 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white'].map(k => t[k]))
+    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white', 'battery', 'connected', 'lat', 'lon', 'track', 'mapImage'].map(k => t[k]))
     .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan', 'preAlarm', 'faultText', 'disabledText', 'lastMsg', 'connection', 'fault', 'disabled'].map(k => t[k]))
     .concat(t.type === 'fire' ? (t.detectors || []).flatMap(d => [d.state, d.alarm, d.fault, d.off, d.mode]) : [])
     .concat((t.rooms || []).flatMap(r => RADIO_KEYS.map(k => r[k])))
@@ -624,6 +625,66 @@ function windowsWarn(t) {
   return WinLogic.warn(t, st, windowStates(t));
 }
 
+// ---------------- robot (vacuum / lawn mower) ----------------
+
+/** status line, battery, error for tile / row / marker */
+function robotInfo(t) {
+  const s = st(t.status);
+  const err = RobotLogic.hasError(st(t.error));
+  const b = Number(val(t.battery));
+  const off = t.connected && val(t.connected) === false;
+  let line = RobotLogic.statusText(t, s) || '–';
+  if (err) line = 'Störung (' + val(t.error) + ')';
+  else if (off) line = 'Keine Verbindung';
+  return { line, error: err, battery: t.battery && Number.isFinite(b) ? Math.round(b) : null, working: RobotLogic.working(t, s) };
+}
+
+/** web:/path -> the web adapter on the host SmartView was opened from */
+function robotMapUrl(t) {
+  const u = String(t.mapUrl || '');
+  if (!u.startsWith('web:')) return u;
+  const w = SV.web || { port: 8082, secure: false };
+  return (w.secure ? 'https:' : 'http:') + '//' + location.hostname + ':' + w.port + u.slice(4);
+}
+
+function robotMap(t) {
+  if (t.mapMode === 'url' && t.mapUrl) {
+    const url = robotMapUrl(t);
+    // an http page cannot be shown inside an https page (iPhone app): offer it in its own window
+    const blocked = location.protocol === 'https:' && url.startsWith('http:');
+    return '<div class="robmap">' + (blocked ? '<p class="hint">Die Karte läuft nur über http – hier antippen:</p>' :
+      '<iframe class="robframe" data-src="' + esc(url) + '" src="' + esc(url) + '" loading="lazy"></iframe>') +
+      '<a class="btnlink" href="' + esc(url) + '" target="_blank" rel="noopener">Karte groß öffnen</a></div>';
+  }
+  if (t.mapMode === 'image' && t.mapImage) {
+    let v = String(val(t.mapImage) || '');
+    if (v && !/^(data:|https?:)/.test(v)) v = 'data:image/png;base64,' + v;
+    return v ? '<div class="robmap"><img class="robimg" src="' + esc(v) + '" alt="Karte"></div>' : '';
+  }
+  if (t.mapMode === 'gps' && t.mapImg) {
+    const cal = RobotLogic.parseCal(t.cal);
+    if (!cal) return '<div class="robmap"><img class="robimg" src="files/' + encodeURIComponent(t.mapImg) + '" alt=""><p class="hint">Bild noch nicht eingemessen (✎ Kachel → Karte).</p></div>';
+    const pos = RobotLogic.toXY(cal, val(t.lat), val(t.lon));
+    const track = RobotLogic.parseTrack(val(t.track)).map(p => RobotLogic.toXY(cal, p.lat, p.lon)).filter(Boolean);
+    const svg = '<svg class="robtrack" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+      (track.length > 1 ? '<polyline points="' + track.map(p => p.x.toFixed(2) + ',' + p.y.toFixed(2)).join(' ') + '"/>' : '') + '</svg>';
+    const dot = pos ? '<span class="robdot" style="left:' + pos.x.toFixed(2) + '%;top:' + pos.y.toFixed(2) + '%">' + icon(tileIcon(t)) + '</span>' : '';
+    return '<div class="robmap gps"><img class="robimg" src="files/' + encodeURIComponent(t.mapImg) + '" alt="">' + svg + dot + '</div>';
+  }
+  return '';
+}
+
+function robotSheet(t) {
+  const r = robotInfo(t);
+  const mower = t.robotKind === 'mower';
+  const btn = (k, text, primary) => (t[k] ? '<button type="button" data-a="rob" data-v="' + k + '"' + (primary ? ' class="primary"' : '') + '>' + text + '</button>' : '');
+  const areas = (t.areas || []).length && t.areaId && t.areaStart ? '<div class="robareas">' + t.areas.map(a => '<button type="button" data-a="robarea" data-v="' + esc(a.id) + '">' + (mower ? 'Mähen: ' : 'Reinigen: ') + esc(a.label) + '</button>').join('') + '</div>' : '';
+  return '<div class="bigval' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</div>' +
+    (r.battery !== null ? '<div class="mrow"><span>Akku</span><b>' + r.battery + ' %</b></div>' : '') +
+    '<div class="row robbtns">' + btn('start', mower ? 'Mähen' : 'Saugen', !r.working) + btn('resume', 'Nach Plan') + btn('pause', 'Pause') +
+    btn('stop', 'Stopp') + btn('home', mower ? 'Parken' : 'Zur Station', r.working) + btn('homeNext', 'Parken bis Plan') + '</div>' + areas + robotMap(t);
+}
+
 // ---------------- color light (RGBW) ----------------
 
 /** key the adapter knows the tile by (a link acts through its original) */
@@ -841,6 +902,7 @@ function tileState(t, pageId) {
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'color') return colorInfo(t).on ? 'on' : '';
+  if (t.type === 'robot') return RobotLogic.hasError(st(t.error)) ? 'alert' : RobotLogic.working(t, st(t.status)) ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
   if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
   if (t.type === 'wallbox') return wbFault(t) ? 'alert' : wbCharging(t) ? 'on' : '';
@@ -1688,7 +1750,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color', 'robot'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1779,6 +1841,11 @@ function fillRow(el, t) {
       const lvl = Math.round(dimOn(t) ? dimLevel(t) : 0);
       ctl = '<button type="button" data-a="dimdown" aria-label="dunkler">' + icon('minus') + '</button><button type="button" data-a="dimup" aria-label="heller">' + icon('plus') + '</button>' +
         '<span class="lbar"><span style="width:' + lvl + '%"></span></span><span class="lval">' + lvl + ' %</span>';
+      break;
+    }
+    case 'robot': {
+      const r = robotInfo(t);
+      ctl = '<span class="lval' + (r.error ? ' bad' : '') + '">' + esc(r.line) + (r.battery !== null ? ' · ' + r.battery + ' %' : '') + '</span>';
       break;
     }
     case 'color': {
@@ -1903,7 +1970,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -1929,6 +1996,12 @@ function fillTile(el, t) {
       const on = dimOn(t);
       html = '<div class="row1">' + ic + '<span class="tval">' + (on ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</span></div>' + label;
       if (t.state) html += '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '" aria-label="Helligkeit">';
+      break;
+    }
+    case 'robot': {
+      const r = robotInfo(t);
+      html = '<div class="row1">' + ic + '<span class="tval">' + (r.battery !== null ? r.battery + ' %' : '') + '</span></div>' +
+        '<div class="tsub' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</div>' + label;
       break;
     }
     case 'color': {
@@ -2083,6 +2156,13 @@ function bindControls(el, t) {
         if (t.switchState && next > 0 && !dimOn(t)) send(t.switchState, true);
         if (t.state) send(t.state, next);
         else if (t.switchState) send(t.switchState, next > 0);
+        return;
+      }
+      if (t.type === 'robot' && a === 'rob') return send(t[b.dataset.v], true);
+      if (t.type === 'robot' && a === 'robarea') {
+        // husqvarna: work area id first, then the start button
+        send(t.areaId, typedVal(b.dataset.v));
+        setTimeout(() => send(t.areaStart, true), 500);
         return;
       }
       if (t.type === 'color' && ['con', 'coff', 'cpre', 'cnext'].includes(a)) {
@@ -2482,6 +2562,7 @@ function fillMarker(el, t) {
     v = f.text + (f.unit ? ' ' + f.unit : '');
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'color') v = colorInfo(t).on ? colorText(t) : '';
+  else if (t.type === 'robot') v = robotInfo(t).line;
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
@@ -2644,6 +2725,8 @@ function fillSheet(sh, t) {
     body = '<div class="bigval" data-out>' + (dimOn(t) ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</div>' +
       (t.state ? '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '">' : '') +
       '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';
+  } else if (t.type === 'robot') {
+    body = robotSheet(t);
   } else if (t.type === 'color') {
     body = colorSheet(t);
   } else if (t.type === 'blind') {
@@ -2783,7 +2866,11 @@ function fillSheet(sh, t) {
       return '<div class="mrow"><span>' + esc(r.label) + '</span><b>' + esc(f.text) + (f.unit ? ' ' + esc(f.unit) : '') + '</b></div>';
     }).join('') + '</div>';
   }
+  // a map page in a frame must not reload with every status change
+  const frame = sh.querySelector('iframe.robframe');
   sh.innerHTML = '<h3>' + tileIc(t) + '<span class="grow">' + esc(t.label || '') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' + body;
+  const slot = sh.querySelector('iframe.robframe');
+  if (frame && slot && frame.dataset.src === slot.dataset.src) slot.replaceWith(frame);
   if (Timers.supports(t) && !SV.editing) {
     body = '<div class="row"><button type="button" data-timer>⏰ Zeitschaltuhr' + (Timers.active(t) ? ' (aktiv)' : '') + '</button></div>';
     sh.insertAdjacentHTML('beforeend', body);
@@ -3062,6 +3149,7 @@ function connect() {
       setDnd(msg.dnd);
       SV.apps = msg.apps || {};
       SV.colors = msg.colors || {};
+      SV.web = msg.web || null;
       SV.locks = clientLocks(msg.locks);
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);

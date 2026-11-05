@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.50.1",
+    "version": "0.51.0",
     "news": {
+      "0.51.0": {
+        "en": "New tile vacuum / lawn mower robot (any brand; templates for dreame and husqvarna-automower): status, battery, buttons, work areas, map (adapter page, image or GPS on an own picture with track)",
+        "de": "Neue Kachel Saug- / Mähroboter (jede Marke; Vorlagen für dreame und husqvarna-automower): Zustand, Akku, Tasten, Arbeitsbereiche, Karte (Kartenseite des Adapters, Bild oder GPS auf eigenem Gartenbild mit Spur)"
+      },
       "0.50.1": {
         "en": "Color light: every telegram of the KNX push button is written to the log (to find out why it does nothing)",
         "de": "Farblicht: Jedes Telegramm des KNX-Tasters steht im Log (um zu sehen, warum er nichts tut)"
