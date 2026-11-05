@@ -453,6 +453,8 @@ switches/buttons on them.
   map (mapUrl is always stored now, so a later "keine" sticks). Dreame map works in the adapter after updating it to 0.4.12
   (was 0.4.1). Tile showed "Störung (68)" = dreame "Wischpad entfernen" -> error text from the error data point's states,
   sheet shows status + ⚠ error line.
+- 0.52.2 field: map still missing - 0.52.0 had stored mapUrl (template) but mapMode "none", so the migration (no mapUrl)
+  did not apply; owner set "Kartenseite" by hand -> confirmed: Dreame map shows in the robot tile ("Perfekt Funktioniert").
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
