@@ -571,3 +571,5 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .carbar span { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
 .carbar.big { height: 12px; border-radius: 6px; margin: 0 0 12px; overflow: visible; }
 .carbar.big i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text, #ddd); }
+.tile .tsub.wbcar { color: var(--ok); }
+.wbcarbtn { width: 100%; }

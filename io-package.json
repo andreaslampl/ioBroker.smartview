@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.54.0",
+    "version": "0.54.1",
     "news": {
+      "0.54.1": {
+        "en": "Wallbox tile: optional car tile - shows the car's charge level and range while plugged in, tap opens the car",
+        "de": "Wallbox-Kachel: optionale Auto-Kachel – zeigt Akku und Reichweite des Autos, solange es angesteckt ist; antippen öffnet das Auto"
+      },
       "0.54.0": {
         "en": "New car tile (any brand): pick the car, data points are found by name (charge level, range, charging, plug, lock, mileage, position), optional climate / charge buttons",
         "de": "Neue Auto-Kachel (jede Marke): Auto wählen, Datenpunkte werden selbst gefunden (Akku, Reichweite, Laden, Stecker, verriegelt, km-Stand, Position), optional Klima / Laden"

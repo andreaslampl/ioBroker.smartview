@@ -475,6 +475,9 @@ switches/buttons on them.
   same adapter). VW ID via vw-connect 0.10.1 = EU Data Act `statuseudata.*` (names vary per car; owner's soc is
   battery_level_HV.value). Tile: soc + bar + "241 km · lädt 10,8 kW"; sheet rows + OSM link. Unit tests + Playwright with
   fake vw-connect states; not with the owner's car.
+- 0.54.1: owner asked (advice: keep car + wallbox separate, link them) -> wallbox option `carTile` (editor kind `cartile`): app.js
+  `wbCar()`, `wbCarLine()` ("ID.4 63 % · 241 km" unless plugged is known false and not charging), tile line `.wbcar`, sheet
+  button `wbcar` opens the car sheet; car soc/range in the wallbox tile's tileIds (refresh). Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

@@ -320,6 +320,7 @@ const TYPE_FIELDS = {
   html: [['state', 'Datenpunkt mit HTML', 'state-r', 'z. B. eine Tabelle, die ein Skript erzeugt (javascript.0.…). Skripte im HTML werden nicht ausgeführt.']],
   heading: [],
   wallbox: [
+    ['carTile', 'Auto-Kachel (optional)', 'cartile', 'Zeigt in der Wallbox-Kachel „Auto 63 % · 241 km“, solange ein Auto angesteckt ist; antippen öffnet die Auto-Kachel.'],
     ['charger', 'Wallbox-Instanz', 'charger', 'Füllt die Datenpunkte unten aus (Adapter versicharge). Andere Wallboxen: Datenpunkte selbst wählen.'],
     ['instance', 'Überschussladen (Energie-Instanz)', 'energy', 'Lademodus PV / Min+PV / Schnell / Aus vom Adapter „energie“ (Reiter Wallbox in dessen Einstellungen)'],
     ['state', 'Ladeleistung (W)', 'state-r'],
@@ -1599,6 +1600,9 @@ const Editor = (() => {
         } else if (kind === 'alarmtile') {
           const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
           inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
+        } else if (kind === 'cartile') {
+          const cars = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'car').map(x => [x.id, (x.label || 'Auto') + ' (' + p.name + ')']));
+          inputs[key] = field(body, label, select([['', '(keine)']].concat(cars), t[key] || ''), help);
         } else if (kind === 'channels') {
           // which ways this tile's messages take (not set = all that are set up under "Allgemein")
           const ch = t[key] || { app: true, telegram: true, whatsapp: true };

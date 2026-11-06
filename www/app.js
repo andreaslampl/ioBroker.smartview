@@ -142,6 +142,7 @@ function tileIc(t) {
 function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen', 'command', 'alarm', 'error'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
+    .concat(t.type === 'wallbox' && wbCar(t) ? [wbCar(t).soc, wbCar(t).range] : [])
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
@@ -315,6 +316,25 @@ const OCPP_TEXT = {
 function wbStatusText(t) {
   const s = String(val(t.status) || '');
   return OCPP_TEXT[s] || s;
+}
+
+/** the car tile linked to a wallbox tile (any page) */
+function wbCar(t) {
+  if (!t.carTile) return null;
+  for (const p of layout().pages) for (const x of p.tiles) if (x.id === t.carTile && x.type === 'car') return x;
+  return null;
+}
+
+/** "Auto 63 % · 241 km" while a car is plugged in (or charging; unknown plug state counts as plugged) */
+function wbCarLine(t) {
+  const car = wbCar(t);
+  if (!car) return '';
+  const pv = t.plugged ? val(t.plugged) : undefined;
+  const pluggedOff = pv === false || pv === 0 || pv === 'false' || /^(available|verfügbar|frei|nicht angesteckt|a)$/i.test(wbStatusText(t) || '');
+  if (pluggedOff && !wbCharging(t)) return '';
+  const c = carInfo(car);
+  if (c.soc === null) return '';
+  return (car.label || 'Auto') + ' ' + c.soc + ' %' + (c.range !== null ? ' · ' + Math.round(c.range) + ' km' : '');
 }
 
 function wbCharging(t) {
@@ -2205,7 +2225,8 @@ function fillTile(el, t) {
     case 'wallbox': {
       const kwh = t.energy ? fmt({ decimals: 1, unit: 'kWh' }, t.energy) : null;
       html = '<div class="row1">' + ic + '<span class="tval">' + esc(kwh && kwh.text !== '–' ? kwh.text + ' kWh' : '') + '</span></div>' +
-        '<div class="big">' + esc(wbBig(t)) + '</div><div class="tsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</div>' + label +
+        '<div class="big">' + esc(wbBig(t)) + '</div><div class="tsub' + (wbLimited(t) ? ' wblim' : '') + '">' + esc(wbLine(t)) + '</div>' +
+        (wbCarLine(t) ? '<div class="tsub wbcar">🚗 ' + esc(wbCarLine(t)) + '</div>' : '') + label +
         (t.mode && (t.size === 'l' || (t.sh || 0) >= 2) ? '<div class="ctl wbm">' + wbModeButtons(t) + '</div>' : '');
       break;
     }
@@ -2293,6 +2314,11 @@ function bindControls(el, t) {
         if (t.switchState && next > 0 && !dimOn(t)) send(t.switchState, true);
         if (t.state) send(t.state, next);
         else if (t.switchState) send(t.switchState, next > 0);
+        return;
+      }
+      if (a === 'wbcar') {
+        const car = wbCar(t);
+        if (car) openSheet(car);
         return;
       }
       if (t.type === 'car' && (a === 'carclim' || a === 'carcharge')) {
@@ -2974,7 +3000,9 @@ function fillSheet(sh, t) {
       const c = Number(val(t.current));
       info.push(['Ladestrom', Number.isFinite(c) ? (c >= 6 ? esc(String(c).replace('.', ',')) + ' A' : 'Pause') : '–']);
     }
+    const carLine = wbCarLine(t);
     body = '<div class="bigval">' + esc(wbBig(t)) + '</div>' +
+      (carLine ? '<div class="row"><button type="button" data-a="wbcar" class="wbcarbtn">🚗 ' + esc(carLine) + ' ›</button></div>' : '') +
       (t.mode ? '<div class="row modes">' + wbModeButtons(t) + '</div>' : '') +
       (wbManual(t) ? '<div class="row"><button type="button" data-a="wbminus" aria-label="weniger Strom">' + icon('minus') + '</button><button type="button" data-a="wbplus" aria-label="mehr Strom">' + icon('plus') + '</button></div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
