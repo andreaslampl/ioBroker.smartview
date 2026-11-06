@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.53.0",
+    "version": "0.53.1",
     "news": {
+      "0.53.1": {
+        "en": "Energy flow tile: the car's charge level at the wallbox (energie 0.9.0)",
+        "de": "Energiefluss-Kachel: Akkustand des Autos an der Wallbox (energie 0.9.0)"
+      },
       "0.53.0": {
         "en": "Switch / dimmer / blind tiles: more data points switched together, on / off delay, auto off (run in the adapter, countdown on the tile)",
         "de": "Schalter-, Dimmer- und Rollladen-Kacheln: weitere Datenpunkte mitschalten, Ein-/Ausschaltverzögerung, automatisch aus (läuft im Adapter, Countdown auf der Kachel)"

@@ -462,6 +462,7 @@ switches/buttons on them.
   {type:'pending'} + init, tile line "⏱ Ein in …" (`pendHtml`, 1 s countdown); dimmer tap = switch + level commands are
   collected into one pending; no optimistic display for delayed ids (`delayedIds()`). setValue: number -> boolean target
   is now `> 0`. Unit tests + Playwright.
+- 0.53.1: energy-view.js = energie 0.9.0 render.js (car charge level ring + "Wallbox · 63 %" at the wallbox consumer).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
