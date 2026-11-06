@@ -483,6 +483,9 @@ switches/buttons on them.
 - 0.55.0: owner asked for a tick to allow / forbid changing the heating set point -> thermostat `fixedSet` ("Sollwert nur
   anzeigen"): stateIds/tileWriteIds drop `state` (also of circuits) from the writes, sheet/row without − / +, plus/minus
   ignored; mode stays writable. Unit test + Playwright (forged ws set refused).
+- 0.55.1: owner wanted the day values to follow the day chosen in the energy sheet -> `energySheet()` heading `[data-stitle]`, past
+  day = `day.summary` from energie (History.days, 400 days; none -> hint), live values only while today is shown. Playwright
+  (day API mocked).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

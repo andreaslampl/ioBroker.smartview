@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.55.0",
+    "version": "0.55.1",
     "news": {
+      "0.55.1": {
+        "en": "Energy view: the day values (produced, used, import …) follow the day chosen with ‹ ›",
+        "de": "Energie-Ansicht: Die Tageswerte (Erzeugt, Verbraucht, Bezogen …) springen mit dem Tag mit, der mit ‹ › gewählt ist"
+      },
       "0.55.0": {
         "en": "Heating tile: tick 'set point only shown' - no − / + buttons, the set point cannot be written from SmartView",
         "de": "Heizungs-Kachel: Haken „Sollwert nur anzeigen“ – keine − / + Knöpfe, der Sollwert ist aus SmartView nicht verstellbar"

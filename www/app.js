@@ -2830,7 +2830,7 @@ function energySheet(sh, t) {
   sh.classList.add('energy');
   if (!sh._ef) {
     sh.innerHTML = '<h3><span class="grow">' + esc(t.label || 'Energiefluss') + '</span><button type="button" class="iconbtn" data-close aria-label="Schließen">' + icon('close') + '</button></h3>' +
-      '<div class="egrid"><div class="eflow"></div><div><div class="estats"></div><div class="echead"><b data-title>Tagesverlauf heute</b><span class="grow"></span>' +
+      '<div class="egrid"><div class="eflow"></div><div><div class="echead"><b data-stitle>Heute</b></div><div class="estats"></div><div class="echead"><b data-title>Tagesverlauf heute</b><span class="grow"></span>' +
       '<button type="button" class="iconbtn" data-prev aria-label="Tag davor">‹</button><button type="button" class="iconbtn" data-next aria-label="Tag danach">›</button></div><div class="echart"></div></div></div>';
     sh.querySelector('[data-close]').onclick = closeSheet;
     sh._ef = { flow: EnergyView.flow(sh.querySelector('.eflow')), date: null, dates: [], today: null };
@@ -2843,6 +2843,16 @@ function energySheet(sh, t) {
         sh._ef.today = sh._ef.today || (!date ? day.date : null);
         sh.querySelector('[data-title]').textContent = date ? new Date(day.date + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Tagesverlauf heute';
         EnergyView.chart(sh.querySelector('.echart'), day);
+        // the day values follow the chosen day (today: live values, see below)
+        sh.querySelector('[data-stitle]').textContent = date ? new Date(day.date + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Heute';
+        if (date) {
+          const sum = day.summary;
+          if (sum) EnergyView.stats(sh.querySelector('.estats'), sum, sh._ef.bat || sum.charge > 0 || sum.discharge > 0);
+          else sh.querySelector('.estats').innerHTML = '<p class="muted">Für diesen Tag sind keine Tageswerte gespeichert.</p>';
+        } else {
+          const d = energyData(t);
+          if (d && d.s) EnergyView.stats(sh.querySelector('.estats'), d.today, d.s.battery !== null);
+        }
         sh.querySelector('[data-prev]').disabled = sh._ef.dates.indexOf(day.date) <= 0;
         sh.querySelector('[data-next]').disabled = !date;
       } catch (e) {
@@ -2863,7 +2873,9 @@ function energySheet(sh, t) {
   const d = energyData(t);
   if (d && d.s) {
     sh._ef.flow.update(d.s, d.view);
-    EnergyView.stats(sh.querySelector('.estats'), d.today, d.s.battery !== null);
+    sh._ef.bat = d.s.battery !== null;
+    // live values only while "today" is shown
+    if (!sh._ef.date) EnergyView.stats(sh.querySelector('.estats'), d.today, d.s.battery !== null);
   }
 }
 
