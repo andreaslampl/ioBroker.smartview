@@ -776,7 +776,9 @@ function robotMap(t) {
     const url = robotMapUrl(t);
     // an http page cannot be shown inside an https page (iPhone app): offer it in its own window
     const blocked = location.protocol === 'https:' && url.startsWith('http:');
-    return '<div class="robmap">' + (blocked ? '<p class="hint">Die Karte kommt vom web-Adapter über http – in der https-App kann der Browser sie nicht einbetten. Abhilfe: eine zweite web-Instanz mit HTTPS (Let\'s-Encrypt-Zertifikat) anlegen, SmartView nimmt sie dann automatisch. Bis dahin:</p>' :
+    return '<div class="robmap">' + (blocked ? '<p class="hint">Die Karte kommt vom web-Adapter über http – in der https-App kann der Browser sie nicht einbetten. ' +
+      (SV.web && SV.web.sslPort ? '' : 'SmartView findet keine eingeschaltete web-Instanz mit HTTPS. ') +
+      'Abhilfe: eine zweite web-Instanz mit „Sicher (HTTPS)“ und dem Let\'s-Encrypt-Zertifikat anlegen und einschalten, danach diese Seite neu laden. Bis dahin:</p>' :
       '<iframe class="robframe" data-src="' + esc(url) + '" src="' + esc(url) + '" loading="lazy"></iframe>') +
       '<a class="btnlink" href="' + esc(url) + '" target="_blank" rel="noopener">Karte groß öffnen</a></div>';
   }

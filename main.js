@@ -1753,6 +1753,10 @@ class SmartView extends utils.Adapter {
 
     /** port / https of the web adapter for pages it serves (robot maps, web:/… links); from the cache of webBase() */
     webInfo() {
+        // a web instance added later (e.g. a second one with HTTPS) is noticed without restarting SmartView
+        if (!this.webCache || Date.now() - this.webCache.at > 60000) {
+            this.webBase().catch(() => '');
+        }
         const m = /^(https?):\/\/[^:]+:(\d+)/.exec((this.webCache && this.webCache.base) || '');
         const ssl = (this.webCache && this.webCache.sslPort) || 0;
         return m ? { port: Number(m[2]), secure: m[1] === 'https', sslPort: m[1] === 'https' ? Number(m[2]) : ssl } : null;

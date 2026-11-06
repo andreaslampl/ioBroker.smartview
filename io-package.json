@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.54.1",
+    "version": "0.54.2",
     "news": {
+      "0.54.2": {
+        "en": "Robot map: a web instance with HTTPS added later is found without restart; hint says whether one was found",
+        "de": "Roboter-Karte: später angelegte web-Instanz mit HTTPS wird ohne Neustart gefunden; Hinweis sagt, ob eine gefunden wurde"
+      },
       "0.54.1": {
         "en": "Wallbox tile: optional car tile - shows the car's charge level and range while plugged in, tap opens the car",
         "de": "Wallbox-Kachel: optionale Auto-Kachel – zeigt Akku und Reichweite des Autos, solange es angesteckt ist; antippen öffnet das Auto"
