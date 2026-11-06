@@ -162,6 +162,7 @@ const TYPE_FIELDS = {
   thermostat: [
     ['circLabel', 'Name dieses Kreises (optional)', 'text', 'Nur nötig, wenn es unten weitere Kreise gibt – z. B. „Fußbodenheizung“. Die Felder hier sind Kreis 1.'],
     ['state', 'Sollwert (Datenpunkt)', 'state-w'],
+    ['fixedSet', 'Sollwert nur anzeigen (nicht verstellbar)', 'check', 'Haken: keine − / + Knöpfe, SmartView nimmt für den Sollwert auch keine Befehle an. Betriebsart bleibt umschaltbar.'],
     ['setStatus', 'Rückmeldung Sollwert (optional)', 'state-r', 'Aktueller Sollwert vom Regler, z. B. KNX-Status'],
     ['status', 'Raumtemperatur Ist (optional)', 'state-r'],
     ['humidity', 'Luftfeuchte (optional)', 'state-r'],

@@ -480,6 +480,9 @@ switches/buttons on them.
   button `wbcar` opens the car sheet; car soc/range in the wallbox tile's tileIds (refresh). Playwright.
 - 0.54.2 field, confirmed: Dreame map embedded in the https app via web.1 (port 8443, HTTPS). web 8.0.0 has no LE tab:
   @iobroker/webserver uses all acme collections by SNI when `leCollection` is unset (defaultPublic = fallback only).
+- 0.55.0: owner asked for a tick to allow / forbid changing the heating set point -> thermostat `fixedSet` ("Sollwert nur
+  anzeigen"): stateIds/tileWriteIds drop `state` (also of circuits) from the writes, sheet/row without − / +, plus/minus
+  ignored; mode stays writable. Unit test + Playwright (forged ws set refused).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

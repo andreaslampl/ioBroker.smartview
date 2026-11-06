@@ -40,6 +40,14 @@ test('layout: own phone order keeps only existing tiles, once each', () => {
     assert.equal(l.pages[1].phoneOrder, undefined);
 });
 
+test('layout: heating set point "nur anzeigen" is not writable, the mode still is', () => {
+    const l = cleanLayout({ pages: [{ id: 'p', name: 'P', tiles: [{ id: 't', type: 'thermostat', state: 'k.soll', mode: 'k.mode', fixedSet: true, circuits: [{ label: 'FBH', state: 'k.soll2' }] }] }] });
+    const { read, write } = stateIds(l);
+    assert.ok(read.includes('k.soll') && read.includes('k.soll2'));
+    assert.ok(!write.includes('k.soll') && !write.includes('k.soll2'));
+    assert.ok(write.includes('k.mode'));
+});
+
 test('layout: only control data points are writable', () => {
     const l = cleanLayout({
         pages: [

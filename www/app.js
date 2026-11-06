@@ -2052,7 +2052,8 @@ function fillRow(el, t) {
       const a = c.status ? fmt({ decimals: 1, unit: c.unit }, c.status) : null;
       const sub = (c._circs ? [c._circs[c._circ].label] : []).concat(a ? ['Ist ' + a.text + ' ' + (a.unit || '°C')] : []).concat(thermoChips(c)).join(' · ');
       ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Kreis">⇄</button>' : '') + (sub ? '<span class="lsub">' + esc(sub) + '</span>' : '') +
-        '<button type="button" data-a="minus" aria-label="weniger">' + icon('minus') + '</button><span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span><button type="button" data-a="plus" aria-label="mehr">' + icon('plus') + '</button>';
+        (t.fixedSet ? '<span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span>' :
+          '<button type="button" data-a="minus" aria-label="weniger">' + icon('minus') + '</button><span class="lval">' + esc(f.text) + ' ' + esc(f.unit || '°C') + '</span><button type="button" data-a="plus" aria-label="mehr">' + icon('plus') + '</button>');
       break;
     }
     case 'value': {
@@ -2351,6 +2352,7 @@ function bindControls(el, t) {
       else if (a === 'up') blindWrite(t, 100);
       else if (a === 'down') blindWrite(t, 0);
       else if (a === 'stop') send(t.stop, true);
+      else if ((a === 'plus' || a === 'minus') && t.fixedSet) return;
       else if (a === 'plus') thermoStep(thermoCur(t), 1);
       else if (a === 'minus') thermoStep(thermoCur(t), -1);
       else if (a === 'mode') sendMode(thermoCur(t), b.dataset.v);
@@ -3024,7 +3026,7 @@ function fillSheet(sh, t) {
     if (h) info.push(['Heizung', esc(h.text)]);
     if (c.window) info.push(['Fenster', thermoWindowOpen(c) ? '<span class="bad">offen</span>' : 'zu']);
     body = circSwitcher(c, true) + '<p class="muted" style="text-align:center;margin:0">Soll' + (c._circs ? ' – ' + esc(c._circs[c._circ].label) : '') + '</p><div class="bigval">' + esc(f.text) + ' ' + u(f) + '</div>' +
-      '<div class="row"><button type="button" data-a="minus" aria-label="kälter">' + icon('minus') + '</button><button type="button" data-a="plus" aria-label="wärmer">' + icon('plus') + '</button></div>' +
+      (t.fixedSet ? '' : '<div class="row"><button type="button" data-a="minus" aria-label="kälter">' + icon('minus') + '</button><button type="button" data-a="plus" aria-label="wärmer">' + icon('plus') + '</button></div>') +
       (c.mode ? '<div class="row modes">' + thermoModes(c).map(([k, v]) => '<button type="button" data-a="mode" data-v="' + esc(k) + '"' + (thermoModeKey(c) === k ? ' class="primary"' : '') + '>' + esc(v) + '</button>').join('') + '</div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '');
   } else if (t.type === 'value') {

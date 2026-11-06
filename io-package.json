@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.54.2",
+    "version": "0.55.0",
     "news": {
+      "0.55.0": {
+        "en": "Heating tile: tick 'set point only shown' - no − / + buttons, the set point cannot be written from SmartView",
+        "de": "Heizungs-Kachel: Haken „Sollwert nur anzeigen“ – keine − / + Knöpfe, der Sollwert ist aus SmartView nicht verstellbar"
+      },
       "0.54.2": {
         "en": "Robot map: a web instance with HTTPS added later is found without restart; hint says whether one was found",
         "de": "Roboter-Karte: später angelegte web-Instanz mit HTTPS wird ohne Neustart gefunden; Hinweis sagt, ob eine gefunden wurde"
