@@ -124,6 +124,15 @@ Karte im Bedienfenster:
   auseinander liegende Stellen antippen und ihre Koordinaten eingeben (Google Maps: Rechtsklick → oberste Zeile kopiert
   sie; steht der Mäher in der Station, wird seine Position vorgeschlagen). Danach: Mäher als Punkt mit Spur.
 
+### Auto (jede Marke)
+
+Kachel-Art **„Auto“**: im Feld „Auto“ das Fahrzeug wählen (Liste aus vw-connect, tesla-motors, bmw, mercedesme, renault,
+bluelink, skodaconnect …). Beim Übernehmen sucht SmartView die Datenpunkte selbst: Akku, Reichweite, Laden,
+Ladeleistung, Stecker, Ziel-Ladestand, verriegelt, km-Stand, Position und Zeit der Daten – fehlende selbst wählen.
+Kachel: Akku mit Balken, Reichweite, „lädt 10,8 kW“; Fenster: alle Werte, „📍 Wo steht das Auto?“ (OpenStreetMap)
+und – nur wenn der Adapter das Auto steuern kann – Klima / Laden ein-aus. VW ID: seit Juni 2026 liefert vw-connect
+die Daten über das EU-Data-Act-Portal (nur lesen, etwa alle 15 min, wenn das Auto aktiv ist).
+
 ### Farblicht (RGBW, z. B. Shelly) mit KNX-Taster
 
 Datenpunkte des Shelly-Adapters:

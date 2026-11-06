@@ -7,6 +7,7 @@ const TYPE_LABELS = {
   dimmer: 'Dimmer',
   color: 'Farblicht / RGBW (z. B. Shelly RGBW, mit KNX-Taster)',
   robot: 'Saugroboter / Mähroboter (jede Marke)',
+  car: 'Auto (Akku, Reichweite, Laden – jede Marke)',
   blind: 'Rollladen / Jalousie',
   value: 'Anzeige (Wert, Text, Kontakt)',
   button: 'Taste (schreibt einen Wert, z. B. Szene)',
@@ -52,6 +53,22 @@ const TYPE_FIELDS = {
     ['onDelay', 'Einschaltverzögerung (Sekunden, optional)', 'number', 'Ein wird erst nach dieser Zeit ausgeführt. Ein neuer Befehl bricht das Warten ab. Die Kachel zeigt „Ein in …“.'],
     ['offDelay', 'Ausschaltverzögerung (Sekunden, optional)', 'number', 'Aus wird erst nach dieser Zeit ausgeführt, z. B. Lüfter-Nachlauf.'],
     ['autoOff', 'Automatisch aus nach (Minuten, optional)', 'number', 'Treppenhauslicht: nach dem Einschalten geht es nach dieser Zeit wieder aus. Neues Ein startet die Zeit neu.'],
+  ],
+  car: [
+    ['carSrc', 'Auto (Adapter vw-connect, tesla-motors, bmw …)', 'cardev', 'Beim Übernehmen sucht SmartView die Datenpunkte des Autos selbst (Akku, Reichweite, Laden, Stecker, verriegelt, km-Stand, Position …) und trägt sie unten ein. Fehlendes selbst wählen.'],
+    ['soc', 'Akku %', 'state-r'],
+    ['range', 'Reichweite (km)', 'state-r'],
+    ['charging', 'Ladezustand', 'state-r', 'Text oder Zahl, z. B. CHARGE_STATE_CHARGING'],
+    ['power', 'Ladeleistung (kW)', 'state-r'],
+    ['plugged', 'Stecker angesteckt', 'state-r'],
+    ['target', 'Ziel-Ladestand %', 'state-r'],
+    ['locked', 'Verriegelt', 'state-r'],
+    ['mileage', 'Kilometerstand', 'state-r'],
+    ['lat', 'Position Breite', 'state-r'],
+    ['lon', 'Position Länge', 'state-r'],
+    ['updated', 'Daten vom (Zeit)', 'state-r', 'z. B. VW: _dataset_created_on (VW liefert nur alle 15 min, wenn das Auto aktiv ist)'],
+    ['climate', 'Taste: Klimatisierung ein/aus (optional)', 'state-w', 'Nur wenn der Adapter das Auto steuern kann (bei VW über das EU-Data-Act-Portal nicht).'],
+    ['charge', 'Taste: Laden ein/aus (optional)', 'state-w'],
   ],
   robot: [
     ['robotKind', 'Gerät', 'select:vacuum=Saugroboter;mower=Mähroboter'],
@@ -789,6 +806,26 @@ const Editor = (() => {
       s.appendChild(o);
     }
     s.value = value === undefined ? list[0] || '' : value || '';
+    return s;
+  }
+
+  /** car folder of a car adapter (value = folder) */
+  async function carField(box, value, label, help) {
+    const s = select([['', '(keines – Datenpunkte selbst wählen)']], value || '');
+    field(box, label, s, help);
+    let list = [];
+    try {
+      list = (await api('energy')).cars || [];
+    } catch (e) {
+      // no car adapter
+    }
+    for (const r of list.concat(value && !list.some(r => r.id === value) ? [{ id: value, label: value + ' (nicht gefunden)' }] : [])) {
+      const o = document.createElement('option');
+      o.value = r.id;
+      o.textContent = r.label;
+      s.appendChild(o);
+    }
+    s.value = value || '';
     return s;
   }
 
@@ -1618,6 +1655,7 @@ const Editor = (() => {
           inputs[key] = field(body, label, select(opts, t[key] || opts[0][0]), help);
         } else if (kind === 'energy') energyField(body, t[key], t.type === 'wallbox' ? [label, help] : null).then(s => (inputs[key] = s));
         else if (kind === 'charger') chargerField(body, t[key], label, help).then(s => (inputs[key] = s));
+        else if (kind === 'cardev') carField(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'robotdev') robotField(body, t[key], label, help, () => inputs.robotKind).then(s => (inputs[key] = s));
         else if (kind === 'camera') cameraField(body, t[key]).then(s => (inputs[key] = s));
         else if (kind === 'planpage') inputs[key] = field(body, label, select([['', '(wählen)']].concat(SV.draft.pages.filter(p => p.type === 'plan').map(p => [p.id, p.name])), t[key] || ''), 'Zuerst eine Seite der Art „Grundriss“ anlegen. Beschriftung leer = Name der Seite. In den Seiten-Einstellungen kann die Grundriss-Seite aus der Seitenleiste ausgeblendet werden.');

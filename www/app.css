@@ -565,3 +565,9 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .robzones .mrow button { padding: 4px 12px; min-width: 70px; }
 .robwarn { color: var(--bad); text-align: center; margin: -4px 0 10px; font-weight: 600; }
 .tile .pend { font-size: 12px; color: var(--accent); margin-top: 2px; }
+
+/* car: charge level bar, target mark */
+.carbar { position: relative; height: 6px; border-radius: 3px; background: rgba(128, 128, 128, .25); margin: 4px 0 2px; overflow: hidden; }
+.carbar span { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+.carbar.big { height: 12px; border-radius: 6px; margin: 0 0 12px; overflow: visible; }
+.carbar.big i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text, #ddd); }

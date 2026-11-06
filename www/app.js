@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { car: 'car', robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -145,7 +145,7 @@ function tileIds(t) {
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
     .concat([t, ...(t.areas || [])].flatMap(a => (Array.isArray(a.detectors) ? a.detectors : []).flatMap(d => [d.open, d.deact])))
-    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white', 'battery', 'connected', 'lat', 'lon', 'track', 'mapImage', 'confirmable', 'dirty'].map(k => t[k]))
+    .concat(['bright', 'rgb', 'red', 'green', 'blue', 'white', 'battery', 'connected', 'lat', 'lon', 'track', 'mapImage', 'confirmable', 'dirty', 'soc', 'range', 'charging', 'power', 'plugged', 'locked', 'mileage', 'updated', 'climate', 'charge'].map(k => t[k]))
     .concat(t.type === 'robot' ? (t.zones || []).map(z => z.state) : [])
     .concat(['ready', 'openText', 'alarmText', 'station', 'playing', 'volume', 'title', 'group', 'online', 'tilt', 'target', 'temp', 'fan', 'preAlarm', 'faultText', 'disabledText', 'lastMsg', 'connection', 'fault', 'disabled'].map(k => t[k]))
     .concat(t.type === 'fire' ? (t.detectors || []).flatMap(d => [d.state, d.alarm, d.fault, d.off, d.mode]) : [])
@@ -672,6 +672,58 @@ setInterval(() => {
   }
 }, 1000);
 
+// ---------------- car ----------------
+
+function carNum(id) {
+  const v = val(id);
+  const n = v === null || v === undefined || v === '' ? NaN : Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** charge level, range, charging text and a short line for the tile */
+function carInfo(t) {
+  const soc = carNum(t.soc);
+  const range = carNum(t.range);
+  const chg = CarLogic.chargeText(st(t.charging));
+  const charging = CarLogic.charging(st(t.charging));
+  const plug = CarLogic.plugged(st(t.plugged));
+  const parts = [];
+  if (range !== null) parts.push(Math.round(range) + ' km');
+  if (charging) parts.push('lädt' + (carNum(t.power) ? ' ' + String(Math.round(carNum(t.power) * 10) / 10).replace('.', ',') + ' kW' : ''));
+  else if (plug === true) parts.push('angesteckt');
+  return { soc: soc === null ? null : Math.round(soc), range, chg, charging, plug, line: parts.join(' · ') };
+}
+
+/** "vor 12 min" for the data time (number ms / s or text) */
+function carAge(v) {
+  if (v === null || v === undefined || v === '') return '';
+  let ts = typeof v === 'number' ? (v < 1e12 ? v * 1000 : v) : Date.parse(v);
+  if (!Number.isFinite(ts)) return String(v);
+  return since(ts);
+}
+
+function carSheet(t) {
+  const c = carInfo(t);
+  const row = (label, text) => (text !== '' && text !== null && text !== undefined ? '<div class="mrow"><span>' + label + '</span><b>' + esc(String(text)) + '</b></div>' : '');
+  const locked = t.locked ? (val(t.locked) === null || val(t.locked) === undefined ? '' : truthy(val(t.locked)) || /lock/i.test(String(val(t.locked))) && !/unlock/i.test(String(val(t.locked))) ? 'ja' : 'nein') : '';
+  const lat = carNum(t.lat);
+  const lon = carNum(t.lon);
+  const btn = (a, id, on, off) => (id ? '<button type="button" data-a="' + a + '"' + (truthy(val(id)) ? ' class="primary"' : '') + '>' + (truthy(val(id)) ? on : off) + '</button>' : '');
+  const buttons = btn('carclim', t.climate, 'Klima aus', 'Klima ein') + btn('carcharge', t.charge, 'Laden stoppen', 'Laden starten');
+  return '<div class="bigval">' + (c.soc !== null ? c.soc + ' %' : '–') + '</div>' +
+    '<div class="carbar big"><span style="width:' + (c.soc || 0) + '%"></span>' + (carNum(t.target) ? '<i style="left:' + carNum(t.target) + '%"></i>' : '') + '</div>' +
+    row('Reichweite', c.range !== null ? Math.round(c.range) + ' km' : '') +
+    row('Laden', c.chg) +
+    row('Ladeleistung', carNum(t.power) !== null && c.charging ? String(Math.round(carNum(t.power) * 10) / 10).replace('.', ',') + ' kW' : '') +
+    row('Stecker', c.plug === null ? '' : c.plug ? 'angesteckt' : 'nicht angesteckt') +
+    row('Ziel-Ladestand', carNum(t.target) !== null ? Math.round(carNum(t.target)) + ' %' : '') +
+    row('Verriegelt', locked) +
+    row('Kilometerstand', carNum(t.mileage) !== null ? Math.round(carNum(t.mileage)).toLocaleString('de-DE') + ' km' : '') +
+    row('Daten von', t.updated && carAge(val(t.updated)) ? 'vor ' + carAge(val(t.updated)) : '') +
+    (lat !== null && lon !== null ? '<div class="row"><a class="btnlink" href="https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lon + '#map=17/' + lat + '/' + lon + '" target="_blank" rel="noopener">📍 Wo steht das Auto?</a></div>' : '') +
+    (buttons ? '<div class="row">' + buttons + '</div>' : '');
+}
+
 // ---------------- robot (vacuum / lawn mower) ----------------
 
 /** status line, battery, error for tile / row / marker */
@@ -970,6 +1022,7 @@ function tileState(t, pageId) {
   if (t.type === 'switch') return switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'color') return colorInfo(t).on ? 'on' : '';
+  if (t.type === 'car') return CarLogic.charging(st(t.charging)) ? 'on' : '';
   if (t.type === 'robot') return RobotLogic.hasError(st(t.error)) ? 'alert' : RobotLogic.working(t, st(t.status)) ? 'on' : '';
   if (t.type === 'blind') return blindLock(t) ? 'alert' : '';
   if (t.type === 'gate') return gateStatus(t) === 'open' ? 'on' : gateStatus(t) === 'moving' ? 'alert' : '';
@@ -1820,7 +1873,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color', 'robot'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color', 'robot', 'car'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -1911,6 +1964,11 @@ function fillRow(el, t) {
       const lvl = Math.round(dimOn(t) ? dimLevel(t) : 0);
       ctl = '<button type="button" data-a="dimdown" aria-label="dunkler">' + icon('minus') + '</button><button type="button" data-a="dimup" aria-label="heller">' + icon('plus') + '</button>' +
         '<span class="lbar"><span style="width:' + lvl + '%"></span></span><span class="lval">' + lvl + ' %</span>';
+      break;
+    }
+    case 'car': {
+      const c = carInfo(t);
+      ctl = '<span class="lval">' + (c.soc !== null ? c.soc + ' %' : '–') + (c.line ? ' · ' + esc(c.line) : '') + '</span>';
       break;
     }
     case 'robot': {
@@ -2040,7 +2098,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot' || t.type === 'car') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -2066,6 +2124,13 @@ function fillTile(el, t) {
       const on = dimOn(t);
       html = '<div class="row1">' + ic + '<span class="tval">' + (on ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</span></div>' + label;
       if (t.state) html += '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '" aria-label="Helligkeit">';
+      break;
+    }
+    case 'car': {
+      const c = carInfo(t);
+      html = '<div class="row1">' + ic + '<span class="tval">' + (c.soc !== null ? c.soc + ' %' : '–') + '</span></div>' +
+        '<div class="carbar"><span style="width:' + (c.soc || 0) + '%"></span></div>' +
+        '<div class="tsub">' + esc(c.line) + '</div>' + label;
       break;
     }
     case 'robot': {
@@ -2229,6 +2294,10 @@ function bindControls(el, t) {
         if (t.state) send(t.state, next);
         else if (t.switchState) send(t.switchState, next > 0);
         return;
+      }
+      if (t.type === 'car' && (a === 'carclim' || a === 'carcharge')) {
+        const id = a === 'carclim' ? t.climate : t.charge;
+        return send(id, !truthy(val(id)));
       }
       if (t.type === 'robot' && a === 'rob') return send(t[b.dataset.v], true);
       if (t.type === 'robot' && a === 'robzone') {
@@ -2641,6 +2710,7 @@ function fillMarker(el, t) {
   } else if (t.type === 'dimmer') v = dimOn(t) ? Math.round(dimLevel(t)) + ' %' : '';
   else if (t.type === 'color') v = colorInfo(t).on ? colorText(t) : '';
   else if (t.type === 'robot') v = robotInfo(t).line;
+  else if (t.type === 'car') v = carInfo(t).soc !== null ? carInfo(t).soc + ' %' : '';
   else if (t.type === 'blind') v = blindText(t);
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
@@ -2803,6 +2873,8 @@ function fillSheet(sh, t) {
     body = '<div class="bigval" data-out>' + (dimOn(t) ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</div>' +
       (t.state ? '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '">' : '') +
       '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';
+  } else if (t.type === 'car') {
+    body = carSheet(t);
   } else if (t.type === 'robot') {
     body = robotSheet(t);
   } else if (t.type === 'color') {

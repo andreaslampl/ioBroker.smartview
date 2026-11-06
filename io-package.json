@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.53.2",
+    "version": "0.54.0",
     "news": {
+      "0.54.0": {
+        "en": "New car tile (any brand): pick the car, data points are found by name (charge level, range, charging, plug, lock, mileage, position), optional climate / charge buttons",
+        "de": "Neue Auto-Kachel (jede Marke): Auto wählen, Datenpunkte werden selbst gefunden (Akku, Reichweite, Laden, Stecker, verriegelt, km-Stand, Position), optional Klima / Laden"
+      },
       "0.53.2": {
         "en": "Robot tile: start / pause / home buttons on the small tile; map in the https app via a second web instance with HTTPS (picked automatically)",
         "de": "Roboter-Kachel: Start / Pause / Heim direkt auf der kleinen Kachel; Karte in der https-App über eine zweite web-Instanz mit HTTPS (wird automatisch genommen)"

@@ -467,6 +467,14 @@ switches/buttons on them.
   `.ctl` start/pause/home (`robotButtons()`, icons play/pause); webBase() also remembers an enabled web instance with
   native.secure (`sslPort` in webInfo), `robotMapUrl()` uses it inside the https app (owner: create web.1 with HTTPS + acme
   collection, web.0 http stays for VIS). Playwright.
+- 0.54.0: owner asked for a car tile, open for brands, picked like an instance -> tile `car` {soc, range, charging, power, plugged,
+  locked, mileage, target, lat, lon, updated (r), climate, charge (w, optional); option carSrc = car folder}. `www/carlogic.js`
+  (ADAPTERS list, FIELDS = regex lists per field, `match()` first hit on ids sorted short first, `chargeText()` VW
+  CHARGE_STATE_* / Tesla texts - "ready" before "charging", `plugged()`). main `carDevices()` (folders <adapter>.<n>.<car>
+  with a soc match; `/api/energy` cars) + `fillCar()` in fillDetectors on save (only empty fields or other cars of the
+  same adapter). VW ID via vw-connect 0.10.1 = EU Data Act `statuseudata.*` (names vary per car; owner's soc is
+  battery_level_HV.value). Tile: soc + bar + "241 km · lädt 10,8 kW"; sheet rows + OSM link. Unit tests + Playwright with
+  fake vw-connect states; not with the owner's car.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

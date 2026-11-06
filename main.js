@@ -20,6 +20,7 @@ const AppLogic = require('./www/applogic');
 const { ColorLights } = require('./lib/colorlight');
 const { SwitchCtl } = require('./lib/switchctl');
 const RobotLogic = require('./www/robotlogic');
+const CarLogic = require('./www/carlogic');
 const { sunTimes } = require('./lib/sun');
 const { CHOICES, LABELS, defaultType, cleanChoice, toDevice, devicesFor, toTile } = require('./lib/homekit');
 
@@ -174,6 +175,7 @@ class SmartView extends utils.Adapter {
                 chargerInstances: () => this.instancesOf('versicharge'),
                 fc20Instances: () => this.instancesOf('fc20-cerberus-bacnet'),
                 robotDevices: () => this.robotDevices(),
+                carDevices: () => this.carDevices(),
                 energyDay: (instance, date) => this.energyDay(instance, date),
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
@@ -1176,6 +1178,51 @@ class SmartView extends utils.Adapter {
      * from its export list, switch off/on via inputs.N.deactivated) or SPC (zones.N.area, no switching). Done on
      * saving the layout, so the data points are known (and writable) like any other.
      */
+    /** cars of the known car adapters for the tile dialog: [{id (car folder), label}] - folders with a charge level */
+    async carDevices() {
+        const out = [];
+        for (const adapter of CarLogic.ADAPTERS) {
+            const objs = await this.getForeignObjectsAsync(`${adapter}.*`, 'state').catch(() => ({}));
+            const byCar = new Map();
+            for (const id of Object.keys(objs || {})) {
+                const p = CarLogic.prefixOf(id);
+                if (p) {
+                    if (!byCar.has(p)) {
+                        byCar.set(p, []);
+                    }
+                    byCar.get(p).push(id);
+                }
+            }
+            for (const [p, ids] of byCar) {
+                if (!CarLogic.match(ids).soc) {
+                    continue;
+                }
+                const dev = await this.getForeignObjectAsync(p).catch(() => null);
+                const name = dev && dev.common && dev.common.name;
+                const text = typeof name === 'object' && name ? name.de || name.en || '' : name || '';
+                out.push({ id: p, label: `${text && text !== p.split('.')[2] ? `${text} ` : ''}(${p})` });
+            }
+        }
+        return out;
+    }
+
+    /** car tile: empty fields from the data points found below the chosen car */
+    async fillCar(t) {
+        const p = CarLogic.prefixOf(t.carSrc);
+        if (!p) {
+            return;
+        }
+        const objs = await this.getForeignObjectsAsync(`${p}.*`, 'state').catch(() => ({}));
+        const found = CarLogic.match(Object.keys(objs || {}).sort((a, b) => a.length - b.length));
+        for (const [k, id] of Object.entries(found)) {
+            // empty, or a data point of another car of the same adapter (own picks for this car stay)
+            if (!t[k] || (String(t[k]).startsWith(`${p.split('.')[0]}.`) && !String(t[k]).startsWith(`${p}.`))) {
+                t[k] = id;
+            }
+        }
+        this.log.info(`Auto ${t.label || p}: gefunden ${Object.keys(found).join(', ') || 'nichts'}`);
+    }
+
     /** robots of the dreame / husqvarna-automower adapters for the tile dialog: [{id (device prefix), label, kind}] */
     async robotDevices() {
         const out = [];
@@ -1221,6 +1268,10 @@ class SmartView extends utils.Adapter {
             for (const t of (p && Array.isArray(p.tiles) ? p.tiles : [])) {
                 if (t && t.type === 'fire') {
                     t.detectors = t.showDetectors ? await this.fireDetectorsOf(String(t.panel || '')) : [];
+                    continue;
+                }
+                if (t && t.type === 'car') {
+                    await this.fillCar(t);
                     continue;
                 }
                 if (t && t.type === 'robot') {
