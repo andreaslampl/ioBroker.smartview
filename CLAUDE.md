@@ -463,6 +463,10 @@ switches/buttons on them.
   collected into one pending; no optimistic display for delayed ids (`delayedIds()`). setValue: number -> boolean target
   is now `> 0`. Unit tests + Playwright.
 - 0.53.1: energy-view.js = energie 0.9.0 render.js (car charge level ring + "Wallbox · 63 %" at the wallbox consumer).
+- 0.53.2: owner wanted buttons on the small robot tile and asked why "nur über http" -> tile: status as tval, "Name · 100 %",
+  `.ctl` start/pause/home (`robotButtons()`, icons play/pause); webBase() also remembers an enabled web instance with
+  native.secure (`sslPort` in webInfo), `robotMapUrl()` uses it inside the https app (owner: create web.1 with HTTPS + acme
+  collection, web.0 http stays for VIS). Playwright.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

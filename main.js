@@ -1694,14 +1694,17 @@ class SmartView extends utils.Adapter {
             const host = bind === '0.0.0.0' || bind === '::' || !bind ? '127.0.0.1' : bind;
             base = `${inst.native.secure ? 'https' : 'http'}://${host}:${Number(inst.native.port) || 8082}`;
         }
-        this.webCache = { at: Date.now(), base };
+        // an enabled web instance with HTTPS (for pages shown inside SmartView's https app, e.g. the Dreame map)
+        const sec = Object.values(objs || {}).find(o => o && o.common && o.common.enabled && o.native && o.native.secure && /^system\.adapter\.web\.\d+$/.test(o._id));
+        this.webCache = { at: Date.now(), base, sslPort: sec ? Number(sec.native.port) || 8443 : 0 };
         return base;
     }
 
     /** port / https of the web adapter for pages it serves (robot maps, web:/… links); from the cache of webBase() */
     webInfo() {
         const m = /^(https?):\/\/[^:]+:(\d+)/.exec((this.webCache && this.webCache.base) || '');
-        return m ? { port: Number(m[2]), secure: m[1] === 'https' } : null;
+        const ssl = (this.webCache && this.webCache.sslPort) || 0;
+        return m ? { port: Number(m[2]), secure: m[1] === 'https', sslPort: m[1] === 'https' ? Number(m[2]) : ssl } : null;
     }
 
     async cameraUrl(id, kind) {

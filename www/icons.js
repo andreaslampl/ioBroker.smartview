@@ -61,6 +61,8 @@ const ICON_PATHS = {
   up: '<path d="M6 15l6-6 6 6"/>',
   down: '<path d="M6 9l6 6 6-6"/>',
   stop: '<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
+  play: '<path d="M8 5v14l11-7z"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',

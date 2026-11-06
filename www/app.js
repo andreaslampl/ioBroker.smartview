@@ -694,6 +694,8 @@ function robotMapUrl(t) {
   const u = String(t.mapUrl || '');
   if (!u.startsWith('web:')) return u;
   const w = SV.web || { port: 8082, secure: false };
+  // inside the https app only an https page can be shown: a web instance with HTTPS, if there is one
+  if (location.protocol === 'https:' && w.sslPort) return 'https://' + location.hostname + ':' + w.sslPort + u.slice(4);
   return (w.secure ? 'https:' : 'http:') + '//' + location.hostname + ':' + w.port + u.slice(4);
 }
 
@@ -702,7 +704,7 @@ function robotMap(t) {
     const url = robotMapUrl(t);
     // an http page cannot be shown inside an https page (iPhone app): offer it in its own window
     const blocked = location.protocol === 'https:' && url.startsWith('http:');
-    return '<div class="robmap">' + (blocked ? '<p class="hint">Die Karte läuft nur über http – hier antippen:</p>' :
+    return '<div class="robmap">' + (blocked ? '<p class="hint">Die Karte kommt vom web-Adapter über http – in der https-App kann der Browser sie nicht einbetten. Abhilfe: eine zweite web-Instanz mit HTTPS (Let\'s-Encrypt-Zertifikat) anlegen, SmartView nimmt sie dann automatisch. Bis dahin:</p>' :
       '<iframe class="robframe" data-src="' + esc(url) + '" src="' + esc(url) + '" loading="lazy"></iframe>') +
       '<a class="btnlink" href="' + esc(url) + '" target="_blank" rel="noopener">Karte groß öffnen</a></div>';
   }
@@ -722,6 +724,14 @@ function robotMap(t) {
     return '<div class="robmap gps"><img class="robimg" src="files/' + encodeURIComponent(t.mapImg) + '" alt="">' + svg + dot + '</div>';
   }
   return '';
+}
+
+/** start / pause / home right on the tile (the sheet has all of them) */
+function robotButtons(t, r) {
+  const b = (k, ic, title) => (t[k] ? '<button type="button" data-a="rob" data-v="' + k + '" aria-label="' + title + '" title="' + title + '">' + icon(ic) + '</button>' : '');
+  const mower = t.robotKind === 'mower';
+  const html = b('start', 'play', mower ? 'Mähen' : 'Saugen') + b('pause', 'pause', 'Pause') + b('home', 'home', mower ? 'Parken' : 'Zur Station');
+  return html ? '<div class="ctl">' + html + '</div>' : '';
 }
 
 function robotSheet(t) {
@@ -2060,8 +2070,9 @@ function fillTile(el, t) {
     }
     case 'robot': {
       const r = robotInfo(t);
-      html = '<div class="row1">' + ic + '<span class="tval">' + (r.battery !== null ? r.battery + ' %' : '') + '</span></div>' +
-        '<div class="tsub' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</div>' + label;
+      // small tile: status at the top, name + battery below, buttons at the bottom
+      html = '<div class="row1">' + ic + '<span class="tval' + (r.error ? ' bad' : '') + '">' + esc(r.line) + '</span></div>' +
+        '<div class="lbl">' + esc(t.label || '') + (r.battery !== null ? ' · ' + r.battery + ' %' : '') + '</div>' + robotButtons(t, r);
       break;
     }
     case 'color': {

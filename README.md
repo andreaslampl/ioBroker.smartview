@@ -116,7 +116,9 @@ Karte im Bedienfenster:
 
 - **Kartenseite eines Adapters** – Dreame: die Live-Karte des dreame-Adapters (`web:/dreame/?did=…`, kommt mit der
   Vorlage; im dreame-Adapter „Get Map“ einschalten). Läuft der web-Adapter nur mit http, SmartView aber mit https
-  (iPhone-App), zeigt das Fenster einen Link „Karte groß öffnen“ statt der eingebetteten Karte.
+  (iPhone-App), zeigt das Fenster einen Link „Karte groß öffnen“ statt der eingebetteten Karte. Abhilfe: eine **zweite
+  web-Instanz** mit HTTPS anlegen (z. B. Port 8443, Zertifikate: die Let's-Encrypt-Sammlung von acme) – SmartView nimmt sie
+  in der https-App automatisch, die bisherige http-Instanz (VIS) bleibt unverändert.
 - **Kartenbild aus einem Datenpunkt** – für Adapter, die ein Bild liefern.
 - **GPS auf eigenem Bild** – Automower: Gartenbild hochladen (z. B. Google-Maps-Satellit, Norden oben), zwei weit
   auseinander liegende Stellen antippen und ihre Koordinaten eingeben (Google Maps: Rechtsklick → oberste Zeile kopiert

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.53.1",
+    "version": "0.53.2",
     "news": {
+      "0.53.2": {
+        "en": "Robot tile: start / pause / home buttons on the small tile; map in the https app via a second web instance with HTTPS (picked automatically)",
+        "de": "Roboter-Kachel: Start / Pause / Heim direkt auf der kleinen Kachel; Karte in der https-App über eine zweite web-Instanz mit HTTPS (wird automatisch genommen)"
+      },
       "0.53.1": {
         "en": "Energy flow tile: the car's charge level at the wallbox (energie 0.9.0)",
         "de": "Energiefluss-Kachel: Akkustand des Autos an der Wallbox (energie 0.9.0)"
