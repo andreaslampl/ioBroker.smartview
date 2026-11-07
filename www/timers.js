@@ -10,6 +10,7 @@ const Timers = (() => {
     climate: [['on', 'Ein'], ['off', 'Aus']],
     dimmer: [['on', 'Ein (100 %)'], ['off', 'Aus'], ['level', 'Helligkeit …']],
     blind: [['up', 'Auf'], ['down', 'Ab'], ['position', 'Position (% offen) …']],
+    button: [['press', 'Auslösen']],
   };
 
   async function load() {
@@ -34,7 +35,8 @@ const Timers = (() => {
 
   function supports(t) {
     // a PIN protected tile gets no time switch (it would switch without the PIN)
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !(t.type === 'switch' && t.sendMode === 'push') && !(Array.isArray(t.entries) && t.entries.length) && !t.pin && !(SV.me && SV.me.control === false);
+    const many = Array.isArray(t.entries) && t.entries.length > 0;
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState || many)) && !(t.type === 'switch' && t.sendMode === 'push' && !many) && !t.pin && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {
@@ -196,6 +198,24 @@ const Timers = (() => {
           row2.appendChild(u);
         }
         box.appendChild(row2);
+        // tile with several entries: which ones
+        const ents = tileEntries(t);
+        if (ents) {
+          if (!Array.isArray(e.targets)) e.targets = [ents[0]._e];
+          const row3 = document.createElement('div');
+          row3.className = 'trow targets';
+          for (const x of ents) {
+            const l = document.createElement('label');
+            l.className = 'check';
+            l.innerHTML = '<input type="checkbox"' + (e.targets.includes(x._e) ? ' checked' : '') + '> ';
+            l.appendChild(document.createTextNode(x.label));
+            l.querySelector('input').onchange = ev => {
+              e.targets = ev.target.checked ? e.targets.concat(x._e).sort((a, b) => a - b) : e.targets.filter(n => n !== x._e);
+            };
+            row3.appendChild(l);
+          }
+          box.appendChild(row3);
+        }
         // footer
         const foot = document.createElement('div');
         foot.className = 'trow';
@@ -230,7 +250,11 @@ const Timers = (() => {
       add.onclick = () => {
         const last = tm.entries[tm.entries.length - 1];
         const first = ACTIONS[t.type][0][0];
-        tm.entries.push({ id: 'e' + Date.now().toString(36), enabled: true, days: [1, 2, 3, 4, 5, 6, 7], at: 'time', time: '07:00', offset: 0, action: last && last.action === first ? ACTIONS[t.type][1][0] : first });
+        const second = (ACTIONS[t.type][1] || ACTIONS[t.type][0])[0];
+        const ne = { id: 'e' + Date.now().toString(36), enabled: true, days: [1, 2, 3, 4, 5, 6, 7], at: 'time', time: '07:00', offset: 0, action: last && last.action === first ? second : first };
+        // same entries as the switching time before (e.g. EG + OG every evening)
+        if (last && Array.isArray(last.targets)) ne.targets = last.targets.slice();
+        tm.entries.push(ne);
         draw();
       };
       sh.appendChild(add);
@@ -249,6 +273,7 @@ const Timers = (() => {
       save.onclick = async () => {
         try {
           if (tm.entries.some(e => !e.days.length)) return toast('Bei jeder Schaltzeit mindestens einen Tag wählen', true);
+          if (tileEntries(t) && tm.entries.some(e => !e.targets || !e.targets.length)) return toast('Bei jeder Schaltzeit mindestens einen Eintrag ankreuzen', true);
           await api('timers/' + key, { method: 'PUT', body: JSON.stringify(tm) });
           await load();
           toast('Zeitschaltuhr gespeichert');

@@ -588,3 +588,4 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .entry .ebtns { display: flex; gap: 6px; flex-shrink: 0; }
 .entry .ebtns button { min-width: 52px; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .entry .ebtns button svg { width: 20px; height: 20px; }
+.trow.targets { flex-wrap: wrap; gap: 6px 14px; }

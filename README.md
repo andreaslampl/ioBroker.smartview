@@ -95,7 +95,8 @@ Schalter, Rollo und Taste haben „Weitere Einträge“: z. B. *Licht Zentral Au
 **einer** Kachel. Ein Tipp öffnet eine Liste mit allen Einträgen, jeder mit eigenen Tasten (Ein/Aus, Taster, Auf/Stopp/Ab,
 Auslösen). Die Felder oben in der Kachel sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird). Pro Eintrag
 einstellbar: Rückmeldung, beim Schalter „Senden“ (nur true / nur false / Taster), beim Rollo Stopp, bei der Taste der Wert.
-Zeitschaltuhr gibt es für solche Kacheln nicht; Wind-/Regensperre gilt nur für die eigenen Rollläden der Kachel.
+Zeitschaltuhr: pro Schaltzeit ankreuzen, welche Einträge geschaltet werden (einer oder mehrere). Wind-/Regensperre gilt nur
+für die eigenen Rollläden der Kachel. Auch die Taste-Kachel hat jetzt eine Zeitschaltuhr (z. B. Szene jeden Abend).
 
 ### Jalousien / Rollläden
 

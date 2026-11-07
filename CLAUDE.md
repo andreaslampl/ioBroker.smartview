@@ -497,8 +497,12 @@ switches/buttons on them.
   (button)}] (max 30; stateIds/tileWriteIds: state+stop w, status r; PIN covers them). app.js `tileEntries()` = virtual tiles
   (tile + entry fields, own state = entry 1 if set; no also/delays), tile shows `entriesSummary()` and opens the sheet,
   `entriesSheet()` rows with data-a ent-on/off/up/down/stop/press + data-e -> `entryAction()` (push entries via data-push);
-  main `ctlTiles()` adds switch entries with sendMode as `page/tile#n`. No time switch for such tiles; wind lock only for the
+  main `ctlTiles()` adds switch entries with sendMode as `page/tile#n`. Time switch since 0.57.1; wind lock only for the
   tile's own blinds. Editor `entriesField()` (↑ ↓, new rows copy sendMode). Unit test + Playwright (scratchpad sv/ent-ui.js).
+- 0.57.1: owner needs the time switch exactly there -> timer entries `targets` [0 = own state, n = entries[n-1]] (lib/timers.js
+  cleanEntry; empty = all), main `fireTimer()` resolves the entries and calls `fireOne()` per target; button tiles get timers too
+  (action 'press', writes value or true). Timer editor: checkbox row per entry (default first entry, new rows copy the targets,
+  save refuses none ticked). Playwright (scratchpad sv/enttimer-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

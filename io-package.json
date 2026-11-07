@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.57.0",
+    "version": "0.57.1",
     "news": {
+      "0.57.1": {
+        "en": "Time switch for tiles with several entries (choose the entries per switching time) and for button tiles",
+        "de": "Zeitschaltuhr auch für Kacheln mit mehreren Einträgen (Einträge pro Schaltzeit wählbar) und für Taste-Kacheln"
+      },
       "0.57.0": {
         "en": "Switch, blind and button tiles: several entries in one tile (central functions, scenes), chosen in a list",
         "de": "Schalter-, Rollo- und Taste-Kachel: mehrere Einträge in einer Kachel (Zentralfunktionen, Szenen), Auswahl in einer Liste"

@@ -1642,8 +1642,29 @@ class SmartView extends utils.Adapter {
             return;
         }
         const when = entry.at === 'time' ? entry.time : `${entry.at === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang'}${entry.offset ? ` ${entry.offset > 0 ? '+' : ''}${entry.offset} min` : ''}`;
+        // several entries (central functions, scenes): the ones ticked in this switching time (none ticked = all)
+        if (['switch', 'blind', 'button'].includes(tile.type) && Array.isArray(tile.entries) && tile.entries.length) {
+            const list = [];
+            if (tile.state) {
+                list.push({ ...tile, _e: 0 });
+            }
+            tile.entries.forEach((e, i) => list.push({ ...tile, label: e.label, state: e.state, status: e.status || '', stop: e.stop || '', sendMode: e.sendMode || '', value: e.value, _e: i + 1 }));
+            const pick = entry.targets && entry.targets.length ? list.filter(x => entry.targets.includes(x._e)) : list;
+            this.log.info(`Timer "${tile.label || tile.id}" (${when}): ${action} – ${pick.map(x => x.label || x.state).join(', ') || 'kein Eintrag'}`);
+            for (const sub of pick) {
+                await this.fireOne(sub, action, value).catch(err => this.log.warn(`Timer "${sub.label || sub.state}": ${err.message}`));
+            }
+            return;
+        }
         this.log.info(`Timer "${tile.label || tile.id}" (${when}): ${action}${value !== undefined ? ` ${value} %` : ''}`);
-        if (tile.type === 'switch' || tile.type === 'climate') {
+        await this.fireOne(tile, action, value);
+    }
+
+    /** one tile (or one entry of a tile) of a time switch */
+    async fireOne(tile, action, value) {
+        if (tile.type === 'button') {
+            await this.setValue(tile.state, tile.value === undefined || tile.value === '' ? true : tile.value);
+        } else if (tile.type === 'switch' || tile.type === 'climate') {
             const on = action === 'on';
             await this.setValue(tile.state, tile.invert ? !on : on);
         } else if (tile.type === 'dimmer') {
