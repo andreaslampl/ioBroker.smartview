@@ -164,6 +164,55 @@ function switchOn(t) {
   return t.invert ? !truthy(v) : truthy(v);
 }
 
+/** switch that always sends one value / push button: its own data point says nothing about on/off */
+function swTrigger(t) {
+  return t.type === 'switch' && ['true', 'false', 'push'].includes(t.sendMode);
+}
+
+function swPush(t) {
+  return t.type === 'switch' && t.sendMode === 'push';
+}
+
+/** Ein / Aus, or null when unknown (also for a trigger switch without status data point) */
+function swKnown(t) {
+  if (swTrigger(t) && !t.status) return false;
+  const v = val(t.status || t.state);
+  return v !== undefined && v !== null;
+}
+
+function pushMark(el, t) {
+  if (swPush(t) && t.state && !SV.editing) el.dataset.push = t.state;
+  else delete el.dataset.push;
+}
+
+// push button tiles (data-push = data point): pressed while the finger / mouse button is down
+let pushEl = null;
+function sendHold(id, down) {
+  if (!id) return;
+  if (SV.me && SV.me.control === false) return down && toast('Nur ansehen – du darfst hier nicht schalten', true);
+  if (!SV.ws || SV.ws.readyState !== 1) return down && toast('Keine Verbindung zum ioBroker', true);
+  // with PIN: no holding possible (the PIN dialog comes in between) -> one press of the set length
+  if (SV.pinIds && SV.pinIds.has(id)) return down && send(id, true);
+  SV.ws.send(JSON.stringify({ type: 'set', id, val: down, hold: true }));
+}
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest && e.target.closest('[data-push]');
+  if (!el || SV.editing || e.button > 0) return;
+  pushEl = el;
+  el.classList.add('pressed');
+  sendHold(el.dataset.push, true);
+});
+function pushUp() {
+  if (!pushEl) return;
+  const el = pushEl;
+  pushEl = null;
+  el.classList.remove('pressed');
+  sendHold(el.dataset.push, false);
+}
+document.addEventListener('pointerup', pushUp);
+document.addEventListener('pointercancel', pushUp);
+window.addEventListener('blur', pushUp);
+
 function dimLevel(t) {
   return toNum(val(t.status || t.state));
 }
@@ -1041,7 +1090,7 @@ function tileState(t, pageId) {
     const a = alarmInfo(alarmCur(t));
     return a.alarm || alarmElsewhere(t).length ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
   }
-  if (t.type === 'switch') return switchOn(t) ? 'on' : '';
+  if (t.type === 'switch') return swKnown(t) && switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'color') return colorInfo(t).on ? 'on' : '';
   if (t.type === 'car') return CarLogic.charging(st(t.charging)) ? 'on' : '';
@@ -1977,8 +2026,8 @@ function fillRow(el, t) {
       renderHtml(el.querySelector('.htmlhost'), val(t.state));
       return;
     case 'switch': {
-      const known = val(t.status || t.state) !== undefined && val(t.status || t.state) !== null;
-      ctl = '<button type="button" class="lon" data-a="on">EIN</button><button type="button" class="loff" data-a="off">AUS</button>' +
+      const known = swKnown(t);
+      ctl = (swPush(t) ? '<button type="button" class="lon" data-push="' + esc(t.state || '') + '">DRÜCKEN</button>' : '<button type="button" class="lon" data-a="on">EIN</button><button type="button" class="loff" data-a="off">AUS</button>') +
         '<span class="lamp' + (known ? (switchOn(t) ? ' on' : ' off') : '') + '"></span>';
       break;
     }
@@ -2117,6 +2166,8 @@ function tileTap(t) {
     if (t.target) location.hash = encodeURIComponent(t.target);
     return;
   }
+  // push button: pressed and released by pointerdown / pointerup (data-push), the click does nothing more
+  if (swPush(t)) return;
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
@@ -2127,6 +2178,7 @@ function tileTap(t) {
 function fillTile(el, t) {
   if (t.type === 'energy') return energyTile(el, t);
   if (t.type === 'planview') return planTile(el, t);
+  pushMark(el, t);
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
@@ -2141,7 +2193,7 @@ function fillTile(el, t) {
       html = esc(t.label);
       break;
     case 'switch':
-      html = '<div class="row1">' + ic + '<span class="tval">' + (val(t.status || t.state) === undefined || val(t.status || t.state) === null ? '–' : switchOn(t) ? 'Ein' : 'Aus') + '</span></div>' + label;
+      html = '<div class="row1">' + ic + '<span class="tval">' + (swKnown(t) ? (switchOn(t) ? 'Ein' : 'Aus') : swPush(t) ? 'Taster' : swTrigger(t) ? 'Impuls' : '–') + '</span></div>' + label;
       break;
     case 'dimmer': {
       const on = dimOn(t);
@@ -2727,6 +2779,7 @@ function renderMarker(t, page, inTile) {
 }
 
 function fillMarker(el, t) {
+  pushMark(el, t);
   const stt = tileState(t);
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
@@ -2910,7 +2963,10 @@ function fillSheet(sh, t) {
   if (t.type === 'energy') return energySheet(sh, t);
   let body = '';
   if (t.type === 'switch') {
-    body = '<div class="bigval">' + (switchOn(t) ? 'Ein' : 'Aus') + '</div><div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>';
+    body = '<div class="bigval">' + (swKnown(t) ? (switchOn(t) ? 'Ein' : 'Aus') : swPush(t) ? 'Taster' : 'Impuls') + '</div>' +
+      (swPush(t) ? '<div class="row"><button type="button" class="primary" data-push="' + esc(t.state || '') + '">Drücken</button></div>' : '') +
+      '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>' +
+      (swTrigger(t) && !t.status ? '<p class="hint">Ohne Rückmelde-Datenpunkt wird bei Ein und bei Aus gleich gesendet.</p>' : '');
   } else if (t.type === 'dimmer') {
     body = '<div class="bigval" data-out>' + (dimOn(t) ? Math.round(dimLevel(t)) + ' %' : 'Aus') + '</div>' +
       (t.state ? '<input type="range" min="0" max="100" step="1" value="' + Math.round(dimLevel(t)) + '">' : '') +

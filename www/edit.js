@@ -40,6 +40,8 @@ const TYPE_FIELDS = {
     ['state', 'Schalten (Datenpunkt)', 'state-w'],
     ['status', 'Rückmeldung (optional)', 'state-r', 'Status-Datenpunkt, z. B. KNX-Rückmelde-Adresse'],
     ['invert', 'Umgekehrt (true = aus)', 'check'],
+    ['sendMode', 'Senden', 'select:=Ein = true, Aus = false (normal);true=immer nur true senden (Stromstoß / Umschalten);false=immer nur false senden;push=Taster: drücken = true, loslassen = false', 'Bei „nur true“, „nur false“ und Taster zeigt die Kachel Ein/Aus nur mit Rückmelde-Datenpunkt. Dann wird auch nichts gesendet, wenn er schon so steht (z. B. Zeitschaltuhr „Ein“ bei schon eingeschaltetem Licht). Taster mit „Umgekehrt“: drücken = false, loslassen = true.'],
+    ['pushTime', 'Taster: mindestens gedrückt (Sekunden, optional)', 'number', 'Standard 0,5 s. Auch Zeitschaltuhr, „Haus verlassen“ und Ein/Aus im Bedienfenster drücken so lange.'],
     ['also', 'Weitere Datenpunkte (werden gleich mitgeschaltet)', 'statelist', 'z. B. mehrere Lichter oder Steckdosen mit einer Kachel – sie bekommen denselben Befehl (auch von Zeitschaltuhr und „Haus verlassen“).'],
     ['onDelay', 'Einschaltverzögerung (Sekunden, optional)', 'number', 'Ein wird erst nach dieser Zeit ausgeführt. Ein neuer Befehl bricht das Warten ab. Die Kachel zeigt „Ein in …“.'],
     ['offDelay', 'Ausschaltverzögerung (Sekunden, optional)', 'number', 'Aus wird erst nach dieser Zeit ausgeführt, z. B. Lüfter-Nachlauf.'],

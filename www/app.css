@@ -573,3 +573,8 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .carbar.big i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text, #ddd); }
 .tile .tsub.wbcar { color: var(--ok); }
 .wbcarbtn { width: 100%; }
+
+/* push button switch (sendMode push): pressed while held */
+[data-push] { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.tile[data-push].pressed, .marker[data-push].pressed, button[data-push].pressed { filter: brightness(1.25); transform: scale(0.97); }
+.sheet .hint { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }

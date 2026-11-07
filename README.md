@@ -83,6 +83,9 @@ Bei **Schalter**, **Dimmer** und **Rollladen** im Kachel-Dialog:
 - **Einschaltverzögerung / Ausschaltverzögerung** (Sekunden, Schalter und Dimmer) – der Befehl wird erst später
   ausgeführt, die Kachel zeigt „⏱ Ein in 0:30 min“. Ein neuer Befehl bricht das Warten ab.
 - **Automatisch aus nach** (Minuten) – Treppenhauslicht: nach dem Einschalten wieder aus.
+- **Senden** (Schalter): normal (Ein = true, Aus = false), **nur true** (Stromstoß-Relais, Umschalt-Objekte), **nur false**
+  oder **Taster** (drücken = true, loslassen = false; mindestens „Taster: mindestens gedrückt“, Standard 0,5 s). Mit
+  Rückmelde-Datenpunkt zeigt die Kachel Ein/Aus und sendet nichts, wenn es schon so ist (z. B. Zeitschaltuhr „Ein“).
 
 Das läuft im Adapter, also auch ohne offene Seite.
 

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.55.1",
+    "version": "0.56.0",
     "news": {
+      "0.56.0": {
+        "en": "Switch tile: send only true / only false, or push button (press = true, release = false)",
+        "de": "Schalter-Kachel: nur true / nur false senden oder Taster (drücken = true, loslassen = false)"
+      },
       "0.55.1": {
         "en": "Energy view: the day values (produced, used, import …) follow the day chosen with ‹ ›",
         "de": "Energie-Ansicht: Die Tageswerte (Erzeugt, Verbraucht, Bezogen …) springen mit dem Tag mit, der mit ‹ › gewählt ist"

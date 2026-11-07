@@ -486,6 +486,12 @@ switches/buttons on them.
 - 0.55.1: owner wanted the day values to follow the day chosen in the energy sheet -> `energySheet()` heading `[data-stitle]`, past
   day = `day.summary` from energie (History.days, 400 days; none -> hint), live values only while today is shown. Playwright
   (day API mocked).
+- 0.56.0: owner asked for a switch that sends only true / only false and a push button mode -> switch `sendMode` '' | true | false |
+  push + `pushTime` (s, 0.1-10, default 0.5). SwitchCtl handles these tiles: on/off commands become the fixed value or a press
+  (true, release after pushTime; invert swaps), skipped when the own `status` already shows the target (io.value = liveStates);
+  page holds push tiles via `data-push` (document pointerdown/up -> ws set {hold: true}; release not before pushTime, safety 30 s;
+  with PIN one press). Without status the tile shows Taster / Impuls; push tiles have no long press / time switch in the page.
+  Unit tests + Playwright (scratchpad sv/push-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

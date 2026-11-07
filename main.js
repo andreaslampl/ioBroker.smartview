@@ -694,6 +694,10 @@ class SmartView extends utils.Adapter {
         if (!this.swCtl) {
             this.swCtl = new SwitchCtl({
                 write: (id, val) => this.setValue(id, val, { force: true, raw: true }),
+                value: id => {
+                    const st = this.liveStates.get(id);
+                    return st ? st.val : undefined;
+                },
                 log: this.log,
                 changed: status => this.server && this.server.pendingChanged && this.server.pendingChanged(status),
             });
@@ -715,7 +719,7 @@ class SmartView extends utils.Adapter {
     }
 
     /** Command from the page: write with the type of the data point, as a command (ack = false). */
-    async setValue(id, val, { force = false, raw = false } = {}) {
+    async setValue(id, val, { force = false, raw = false, hold = false } = {}) {
         // blinds locked by wind/rain: no commands from the page or the time switch
         const lock = force ? null : this.lockFor(id);
         if (lock) {
@@ -723,7 +727,7 @@ class SmartView extends utils.Adapter {
         }
         // tiles with more data points / delays / auto off: carried out by SwitchCtl (which writes back with raw)
         if (!raw && this.swCtl && this.swCtl.handles(id)) {
-            return this.swCtl.command(id, val);
+            return this.swCtl.command(id, val, { hold });
         }
         const { type } = await this.metaOf(id);
         let v = val;
