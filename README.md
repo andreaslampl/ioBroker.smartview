@@ -89,6 +89,14 @@ Bei **Schalter**, **Dimmer** und **Rollladen** im Kachel-Dialog:
 
 Das läuft im Adapter, also auch ohne offene Seite.
 
+### Mehrere Einträge in einer Kachel (Zentralfunktionen, Szenen)
+
+Schalter, Rollo und Taste haben „Weitere Einträge“: z. B. *Licht Zentral Aus*, *EG Zentral Aus*, *OG Zentral Aus* in
+**einer** Kachel. Ein Tipp öffnet eine Liste mit allen Einträgen, jeder mit eigenen Tasten (Ein/Aus, Taster, Auf/Stopp/Ab,
+Auslösen). Die Felder oben in der Kachel sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird). Pro Eintrag
+einstellbar: Rückmeldung, beim Schalter „Senden“ (nur true / nur false / Taster), beim Rollo Stopp, bei der Taste der Wert.
+Zeitschaltuhr gibt es für solche Kacheln nicht; Wind-/Regensperre gilt nur für die eigenen Rollläden der Kachel.
+
 ### Jalousien / Rollläden
 
 Datenpunkt: Position in % oder ein Auf/Ab-Objekt (true/false, z. B. KNX 1-Bit: false = auf, true = ab).

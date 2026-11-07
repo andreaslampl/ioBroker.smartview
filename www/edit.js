@@ -46,6 +46,8 @@ const TYPE_FIELDS = {
     ['onDelay', 'Einschaltverzögerung (Sekunden, optional)', 'number', 'Ein wird erst nach dieser Zeit ausgeführt. Ein neuer Befehl bricht das Warten ab. Die Kachel zeigt „Ein in …“.'],
     ['offDelay', 'Ausschaltverzögerung (Sekunden, optional)', 'number', 'Aus wird erst nach dieser Zeit ausgeführt, z. B. Lüfter-Nachlauf.'],
     ['autoOff', 'Automatisch aus nach (Minuten, optional)', 'number', 'Treppenhauslicht: nach dem Einschalten geht es nach dieser Zeit wieder aus. Neues Ein startet die Zeit neu.'],
+    ['entryLabel', 'Name dieses Eintrags (nur mit weiteren Einträgen)', 'text', 'Mit weiteren Einträgen öffnet ein Tipp auf die Kachel eine Liste mit allen – die Felder oben sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird).'],
+    ['entries', 'Weitere Einträge (optional, z. B. Zentralfunktionen)', 'entries'],
   ],
   dimmer: [
     ['state', 'Helligkeit 0–100 % (Datenpunkt)', 'state-w'],
@@ -129,6 +131,8 @@ const TYPE_FIELDS = {
     ['lockTime', 'Sperre nach dem Alarm', 'number', 'Solange ein Alarm ansteht, ist immer gesperrt. Danach noch so lange (0 = sofort frei).'],
     ['lockUnit', 'Einheit der Sperre', 'select:min=Minuten;s=Sekunden'],
     ['also', 'Weitere Rollläden (fahren gleich mit)', 'statelist', 'Position bzw. Auf/Ab-Objekt weiterer Rollläden – sie bekommen denselben Befehl, auch beim Wind- / Regenschutz.'],
+    ['entryLabel', 'Name dieses Eintrags (nur mit weiteren Einträgen)', 'text', 'Mit weiteren Einträgen öffnet ein Tipp auf die Kachel eine Liste mit allen – die Felder oben sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird).'],
+    ['entries', 'Weitere Einträge (optional, z. B. Zentralfunktionen)', 'entries'],
   ],
   planview: [['target', 'Grundriss-Seite', 'planpage']],
   gate: [
@@ -160,6 +164,8 @@ const TYPE_FIELDS = {
     ['state', 'Datenpunkt', 'state-w'],
     ['value', 'Wert, der geschrieben wird', 'text', 'leer = true; Zahl oder Text möglich'],
     ['confirm', 'Vorher nachfragen', 'check'],
+    ['entryLabel', 'Name dieses Eintrags (nur mit weiteren Einträgen)', 'text', 'Mit weiteren Einträgen öffnet ein Tipp auf die Kachel eine Liste mit allen – die Felder oben sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird).'],
+    ['entries', 'Weitere Einträge (optional, z. B. Zentralfunktionen)', 'entries'],
   ],
   thermostat: [
     ['circLabel', 'Name dieses Kreises (optional)', 'text', 'Nur nötig, wenn es unten weitere Kreise gibt – z. B. „Fußbodenheizung“. Die Felder hier sind Kreis 1.'],
@@ -1226,6 +1232,77 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.state || r.status || r.mode || r.modeStatus) };
   }
 
+  /** More entries of a switch / blind / button tile (central functions, scenes): name + data points, chosen in the sheet. */
+  function entriesField(box, rows, type) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, type === 'button' ? 'Weitere Einträge (z. B. Szenen)' : 'Weitere Einträge (z. B. Licht Zentral Aus, EG, OG …)', wrap,
+      'Ein Tipp auf die Kachel öffnet eine Liste mit allen Einträgen, jeder mit eigenen Tasten. Die Einstellungen der Kachel (Umgekehrt, Auf/Ab umdrehen …) gelten für alle.');
+    const keys = type === 'switch' ? [['state', 'Schalten', true], ['status', 'Rückmeldung (optional)', false]]
+      : type === 'blind' ? [['state', 'Auf/Ab oder Position', true], ['stop', 'Stopp (optional)', true], ['status', 'Rückmeldung Position (optional)', false]]
+        : [['state', 'Datenpunkt', true]];
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => {
+      const o = { label: x.label.value.trim() };
+      for (const [k] of keys) o[k] = x[k].value.trim();
+      if (x.sendMode) o.sendMode = x.sendMode.value;
+      if (x.value) o.value = x.value.value.trim();
+      return o;
+    });
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name', textInput(r.label));
+        x.label.placeholder = type === 'button' ? 'z. B. Kino' : type === 'blind' ? 'z. B. Rollos EG' : 'z. B. Licht OG Zentral Aus';
+        for (const [k, label, w] of keys) x[k] = stateField(b, label, r[k], w);
+        if (type === 'switch') {
+          x.sendMode = field(b, 'Senden', select([['', 'Ein = true, Aus = false (normal)'], ['true', 'immer nur true'], ['false', 'immer nur false'], ['push', 'Taster: drücken = true, loslassen = false']], r.sendMode || ''));
+        }
+        if (type === 'button') x.value = field(b, 'Wert', textInput(r.value), 'leer = true');
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const mk = (text, fn, cls) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          if (cls) btn.className = cls;
+          btn.textContent = text;
+          btn.onclick = () => {
+            const cur = read();
+            fn(cur);
+            list.splice(0, list.length, ...cur);
+            draw();
+          };
+          tools.appendChild(btn);
+        };
+        if (i > 0) mk('↑', cur => cur.splice(i - 1, 0, cur.splice(i, 1)[0]));
+        if (i < list.length - 1) mk('↓', cur => cur.splice(i + 1, 0, cur.splice(i, 1)[0]));
+        mk('Eintrag entfernen', cur => cur.splice(i, 1), 'danger');
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.textContent = '+ Eintrag';
+      add.onclick = () => {
+        const cur = read();
+        // same kind of data point as the row before (e.g. all central objects of one actuator)
+        const last = cur[cur.length - 1];
+        cur.push({ label: '', sendMode: last ? last.sendMode : '' });
+        list.splice(0, list.length, ...cur);
+        draw();
+      };
+      wrap.appendChild(add);
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.state) };
+  }
+
   /** Values next to the clock (e.g. outside temperatures and humidity): name, data point, unit, decimals. */
   function headerField(box, rows) {
     const wrap = document.createElement('div');
@@ -1671,6 +1748,7 @@ const Editor = (() => {
         else if (kind === 'windows') inputs[key] = windowsField(body, t[key] || [{ label: '', state: '', tilt: '' }]);
         else if (kind === 'devices') inputs[key] = devicesField(body, t[key] || [{ label: '', kind: 'power', state: '', icon: 'washer' }]);
         else if (kind === 'circuits') inputs[key] = circuitsField(body, t[key] || []);
+        else if (kind === 'entries') inputs[key] = entriesField(body, t[key] || [], t.type);
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);
         else if (kind === 'sensors') inputs[key] = sensorsField(body, t[key] || []);

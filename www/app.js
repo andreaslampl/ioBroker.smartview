@@ -142,6 +142,7 @@ function tileIc(t) {
 function tileIds(t) {
   return ['state', 'status', 'switchState', 'stop', 'setStatus', 'humidity', 'mode', 'modeStatus', 'heating', 'window', 'windAlarm', 'rainAlarm', 'open', 'close', 'posOpen', 'posClosed', 'plugged', 'energy', 'ctrl', 'current', 'warnWhen', 'command', 'alarm', 'error'].map(k => t[k])
     .concat((t.rows || []).map(r => r.state))
+    .concat(['switch', 'blind', 'button'].includes(t.type) ? (t.entries || []).flatMap(e => [e.state, e.status]) : [])
     .concat(t.type === 'wallbox' && wbCar(t) ? [wbCar(t).soc, wbCar(t).range] : [])
     .concat((t.circuits || []).flatMap(c => CIRC_KEYS.map(k => c[k])))
     .concat((t.areas || []).flatMap(a => ALARM_KEYS.filter(k => k !== 'detectors').map(k => a[k])))
@@ -170,7 +171,73 @@ function swTrigger(t) {
 }
 
 function swPush(t) {
-  return t.type === 'switch' && t.sendMode === 'push';
+  return t.type === 'switch' && t.sendMode === 'push' && !tileEntries(t);
+}
+
+// ---------------- several entries in one tile (central functions, scenes): chosen in the sheet ----------------
+
+/** [{...tile, label, state, …, _e}] - the tile's own data point is entry 1 (if set); null without extra entries */
+function tileEntries(t) {
+  if (!['switch', 'blind', 'button'].includes(t.type) || !Array.isArray(t.entries) || !t.entries.length) return null;
+  const base = Object.assign({}, t, { entries: null });
+  const list = [];
+  if (t.state) list.push(Object.assign({}, base, { label: t.entryLabel || t.label || 'Eintrag 1', _e: 0 }));
+  t.entries.forEach((e, i) => list.push(Object.assign({}, base, {
+    label: e.label || 'Eintrag ' + (i + 2), state: e.state, status: e.status || '', stop: e.stop || '',
+    sendMode: e.sendMode || '', value: e.value, also: [], onDelay: 0, offDelay: 0, autoOff: 0, _e: i + 1,
+  })));
+  return list;
+}
+
+function entryStatus(x) {
+  if (x.type === 'switch') return swKnown(x) ? (switchOn(x) ? 'Ein' : 'Aus') : '';
+  if (x.type === 'blind') return blindText(x);
+  return '';
+}
+
+/** tile line: "2 Ein" / "Alle aus" (switches with feedback), else the number of entries */
+function entriesSummary(t) {
+  const list = tileEntries(t) || [];
+  if (t.type === 'switch') {
+    const known = list.filter(swKnown);
+    const on = known.filter(switchOn).length;
+    if (on) return on + ' Ein';
+    if (known.length && known.length === list.length) return 'Alle aus';
+  }
+  return list.length + ' Einträge';
+}
+
+function entriesSheet(t) {
+  const list = tileEntries(t) || [];
+  const w = blindWords(t);
+  return '<div class="entries">' + list.map((x, i) => {
+    const d = ' data-e="' + i + '"';
+    let btns = '';
+    if (t.type === 'switch') {
+      btns = x.sendMode === 'push' ? '<button type="button" class="primary" data-push="' + esc(x.state) + '">Drücken</button>'
+        : '<button type="button" data-a="ent-off"' + d + '>Aus</button><button type="button" class="primary" data-a="ent-on"' + d + '>Ein</button>';
+    } else if (t.type === 'blind') {
+      btns = '<button type="button" data-a="ent-up"' + d + ' aria-label="' + w[0] + '">' + icon('up') + '</button>' +
+        (x.stop ? '<button type="button" data-a="ent-stop"' + d + ' aria-label="Stopp">' + icon('stop') + '</button>' : '') +
+        '<button type="button" data-a="ent-down"' + d + ' aria-label="' + w[1] + '">' + icon('down') + '</button>';
+    } else {
+      btns = '<button type="button" class="primary" data-a="ent-press"' + d + '>Auslösen</button>';
+    }
+    const stt = entryStatus(x);
+    return '<div class="entry' + (x.type === 'switch' && swKnown(x) && switchOn(x) ? ' on' : '') + '"><span class="ename">' + esc(x.label) +
+      (stt ? '<small>' + esc(stt) + '</small>' : '') + '</span><span class="ebtns">' + btns + '</span></div>';
+  }).join('') + '</div>';
+}
+
+function entryAction(t, a, i) {
+  const x = (tileEntries(t) || [])[i];
+  if (!x) return;
+  if (a === 'ent-on') send(x.state, !x.invert);
+  else if (a === 'ent-off') send(x.state, Boolean(x.invert));
+  else if (a === 'ent-up') blindWrite(x, 100);
+  else if (a === 'ent-down') blindWrite(x, 0);
+  else if (a === 'ent-stop') send(x.stop, true);
+  else if (a === 'ent-press') press(x);
 }
 
 /** Ein / Aus, or null when unknown (also for a trigger switch without status data point) */
@@ -1090,6 +1157,7 @@ function tileState(t, pageId) {
     const a = alarmInfo(alarmCur(t));
     return a.alarm || alarmElsewhere(t).length ? 'alert' : a.mode === 'armed' || a.mode === 'home' ? 'on' : '';
   }
+  if (t.type === 'switch' && tileEntries(t)) return tileEntries(t).some(x => swKnown(x) && switchOn(x)) ? 'on' : '';
   if (t.type === 'switch') return swKnown(t) && switchOn(t) ? 'on' : '';
   if (t.type === 'dimmer') return dimOn(t) ? 'on' : '';
   if (t.type === 'color') return colorInfo(t).on ? 'on' : '';
@@ -2026,6 +2094,10 @@ function fillRow(el, t) {
       renderHtml(el.querySelector('.htmlhost'), val(t.state));
       return;
     case 'switch': {
+      if (tileEntries(t)) {
+        ctl = '<button type="button" class="lon" data-a="entries">AUSWAHL</button><span class="lval">' + esc(entriesSummary(t)) + '</span>';
+        break;
+      }
       const known = swKnown(t);
       ctl = (swPush(t) ? '<button type="button" class="lon" data-push="' + esc(t.state || '') + '">DRÜCKEN</button>' : '<button type="button" class="lon" data-a="on">EIN</button><button type="button" class="loff" data-a="off">AUS</button>') +
         '<span class="lamp' + (known ? (switchOn(t) ? ' on' : ' off') : '') + '"></span>';
@@ -2054,6 +2126,10 @@ function fillRow(el, t) {
       break;
     }
     case 'blind':
+      if (tileEntries(t)) {
+        ctl = '<button type="button" data-a="entries">AUSWAHL</button><span class="lval">' + esc(entriesSummary(t)) + '</span>';
+        break;
+      }
       ctl = '<button type="button" data-a="up" aria-label="' + blindWords(t)[0] + '">' + icon('up') + '</button><button type="button" data-a="down" aria-label="' + blindWords(t)[1] + '">' + icon('down') + '</button>' +
         (t.stop ? '<button type="button" data-a="stop">STOPP</button>' : '') + '<span class="lval">' + blindText(t) + '</span>';
       break;
@@ -2117,7 +2193,7 @@ function fillRow(el, t) {
       }).join('') + '</span>';
       break;
     case 'button':
-      ctl = '<button type="button" data-a="press">Auslösen</button>';
+      ctl = tileEntries(t) ? '<button type="button" data-a="entries">AUSWAHL</button>' : '<button type="button" data-a="press">Auslösen</button>';
       break;
     case 'camera':
       el.innerHTML = head + (t.camera ? '<img class="camimg lcam" alt="" data-cam="' + esc(t.camera) + '">' : '');
@@ -2166,6 +2242,7 @@ function tileTap(t) {
     if (t.target) location.hash = encodeURIComponent(t.target);
     return;
   }
+  if (tileEntries(t)) return openSheet(t);
   // push button: pressed and released by pointerdown / pointerup (data-push), the click does nothing more
   if (swPush(t)) return;
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
@@ -2193,6 +2270,10 @@ function fillTile(el, t) {
       html = esc(t.label);
       break;
     case 'switch':
+      if (tileEntries(t)) {
+        html = '<div class="row1">' + ic + '<span class="tval">' + esc(entriesSummary(t)) + '</span></div>' + label;
+        break;
+      }
       html = '<div class="row1">' + ic + '<span class="tval">' + (swKnown(t) ? (switchOn(t) ? 'Ein' : 'Aus') : swPush(t) ? 'Taster' : swTrigger(t) ? 'Impuls' : '–') + '</span></div>' + label;
       break;
     case 'dimmer': {
@@ -2222,6 +2303,10 @@ function fillTile(el, t) {
       break;
     }
     case 'blind':
+      if (tileEntries(t)) {
+        html = '<div class="row1">' + ic + '<span class="tval">' + esc(entriesSummary(t)) + '</span></div>' + label;
+        break;
+      }
       html = '<div class="row1">' + ic + '<span class="tval">' + blindText(t) + '</span></div>' + label +
         '<div class="ctl"><button type="button" data-a="up" aria-label="' + blindWords(t)[0] + '">' + icon('up') + '</button>' +
         (t.stop ? '<button type="button" data-a="stop" aria-label="Stopp">' + icon('stop') + '</button>' : '') +
@@ -2291,7 +2376,7 @@ function fillTile(el, t) {
       break;
     }
     case 'button':
-      html = '<div class="row1">' + ic + '</div>' + label;
+      html = '<div class="row1">' + ic + (tileEntries(t) ? '<span class="tval">' + esc(entriesSummary(t)) + '</span>' : '') + '</div>' + label;
       break;
     case 'thermostat': {
       // tap opens the sheet with − / +; with several circuits ‹ › switches them on the tile
@@ -2363,6 +2448,8 @@ function bindControls(el, t) {
         return p && Editor.editTile(p, t);
       }
       const a = b.dataset.a;
+      if (a === 'entries') return openSheet(t);
+      if (a.startsWith('ent-')) return entryAction(t, a, Number(b.dataset.e));
       if (a === 'dimup' || a === 'dimdown') {
         const cur = dimOn(t) ? dimLevel(t) : 0;
         const next = Math.max(0, Math.min(100, Math.round((cur + (a === 'dimup' ? 10 : -10)) / 10) * 10));
@@ -2962,7 +3049,9 @@ function closeSheet() {
 function fillSheet(sh, t) {
   if (t.type === 'energy') return energySheet(sh, t);
   let body = '';
-  if (t.type === 'switch') {
+  if (tileEntries(t)) {
+    body = entriesSheet(t);
+  } else if (t.type === 'switch') {
     body = '<div class="bigval">' + (swKnown(t) ? (switchOn(t) ? 'Ein' : 'Aus') : swPush(t) ? 'Taster' : 'Impuls') + '</div>' +
       (swPush(t) ? '<div class="row"><button type="button" class="primary" data-push="' + esc(t.state || '') + '">Drücken</button></div>' : '') +
       '<div class="row"><button type="button" data-a="off">Aus</button><button type="button" data-a="on" class="primary">Ein</button></div>' +

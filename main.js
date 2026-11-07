@@ -713,6 +713,13 @@ class SmartView extends utils.Adapter {
                 if (['switch', 'dimmer', 'blind'].includes(tile.type)) {
                     list.push({ key: `${page.id}/${tile.id}`, tile });
                 }
+                // switch entries (central functions) with only true / only false / push button
+                (tile.type === 'switch' ? tile.entries || [] : []).forEach((e, i) => {
+                    if (e.sendMode) {
+                        const sub = { type: 'switch', label: e.label, state: e.state, status: e.status, sendMode: e.sendMode, invert: tile.invert, pushTime: tile.pushTime };
+                        list.push({ key: `${page.id}/${tile.id}#${i + 1}`, tile: sub });
+                    }
+                });
             }
         }
         return list;

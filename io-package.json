@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.56.0",
+    "version": "0.57.0",
     "news": {
+      "0.57.0": {
+        "en": "Switch, blind and button tiles: several entries in one tile (central functions, scenes), chosen in a list",
+        "de": "Schalter-, Rollo- und Taste-Kachel: mehrere Einträge in einer Kachel (Zentralfunktionen, Szenen), Auswahl in einer Liste"
+      },
       "0.56.0": {
         "en": "Switch tile: send only true / only false, or push button (press = true, release = false)",
         "de": "Schalter-Kachel: nur true / nur false senden oder Taster (drücken = true, loslassen = false)"

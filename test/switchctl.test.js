@@ -111,3 +111,21 @@ test('layout keeps sendMode / pushTime of a switch', () => {
     assert.equal(l.pages[0].tiles[0].pushTime, 0.3);
     assert.equal(l.pages[0].tiles[1].sendMode, '');
 });
+
+test('entries (central functions): cleaned per type, written / read ids', () => {
+    const { stateIds } = require('../lib/layout');
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [
+        { id: 'z', type: 'switch', label: 'Zentral', entries: [{ label: 'EG aus', state: 'k.eg', status: 'k.egSt', sendMode: 'false', stop: 'x' }, { label: 'leer' }] },
+        { id: 'r', type: 'blind', entries: [{ label: 'EG', state: 'k.r', stop: 'k.rs', sendMode: 'push' }] },
+        { id: 's', type: 'button', entries: [{ label: 'Kino', state: 'k.sc', value: '4', status: 'x' }] },
+    ] }] });
+    const [z, r, s] = l.pages[0].tiles;
+    assert.deepEqual(z.entries, [{ label: 'EG aus', state: 'k.eg', status: 'k.egSt', sendMode: 'false' }]);
+    assert.deepEqual(r.entries, [{ label: 'EG', state: 'k.r', stop: 'k.rs' }]);
+    assert.deepEqual(s.entries, [{ label: 'Kino', state: 'k.sc', value: '4' }]);
+    const ids = stateIds(l);
+    const w = new Set(ids.write);
+    const r2 = new Set(ids.read);
+    for (const id of ['k.eg', 'k.r', 'k.rs', 'k.sc']) assert.ok(w.has(id), id);
+    assert.ok(r2.has('k.egSt') && !w.has('k.egSt'));
+});

@@ -34,7 +34,7 @@ const Timers = (() => {
 
   function supports(t) {
     // a PIN protected tile gets no time switch (it would switch without the PIN)
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !(t.type === 'switch' && t.sendMode === 'push') && !t.pin && !(SV.me && SV.me.control === false);
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState)) && !(t.type === 'switch' && t.sendMode === 'push') && !(Array.isArray(t.entries) && t.entries.length) && !t.pin && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {

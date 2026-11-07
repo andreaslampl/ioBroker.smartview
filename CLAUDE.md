@@ -492,6 +492,13 @@ switches/buttons on them.
   page holds push tiles via `data-push` (document pointerdown/up -> ws set {hold: true}; release not before pushTime, safety 30 s;
   with PIN one press). Without status the tile shows Taster / Impuls; push tiles have no long press / time switch in the page.
   Unit tests + Playwright (scratchpad sv/push-ui.js).
+- 0.57.0: owner asked for several central functions in one tile (Licht Zentral Aus, EG, OG …; blinds; suggested scenes) -> switch /
+  blind / button options `entryLabel` + `entries` [{label, state, status (switch/blind), stop (blind), sendMode (switch), value
+  (button)}] (max 30; stateIds/tileWriteIds: state+stop w, status r; PIN covers them). app.js `tileEntries()` = virtual tiles
+  (tile + entry fields, own state = entry 1 if set; no also/delays), tile shows `entriesSummary()` and opens the sheet,
+  `entriesSheet()` rows with data-a ent-on/off/up/down/stop/press + data-e -> `entryAction()` (push entries via data-push);
+  main `ctlTiles()` adds switch entries with sendMode as `page/tile#n`. No time switch for such tiles; wind lock only for the
+  tile's own blinds. Editor `entriesField()` (↑ ↓, new rows copy sendMode). Unit test + Playwright (scratchpad sv/ent-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

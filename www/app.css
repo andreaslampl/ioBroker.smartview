@@ -578,3 +578,13 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 [data-push] { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .tile[data-push].pressed, .marker[data-push].pressed, button[data-push].pressed { filter: brightness(1.25); transform: scale(0.97); }
 .sheet .hint { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }
+
+/* several entries in one tile (central functions, scenes) */
+.entries { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; max-height: 60vh; overflow-y: auto; }
+.entry { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--tile); border: 1px solid var(--line); }
+.entry.on { background: var(--tileOn); }
+.entry .ename { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.entry .ename small { color: var(--muted); font-size: 12px; }
+.entry .ebtns { display: flex; gap: 6px; flex-shrink: 0; }
+.entry .ebtns button { min-width: 52px; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.entry .ebtns button svg { width: 20px; height: 20px; }
