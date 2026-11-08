@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.57.1",
+    "version": "0.57.2",
     "news": {
+      "0.57.2": {
+        "en": "Certificate page: clearer iPhone steps (profile message, where to install, trust switch, Let's Encrypt hint)",
+        "de": "Zertifikat-Seite: iPhone-Anleitung verständlicher (Meldung nach dem Laden, wo installieren, Vertrauen einschalten, Hinweis Let's Encrypt)"
+      },
       "0.57.1": {
         "en": "Time switch for tiles with several entries (choose the entries per switching time) and for button tiles",
         "de": "Zeitschaltuhr auch für Kacheln mit mehreren Einträgen (Einträge pro Schaltzeit wählbar) und für Taste-Kacheln"

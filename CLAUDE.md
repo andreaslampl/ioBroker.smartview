@@ -503,6 +503,9 @@ switches/buttons on them.
   cleanEntry; empty = all), main `fireTimer()` resolves the entries and calls `fireOne()` per target; button tiles get timers too
   (action 'press', writes value or true). Timer editor: checkbox row per entry (default first entry, new rows copy the targets,
   save refuses none ticked). Playwright (scratchpad sv/enttimer-ui.js).
+- 0.57.2: owner tried the profile on a private iPhone and got "Überprüfe das Profil in den Einstellungen" (normal since iOS 12) ->
+  lib/pages.js iPhone steps explain that message, where "Profil geladen" is (or VPN und Geräteverwaltung, ~8 min validity), the
+  trust switch, "nicht privat" hint, and the Let's Encrypt route (no profile needed, company iPhones).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
