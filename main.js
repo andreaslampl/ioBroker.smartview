@@ -786,6 +786,11 @@ class SmartView extends utils.Adapter {
         if (!this.subscribed.has(id)) {
             return;
         }
+        // a data point that did not exist yet (e.g. roomba creates its objects only after connecting): read its object now
+        if (state && this.meta.has(id) && !this.meta.get(id).type) {
+            this.meta.delete(id);
+            await this.metaOf(id).catch(() => {});
+        }
         this.liveStates.set(id, state ? { val: state.val, ack: state.ack, ts: state.ts, lc: state.lc } : null);
         if (this.server) {
             this.server.stateChanged(id, this.stateInfo(id));
@@ -1242,12 +1247,14 @@ class SmartView extends utils.Adapter {
             const prefix = id.replace(/\.system\.name$/, '');
             out.push({ id: prefix, label: `${(st && st.val) || 'Automower'} (${prefix.split('.').slice(0, 2).join('.')})`, kind: 'mower' });
         }
-        // iRobot (roomba adapter): one robot per instance
-        const rb = await this.getForeignObjectsAsync('roomba.*.commands.start', 'state').catch(() => ({}));
+        // iRobot (roomba adapter): one robot per instance. Listed by the instance: the adapter creates its data points
+        // (commands.*) only after it has connected to the robot once
+        const rb = await this.getForeignObjectsAsync('system.adapter.roomba.*', 'instance').catch(() => ({}));
         for (const id of Object.keys(rb || {})) {
-            const prefix = id.replace(/\.commands\.start$/, '');
+            const prefix = id.replace(/^system\.adapter\./, '');
             const st = await this.getForeignStateAsync(`${prefix}.device.name`).catch(() => null);
-            out.push({ id: prefix, label: `${(st && st.val) || 'Roomba'} (${prefix})`, kind: 'vacuum' });
+            const conn = await this.getForeignStateAsync(`${prefix}.states._connected`).catch(() => null);
+            out.push({ id: prefix, label: `${(st && st.val) || 'iRobot'} (${prefix})${conn && conn.val === true ? '' : ' – noch nicht verbunden'}`, kind: 'vacuum' });
         }
         for (const [suffix, kind] of [['remote.start-clean', 'vacuum'], ['remote.start-mow', 'mower']]) {
             const objs = await this.getForeignObjectsAsync(`dreame.*.${suffix}`, 'state').catch(() => ({}));

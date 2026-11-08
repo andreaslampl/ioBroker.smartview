@@ -518,6 +518,10 @@ switches/buttons on them.
   Tiles: heading, switch (sendMode, push via touchstart/touchend + ws set hold), dimmer, blind, button, entries, value, multi,
   thermostat (circuits, fixedSet), ref resolved; others skipped. index.html: inline ES5 check (arrow + flatMap + async via
   new Function) -> location.replace('/lite' + search). Playwright (scratchpad sv/lite-ui.js, lite-redirect.js); not on a real iOS 9.
+- 0.59.1 field: owner could not pick the iRobot - roomba 1.3.0 creates commands.* / device.* only after it connected to the robot
+  (preferences received), so `robotDevices()` found nothing -> lists `system.adapter.roomba.*` instances ("– noch nicht verbunden"
+  unless states._connected is true). main onStateChange re-reads the object of a subscribed id whose meta had no type (did not
+  exist at subscribe time). Playwright (sv/roomba-ui.js with a never-connected roomba.1).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
