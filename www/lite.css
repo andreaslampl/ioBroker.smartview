@@ -1,0 +1,35 @@
+/* SmartView Lite: old browsers (iOS 9) - no CSS grid, no flex gap, no variables */
+html, body { margin: 0; padding: 0; }
+body { background: #0f1216; color: #e8eaed; font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 17px; -webkit-text-size-adjust: 100%; -webkit-user-select: none; -webkit-touch-callout: none; }
+#top { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 10px 14px; background: #171c22; border-bottom: 1px solid #2a313a; }
+#title { -webkit-flex: 1; flex: 1; font-weight: bold; font-size: 19px; }
+#clock { font-size: 22px; margin-left: 12px; color: #9aa3ad; }
+#dot { width: 10px; height: 10px; border-radius: 5px; background: #3fb950; display: inline-block; }
+#dot.off { background: #f85149; }
+#pages { padding: 8px 10px 0; background: #171c22; border-bottom: 1px solid #2a313a; }
+#pages a { display: inline-block; padding: 10px 16px; margin: 0 6px 8px 0; border-radius: 10px; background: #1d232b; color: #e8eaed; text-decoration: none; border: 1px solid #2a313a; }
+#pages a.sel { background: #2f81f7; border-color: #2f81f7; color: #fff; }
+#main { padding: 10px; }
+h2 { font-size: 15px; color: #9aa3ad; text-transform: uppercase; letter-spacing: 1px; margin: 18px 4px 8px; font-weight: 600; }
+.row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; background: #1d232b; border: 1px solid #2a313a; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; min-height: 48px; }
+.row.on { background: #243447; border-color: #34506e; }
+.row.alert { border-color: #f85149; }
+.row .name { -webkit-flex: 1; flex: 1; min-width: 0; }
+.row .name small { display: block; color: #9aa3ad; font-size: 15px; margin-top: 2px; }
+.row .val { margin: 0 10px; font-size: 19px; white-space: nowrap; }
+.row .on .lamp, .lamp { display: inline-block; width: 12px; height: 12px; border-radius: 6px; background: #3a414a; margin-right: 10px; vertical-align: middle; }
+.row.on .lamp { background: #f5b83d; }
+.btns { white-space: nowrap; }
+.btns button { font-size: 17px; min-width: 64px; padding: 12px 10px; margin-left: 6px; border-radius: 10px; border: 1px solid #39424d; background: #252c35; color: #e8eaed; font-family: inherit; -webkit-appearance: none; }
+.btns button.pri { background: #2f81f7; border-color: #2f81f7; color: #fff; }
+.btns button.pressed, .btns button:active { background: #3d4855; }
+.sub { margin: -4px 0 8px 22px; }
+.sub .row { min-height: 40px; }
+.multi .line { display: -webkit-flex; display: flex; padding: 2px 0; }
+.multi .line span { -webkit-flex: 1; flex: 1; color: #9aa3ad; }
+.hint { color: #9aa3ad; text-align: center; margin: 30px 10px; }
+#toast { position: fixed; left: 10px; right: 10px; bottom: 16px; background: #2f81f7; color: #fff; padding: 12px 14px; border-radius: 12px; display: none; text-align: center; }
+#toast.err { background: #b62324; }
+form.login { max-width: 360px; margin: 30px auto; }
+form.login input { display: block; width: 100%; box-sizing: border-box; font-size: 18px; padding: 12px; margin: 8px 0 14px; border-radius: 10px; border: 1px solid #39424d; background: #1d232b; color: #e8eaed; -webkit-appearance: none; }
+form.login button { font-size: 18px; width: 100%; padding: 14px; border-radius: 10px; border: 0; background: #2f81f7; color: #fff; }

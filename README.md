@@ -746,6 +746,21 @@ Bild kleiner, die Symbole nicht). Die Tasten − / + zoomen zusätzlich.
 
 Die Entwurfsbreite am besten am Hauptgerät mit **„Breite dieses Bildschirms übernehmen“** setzen. Am Handy und im
 Bearbeiten-Modus wird nicht skaliert.
+## Alte Geräte: SmartView Lite
+
+Für alte Tablets, deren Browser SmartView nicht mehr kann (z. B. iPad 2/3/mini 1 mit iOS 9.3.5), gibt es eine einfache Seite:
+`http://<ioBroker-IP>:8098/lite` (mit Zugangsschlüssel `…/lite?key=…`). Ein zu alter Browser wird von der normalen
+Adresse automatisch dorthin geschickt.
+
+- Seiten als Knöpfe oben, darunter die Kacheln als Zeilen mit großen Tasten
+- Schalter (auch nur true / nur false / Taster), Dimmer (Aus − + Ein), Rollo (Auf / Stopp / Ab), Taste / Szene,
+  Kacheln mit mehreren Einträgen (Zentralfunktionen), Werte, Mehrfach-Werte, Heizung (Soll − / +, Ist, Heizkreise), Überschriften
+- Benutzer, Rechte und PIN gelten wie in der App (PIN wird abgefragt)
+- **Nicht** in Lite: Grundrisse, Kameras, Sprechanlage, Energie-Fluss, Alarm, Zeitschaltuhr, Bearbeiten, Push-Mitteilungen
+
+Tipp fürs Wand-iPad: in Safari öffnen → Teilen → „Zum Home-Bildschirm“; Einstellungen → Allgemein → Automatische Sperre: Nie;
+Bedienungshilfen → Geführter Zugriff.
+
 ## Einstellungen
 
 | Einstellung | Bedeutung |

@@ -511,6 +511,13 @@ switches/buttons on them.
   (bool), states._connected, commands.start/pause/resume/dock/stop, map = missions.current.mapImage (data URL, needs canvas in the
   roomba adapter) -> mapMode image. main `robotDevices()` lists `roomba.*.commands.start` (name from device.name). Unit test +
   Playwright (scratchpad sv/roomba-ui.js); not with a real Roomba.
+- 0.59.0: owner wants to use an iPad with iOS 9.3.5 (Safari 9: no arrow functions/async/grid - the app cannot run there) ->
+  SmartView Lite: `/lite` (server maps to www/lite.html), `www/lite.js` plain ES5 (test/lite.test.js rejects newer syntax/methods;
+  checked with acorn ecmaVersion 5 once), `lite.css` without grid/flex gap/variables. Uses /api/layout (401 -> own login form,
+  POST /api/login) + the same /ws (init/state/pin/error; layout -> reload), so rights/PIN are unchanged; PIN via prompt().
+  Tiles: heading, switch (sendMode, push via touchstart/touchend + ws set hold), dimmer, blind, button, entries, value, multi,
+  thermostat (circuits, fixedSet), ref resolved; others skipped. index.html: inline ES5 check (arrow + flatMap + async via
+  new Function) -> location.replace('/lite' + search). Playwright (scratchpad sv/lite-ui.js, lite-redirect.js); not on a real iOS 9.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

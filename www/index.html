@@ -2,6 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script>
+/* too old for SmartView (e.g. iPad with iOS 9-11): open SmartView Lite instead. ES5 only here. */
+(function () {
+  try {
+    new Function('var f = (a) => [a]; return [1].flatMap(f) && (async function () {})')();
+  } catch (e) {
+    location.replace('/lite' + location.search);
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
