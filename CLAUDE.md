@@ -506,6 +506,11 @@ switches/buttons on them.
 - 0.57.2: owner tried the profile on a private iPhone and got "Überprüfe das Profil in den Einstellungen" (normal since iOS 12) ->
   lib/pages.js iPhone steps explain that message, where "Profil geladen" is (or VPN und Geräteverwaltung, ~8 min validity), the
   trust switch, "nicht privat" hint, and the Let's Encrypt route (no profile needed, company iPhones).
+- 0.58.0: owner asked for iRobot in the robot tile -> RobotLogic.template `roomba.N` (ioBroker.roomba 1.3.0 by Zefau, one robot per
+  instance, read from its npm package _NODES.js): states.status (phase text; ROOMBA_TEXTS), states.battery, missions.current.error
+  (bool), states._connected, commands.start/pause/resume/dock/stop, map = missions.current.mapImage (data URL, needs canvas in the
+  roomba adapter) -> mapMode image. main `robotDevices()` lists `roomba.*.commands.start` (name from device.name). Unit test +
+  Playwright (scratchpad sv/roomba-ui.js); not with a real Roomba.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

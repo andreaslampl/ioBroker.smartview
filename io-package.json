@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.57.2",
+    "version": "0.58.0",
     "news": {
+      "0.58.0": {
+        "en": "Robot tile: iRobot Roomba (roomba adapter) selectable like Dreame and Automower",
+        "de": "Roboter-Kachel: iRobot Roomba (Adapter roomba) wie Dreame und Automower auswählbar"
+      },
       "0.57.2": {
         "en": "Certificate page: clearer iPhone steps (profile message, where to install, trust switch, Let's Encrypt hint)",
         "de": "Zertifikat-Seite: iPhone-Anleitung verständlicher (Meldung nach dem Laden, wo installieren, Vertrauen einschalten, Hinweis Let's Encrypt)"

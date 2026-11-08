@@ -76,7 +76,7 @@ const TYPE_FIELDS = {
   ],
   robot: [
     ['robotKind', 'Gerät', 'select:vacuum=Saugroboter;mower=Mähroboter'],
-    ['robotSrc', 'Roboter (Adapter dreame / husqvarna-automower)', 'robotdev', 'Füllt beim Übernehmen die Felder unten selbst aus (leere Felder bzw. die dieses Adapters). Andere Marken: „keiner“ und die Felder selbst wählen.'],
+    ['robotSrc', 'Roboter (Adapter dreame / husqvarna-automower / roomba)', 'robotdev', 'Füllt beim Übernehmen die Felder unten selbst aus (leere Felder bzw. die dieses Adapters). Andere Marken: „keiner“ und die Felder selbst wählen.'],
     ['status', 'Zustand', 'state-r'],
     ['texts', 'Texte für den Zustand (optional)', 'text', 'z. B. 1=Saugt;2=Bereit;6=Lädt – leer = Texte des Datenpunkts'],
     ['runAt', 'Arbeitet bei (optional)', 'text', 'Werte oder Texte mit ; getrennt, bei denen die Kachel „aktiv“ leuchtet, z. B. MOWING;LEAVING oder 1;5'],

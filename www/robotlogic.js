@@ -7,6 +7,8 @@
 (function (root) {
     const MOWER_TEXTS = 'MOWING=Mäht;GOING_HOME=Fährt heim;CHARGING=Lädt;LEAVING=Fährt los;PARKED_IN_CS=Geparkt;STOPPED_IN_GARDEN=Steht im Garten;NOT_APPLICABLE=Manueller Start nötig;UNKNOWN=Unbekannt';
     const DREAME_TEXTS = '1=Saugt;2=Bereit;3=Pause;4=Fehler;5=Fährt zur Station;6=Lädt;7=Wischt;8=Trocknet;9=Wäscht;13=Geladen';
+    // iRobot Roomba (ioBroker.roomba 1.3.0, states.status = cleanMissionStatus.phase; hmUsrDock -> docking, hmPostMsn -> finished)
+    const ROOMBA_TEXTS = 'run=Saugt;charge=Lädt;stop=Gestoppt;stuck=Steckt fest;docking=Fährt zur Station;finished=Fertig;hmMidMsn=Fährt zum Laden;evac=Leert Behälter;new=Startet;train=Lernt Karte;pause=Pause';
     const DREAME_MOWER_TEXTS = '1=Mäht;2=Bereit;3=Pause;5=Fährt heim;6=Lädt;11=Kartiert;13=Geladen;14=Update';
 
     /**
@@ -42,6 +44,28 @@
                     dirty: `${p}.stayOutZones.dirty`,
                 },
                 options: { robotKind: 'mower', texts: MOWER_TEXTS, runAt: 'MOWING;LEAVING;GOING_HOME', mapMode: 'gps' },
+            };
+        }
+        m = /^(roomba\.\d+)(\.|$)/.exec(id);
+        if (m) {
+            // one robot per instance
+            const p = m[1];
+            return {
+                prefix: p,
+                adapter: 'roomba',
+                fields: {
+                    status: `${p}.states.status`,
+                    battery: `${p}.states.battery`,
+                    error: `${p}.missions.current.error`,
+                    connected: `${p}.states._connected`,
+                    start: `${p}.commands.start`,
+                    pause: `${p}.commands.pause`,
+                    resume: `${p}.commands.resume`,
+                    home: `${p}.commands.dock`,
+                    stop: `${p}.commands.stop`,
+                    mapImage: `${p}.missions.current.mapImage`,
+                },
+                options: { robotKind: 'vacuum', texts: ROOMBA_TEXTS, runAt: 'run;new;hmMidMsn;docking;evac', mapMode: 'image' },
             };
         }
         m = /^(dreame\.\d+)\.([^.]+)/.exec(id);

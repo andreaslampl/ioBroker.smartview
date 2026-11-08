@@ -54,3 +54,19 @@ test('robot: GPS on a calibrated picture, track', () => {
     assert.deepEqual(R.parseTrack('[{"latitude":46.5,"longitude":14.3},{"latitude":"x"}]'), [{ lat: 46.5, lon: 14.3 }]);
     assert.deepEqual(R.parseTrack('kaputt'), []);
 });
+
+test('iRobot (roomba adapter): template from any data point of the instance, fills the tile', () => {
+    const tpl = R.template('roomba.0.states.battery');
+    assert.equal(tpl.prefix, 'roomba.0');
+    assert.equal(tpl.fields.home, 'roomba.0.commands.dock');
+    assert.equal(tpl.fields.mapImage, 'roomba.0.missions.current.mapImage');
+    assert.equal(R.template('roomba.1').prefix, 'roomba.1');
+    const l = cleanLayout({ pages: [{ id: 'p', tiles: [{ id: 'r', type: 'robot', robotSrc: 'roomba.0' }] }] });
+    const t = l.pages[0].tiles[0];
+    assert.equal(t.status, 'roomba.0.states.status');
+    assert.equal(t.mapMode, 'image');
+    assert.equal(R.statusText(t, { val: 'run' }), 'Saugt');
+    assert.ok(R.working(t, { val: 'run' }));
+    assert.ok(!R.working(t, { val: 'charge' }));
+    assert.ok(R.hasError({ val: true }) && !R.hasError({ val: false }));
+});

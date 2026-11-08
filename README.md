@@ -51,7 +51,7 @@ ausschalten.
 | --- | --- | --- |
 | Schalter / Taster | Schalten, optional Rückmeldung (z. B. KNX-Status) | antippen = ein/aus |
 | Dimmer | Helligkeit 0–100, optional Ein/Aus, Rückmeldung | antippen = ein/aus, Schieberegler |
-| Saug- / Mähroboter | jede Marke: Zustand, Akku, Fehler, Tasten; Vorlagen für dreame und husqvarna-automower | antippen = Start / Pause / Heim, Bereiche, Karte (siehe unten) |
+| Saug- / Mähroboter | jede Marke: Zustand, Akku, Fehler, Tasten; Vorlagen für dreame, husqvarna-automower und roomba (iRobot) | antippen = Start / Pause / Heim, Bereiche, Karte (siehe unten) |
 | Farblicht / RGBW | Ein/Aus, Helligkeit, Farbe (z. B. Shelly RGBW), optional KNX-Taster | antippen = Farben, Farbwechsel, Helligkeit (siehe unten) |
 | Rollladen | Position, optional Stopp, Rückmeldung; „100 % = geschlossen“ für KNX | ▲ ■ ▼, antippen = Schieberegler |
 | Anzeige | beliebiger Wert mit Einheit, Texte (`true=Offen;false=Zu`), rot hervorheben | antippen = Details |
@@ -126,6 +126,8 @@ Nach Plan, Pause, Parken …), Texte und bei Husqvarna die Arbeitsbereiche („M
 
 Karte im Bedienfenster:
 
+- **iRobot (roomba-Adapter)** – die Karte der laufenden Reinigung kommt als Bild (`missions.current.mapImage`, Art „Kartenbild
+  aus einem Datenpunkt“, wird mit der Vorlage gesetzt). Der roomba-Adapter zeichnet sie nur, wenn bei ihm das Paket `canvas` läuft.
 - **Kartenseite eines Adapters** – Dreame: die Live-Karte des dreame-Adapters (`web:/dreame/?did=…`, kommt mit der
   Vorlage; im dreame-Adapter „Get Map“ einschalten). Läuft der web-Adapter nur mit http, SmartView aber mit https
   (iPhone-App), zeigt das Fenster einen Link „Karte groß öffnen“ statt der eingebetteten Karte. Abhilfe: eine **zweite

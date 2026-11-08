@@ -1234,13 +1234,20 @@ class SmartView extends utils.Adapter {
         this.log.info(`Auto ${t.label || p}: gefunden ${Object.keys(found).join(', ') || 'nichts'}`);
     }
 
-    /** robots of the dreame / husqvarna-automower adapters for the tile dialog: [{id (device prefix), label, kind}] */
+    /** robots of the dreame / husqvarna-automower / roomba adapters for the tile dialog: [{id (device prefix), label, kind}] */
     async robotDevices() {
         const out = [];
         const hq = await this.getForeignStatesAsync('husqvarna-automower.*.system.name').catch(() => ({}));
         for (const [id, st] of Object.entries(hq || {})) {
             const prefix = id.replace(/\.system\.name$/, '');
             out.push({ id: prefix, label: `${(st && st.val) || 'Automower'} (${prefix.split('.').slice(0, 2).join('.')})`, kind: 'mower' });
+        }
+        // iRobot (roomba adapter): one robot per instance
+        const rb = await this.getForeignObjectsAsync('roomba.*.commands.start', 'state').catch(() => ({}));
+        for (const id of Object.keys(rb || {})) {
+            const prefix = id.replace(/\.commands\.start$/, '');
+            const st = await this.getForeignStateAsync(`${prefix}.device.name`).catch(() => null);
+            out.push({ id: prefix, label: `${(st && st.val) || 'Roomba'} (${prefix})`, kind: 'vacuum' });
         }
         for (const [suffix, kind] of [['remote.start-clean', 'vacuum'], ['remote.start-mow', 'mower']]) {
             const objs = await this.getForeignObjectsAsync(`dreame.*.${suffix}`, 'state').catch(() => ({}));
