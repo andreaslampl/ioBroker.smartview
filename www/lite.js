@@ -3,13 +3,14 @@
  * Written in ES5 on purpose (no arrow functions, let/const, classes, template strings, fetch, Promise chains,
  * Array.includes, closest …) - the tests parse it as ECMAScript 5. Same API and websocket as the app, so
  * users, rights and PINs apply unchanged. Only simple tiles: switch, dimmer, blind, button (also with entries),
- * value, multi, thermostat (set point), heading. Everything else stays in the normal app.
+ * value, multi, thermostat (set point), heading, camera (single pictures, tap = big). Everything else stays in the normal app.
  */
 (function () {
   'use strict';
 
   var S = { layout: null, page: null, states: {}, writable: {}, ws: null, retry: 1000, pending: null };
-  var SUPPORTED = { heading: 1, 'switch': 1, dimmer: 1, blind: 1, button: 1, value: 1, multi: 1, thermostat: 1 };
+  var SUPPORTED = { heading: 1, 'switch': 1, dimmer: 1, blind: 1, button: 1, value: 1, multi: 1, thermostat: 1, camera: 1 };
+  var camSrc = {}; // camera -> last loaded picture (shown right away after a re-render, no white flash)
 
   function $(id) {
     return document.getElementById(id);
@@ -317,6 +318,11 @@
       for (i = 0; i < rows.length; i++) html += '<div class="line"><span>' + esc(rows[i].label) + '</span><b>' + esc(fmt(rows[i].state, rows[i])) + '</b></div>';
       return html + '</div></div>';
     }
+    if (t.type === 'camera') {
+      if (!t.camera) return '';
+      return '<div class="cam" data-big="' + esc(t.camera) + '" data-name="' + esc(t.label || '') + '"><div class="camname">' + esc(t.label || '') + '</div>' +
+        '<img class="camimg" alt="" data-cam="' + esc(t.camera) + '"' + (camSrc[t.camera] ? ' src="' + esc(camSrc[t.camera]) + '"' : '') + '></div>';
+    }
     if (t.type === 'thermostat') {
       list = circuits(t);
       for (i = 0; i < list.length; i++) {
@@ -350,7 +356,7 @@
     actions = [];
     var html = '';
     if (cur) for (i = 0; i < cur.tiles.length; i++) if (visible(cur.tiles[i])) html += tileHtml(cur.tiles[i]);
-    $('main').innerHTML = html || '<p class="hint">Auf dieser Seite gibt es nichts, was SmartView Lite anzeigen kann.<br>(Grundrisse, Kameras, Sprechanlage, Energie usw. nur in der normalen App.)</p>';
+    $('main').innerHTML = html || '<p class="hint">Auf dieser Seite gibt es nichts, was SmartView Lite anzeigen kann.<br>(Grundrisse, Sprechanlage, Energie usw. nur in der normalen App.)</p>';
   }
 
   // render at most every 300 ms (many state changes at once)
@@ -362,6 +368,50 @@
       render();
     }, 300);
   }
+
+  // ---------------- cameras: single pictures (old Safari cannot show video streams reliably) ----------------
+
+  function loadCam(img) {
+    if (img.getAttribute('data-loading') === '1') return;
+    var cam = img.getAttribute('data-cam');
+    var url = '/cam/' + encodeURIComponent(cam) + '.jpg?t=' + new Date().getTime();
+    img.setAttribute('data-loading', '1');
+    img.onload = function () {
+      camSrc[cam] = url;
+      img.setAttribute('data-loading', '0');
+    };
+    img.onerror = function () {
+      setTimeout(function () { img.setAttribute('data-loading', '0'); }, 3000);
+    };
+    img.src = url;
+  }
+
+  setInterval(function () {
+    if (document.hidden) return;
+    var imgs = document.getElementsByClassName('camimg');
+    for (var i = 0; i < imgs.length; i++) loadCam(imgs[i]);
+  }, 1500);
+
+  function openCam(cam, name) {
+    closeCam();
+    var ov = document.createElement('div');
+    ov.id = 'camov';
+    ov.innerHTML = '<div class="bar"><span>' + esc(name) + '</span><button type="button" id="camclose">Schließen</button></div>' +
+      '<img class="camimg" alt="" data-cam="' + esc(cam) + '"' + (camSrc[cam] ? ' src="' + esc(camSrc[cam]) + '"' : '') + '>';
+    document.body.appendChild(ov);
+    $('camclose').onclick = closeCam;
+    loadCam(ov.getElementsByTagName('img')[0]);
+  }
+
+  function closeCam() {
+    var ov = $('camov');
+    if (ov) ov.parentNode.removeChild(ov);
+  }
+
+  document.addEventListener('click', function (e) {
+    var c = target(e.target, 'data-big');
+    if (c) openCam(c.getAttribute('data-big'), c.getAttribute('data-name'));
+  });
 
   // ---------------- input ----------------
 

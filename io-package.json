@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.61.0",
+    "version": "0.62.0",
     "news": {
+      "0.62.0": {
+        "en": "SmartView Lite: camera tiles as pictures (refreshed every 1.5 s, tap = big view)",
+        "de": "SmartView Lite: Kamera-Kacheln als Bilder (alle 1,5 s neu, antippen = groß)"
+      },
       "0.61.0": {
         "en": "Time switch for gate / door tiles (open / close; closing only with the light barrier tick, checks like the buttons)",
         "de": "Zeitschaltuhr für Tor-/Tür-Kacheln (Auf / Zu; Zu nur mit Haken Lichtschranke, Prüfungen wie bei den Knöpfen)"

@@ -532,6 +532,10 @@ switches/buttons on them.
   already open/closed -> nothing; single impulse + unknown/moving -> nothing; close only with `autoSafe` (same rule as autoClose)
   and not while `gateBlocked()`; then `gateOpen()` (new, like gateClose) / `gateClose()`; skips logged. www/timers.js ACTIONS gate
   + warning in the editor when Zu without autoSafe; supports() accepts open/close ids. Adapter test + Playwright (sv/gatetimer-ui.js).
+- 0.62.0: owner asked for cameras in Lite -> camera tiles as single pictures (`/cam/<id>.jpg?t=` every 1.5 s, not while
+  document.hidden; old Safari cannot be trusted with MJPEG), `camSrc` keeps the last loaded URL so re-renders (every state change
+  rebuilds #main) show it at once; tap -> `#camov` full view outside #main. Two per row (inline-block 49 %, border-box). ES5
+  check + Playwright (sv/litecam-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

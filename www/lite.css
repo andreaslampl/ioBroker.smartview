@@ -33,3 +33,13 @@ h2 { font-size: 15px; color: #9aa3ad; text-transform: uppercase; letter-spacing:
 form.login { max-width: 360px; margin: 30px auto; }
 form.login input { display: block; width: 100%; box-sizing: border-box; font-size: 18px; padding: 12px; margin: 8px 0 14px; border-radius: 10px; border: 1px solid #39424d; background: #1d232b; color: #e8eaed; -webkit-appearance: none; }
 form.login button { font-size: 18px; width: 100%; padding: 14px; border-radius: 10px; border: 0; background: #2f81f7; color: #fff; }
+/* cameras: two side by side on the iPad, one on narrow screens */
+.cam { display: inline-block; vertical-align: top; box-sizing: border-box; width: 49%; margin: 0 1% 8px 0; background: #1d232b; border: 1px solid #2a313a; border-radius: 12px; overflow: hidden; }
+.cam .camname { padding: 8px 12px; }
+.cam img { display: block; width: 100%; min-height: 120px; background: #000; }
+@media (max-width: 600px) { .cam { width: 100%; margin-right: 0; } }
+#camov { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 10; }
+#camov .bar { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 10px 14px; background: #171c22; }
+#camov .bar span { -webkit-flex: 1; flex: 1; font-size: 19px; }
+#camov .bar button { font-size: 17px; padding: 12px 18px; border-radius: 10px; border: 0; background: #2f81f7; color: #fff; }
+#camov img { display: block; width: 100%; max-height: 90%; object-fit: contain; }

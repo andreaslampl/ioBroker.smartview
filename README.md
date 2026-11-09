@@ -762,8 +762,9 @@ Adresse automatisch dorthin geschickt.
 - Seiten als Knöpfe oben, darunter die Kacheln als Zeilen mit großen Tasten
 - Schalter (auch nur true / nur false / Taster), Dimmer (Aus − + Ein), Rollo (Auf / Stopp / Ab), Taste / Szene,
   Kacheln mit mehreren Einträgen (Zentralfunktionen), Werte, Mehrfach-Werte, Heizung (Soll − / +, Ist, Heizkreise), Überschriften
+- Kameras als Bilder (alle 1,5 Sekunden ein neues, antippen = groß)
 - Benutzer, Rechte und PIN gelten wie in der App (PIN wird abgefragt)
-- **Nicht** in Lite: Grundrisse, Kameras, Sprechanlage, Energie-Fluss, Alarm, Zeitschaltuhr, Bearbeiten, Push-Mitteilungen
+- **Nicht** in Lite: Grundrisse, Kamera-Video, Sprechanlage, Energie-Fluss, Alarm, Zeitschaltuhr, Bearbeiten, Push-Mitteilungen
 
 Tipp fürs Wand-iPad: in Safari öffnen → Teilen → „Zum Home-Bildschirm“; Einstellungen → Allgemein → Automatische Sperre: Nie;
 Bedienungshilfen → Geführter Zugriff.
