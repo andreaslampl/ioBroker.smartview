@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.62.0",
+    "version": "0.61.1",
     "news": {
+      "0.61.1": {
+        "en": "Gate tile: kind \"door with motor lock\" - locking by time switch / automatically without the light barrier tick; shows Versperrt",
+        "de": "Tor-Kachel: Art „Tür mit Motorschloss“ – Zusperren per Zeitschaltuhr / automatisch ohne Lichtschranken-Haken; zeigt Versperrt"
+      },
       "0.62.0": {
         "en": "SmartView Lite: camera tiles as pictures (refreshed every 1.5 s, tap = big view)",
         "de": "SmartView Lite: Kamera-Kacheln als Bilder (alle 1,5 s neu, antippen = groß)"

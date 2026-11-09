@@ -136,6 +136,7 @@ const TYPE_FIELDS = {
   ],
   planview: [['target', 'Grundriss-Seite', 'planpage']],
   gate: [
+    ['gateKind', 'Art', 'select:gate=Tor / Tür mit Antrieb (fährt zu);lock=Tür mit Motorschloss / Türöffner (nichts fährt)', 'Bei Motorschloss darf auch ohne Lichtschranke per Zeitschaltuhr bzw. „automatisch“ zugesperrt werden – es bewegt sich ja nichts, das jemanden einklemmen könnte.'],
     ['gateMode', 'Ansteuerung', 'select:separate=getrennte Datenpunkte für Auf und Zu;single=ein Datenpunkt für Auf und Zu'],
     ['open', 'Auf (Datenpunkt)', 'state-w', 'nur bei getrennten Datenpunkten'],
     ['close', 'Zu (Datenpunkt)', 'state-w', 'nur bei getrennten Datenpunkten'],
@@ -147,7 +148,7 @@ const TYPE_FIELDS = {
     ['posClosed', 'Position unten / zu (optional)', 'state-r', 'Endlage, true = ganz geschlossen'],
     ['confirm', 'Vorher nachfragen', 'check'],
     ['autoClose', 'Automatisch schließen nach (Minuten, optional)', 'number', 'Ist das Tor so lange offen, schickt der Adapter einmal „Zu“ (auch ohne offene Seite). Braucht eine Endlage (oben oder unten) und den Haken darunter.'],
-    ['autoSafe', 'Der Antrieb hat eine Lichtschranke / Schließkantensicherung', 'check', 'Ohne diesen Haken wird nie automatisch geschlossen. Der Antrieb selbst muss beim Schließen auf Hindernisse reagieren – SmartView sieht nicht, ob jemand darunter steht.'],
+    ['autoSafe', 'Der Antrieb hat eine Lichtschranke / Schließkantensicherung', 'check', 'Ohne diesen Haken wird nie automatisch geschlossen (bei Art „Motorschloss“ nicht nötig). Der Antrieb selbst muss beim Schließen auf Hindernisse reagieren – SmartView sieht nicht, ob jemand darunter steht.'],
     ['barrier', 'Lichtschranke (optional)', 'state-r', 'true = unterbrochen: dann wird nicht geschlossen, sondern gewartet, bis sie frei ist.'],
     ['barrierInvert', 'Lichtschranke umgekehrt (true = frei)', 'check'],
     ['autoNotify', 'Mitteilung beim automatischen Schließen', 'check', 'Push / Telegram / WhatsApp – und eine Warnung, wenn das Tor 2 Minuten danach noch nicht zu ist.'],

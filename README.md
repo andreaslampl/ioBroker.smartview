@@ -238,7 +238,8 @@ nicht ab – dort eigene Schutzmöglichkeiten nutzen.
 **Zeitschaltuhr (Tor / Tür):** lange drücken bzw. ⏰ im Bedienfenster → Auf oder Zu zu festen Zeiten oder nach Sonnenauf-/-untergang.
 Es gelten dieselben Prüfungen wie bei den Knöpfen: schon offen / schon zu → nichts; Impuls-Tor mit unbekannter Stellung → nichts
 (der Impuls könnte in die falsche Richtung fahren). **Zu** nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“
-und nicht, solange die Lichtschranke unterbrochen ist. Mit PIN: beim Speichern abgefragt. Was nicht ausgeführt wird, steht im Log.
+und nicht, solange die Lichtschranke unterbrochen ist. Bei Art **„Tür mit Motorschloss / Türöffner“** bewegt sich nichts,
+dort wird auch ohne diesen Haken zugesperrt (Zeitschaltuhr und „automatisch schließen“); die Kachel zeigt „Versperrt“. Mit PIN: beim Speichern abgefragt. Was nicht ausgeführt wird, steht im Log.
 
 **Automatisch schließen:** „Automatisch schließen nach … Minuten“ – ist das Tor so lange offen, schickt der Adapter
 einmal „Zu“ (auch ohne offene Seite). Das geht **nur** mit dem Haken „Der Antrieb hat eine Lichtschranke /

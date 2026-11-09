@@ -416,7 +416,8 @@ class SmartView extends utils.Adapter {
         const name = t.label || t.id;
         const stt = this.gateStatus(t);
         const close = action === 'close';
-        if (close && !t.autoSafe) {
+        // motor lock: nothing moves that could trap someone
+        if (close && !t.autoSafe && t.gateKind !== 'lock') {
             this.log.warn(`Timer "${name}": Zu nicht ausgeführt – automatisch schließen nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“`);
             return;
         }
@@ -460,7 +461,7 @@ class SmartView extends utils.Adapter {
         for (const p of this.store.layout.pages) {
             for (const t of p.tiles) {
                 // only with the tick "Antrieb hat Lichtschranke / Schließkantensicherung"
-                if (t.type === 'gate' && t.autoClose > 0 && t.autoSafe && (t.posOpen || t.posClosed)) {
+                if (t.type === 'gate' && t.autoClose > 0 && (t.autoSafe || t.gateKind === 'lock') && (t.posOpen || t.posClosed)) {
                     list.push({ key: `${p.id}/${t.id}`, page: p, tile: t });
                 }
             }

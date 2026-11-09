@@ -370,6 +370,7 @@ function gateStatus(t) {
 }
 
 function gateText(t) {
+  if (t.gateKind === 'lock') return { open: 'Offen', closed: 'Versperrt', moving: 'Entriegelt', unknown: '' }[gateStatus(t)];
   return { open: 'Offen', closed: 'Geschlossen', moving: 'Fährt / Zwischenstellung', unknown: '' }[gateStatus(t)];
 }
 
@@ -378,12 +379,12 @@ function gateCmd(t, dir) {
   const name = t.label || 'Das Tor';
   const stt = gateStatus(t);
   if (dir === 'open' && stt === 'open') return toast(name + ' ist schon offen');
-  if (dir === 'close' && stt === 'closed') return toast(name + ' ist schon zu');
+  if (dir === 'close' && stt === 'closed') return toast(name + (t.gateKind === 'lock' ? ' ist schon versperrt' : ' ist schon zu'));
   const single = t.gateMode === 'single';
   const impulse = single ? t.single === 'impulse' : t.impulse;
   if (single && t.single === 'impulse' && dir !== 'stop' && (stt === 'unknown' || stt === 'moving')) {
     if (!confirm('Stellung von „' + name + '“ unbekannt. Impuls trotzdem senden? Das Tor fährt dann in die nächste Richtung oder bleibt stehen.')) return;
-  } else if (t.confirm && dir !== 'stop' && !confirm(name + (dir === 'open' ? ' öffnen?' : ' schließen?'))) return;
+  } else if (t.confirm && dir !== 'stop' && !confirm(name + (dir === 'open' ? ' öffnen?' : t.gateKind === 'lock' ? ' versperren?' : ' schließen?'))) return;
   const id = dir === 'stop' ? t.stop : single ? t.state : dir === 'open' ? t.open : t.close;
   if (!id) return toast('Kein Datenpunkt für ' + (dir === 'open' ? 'Auf' : dir === 'close' ? 'Zu' : 'Stopp'), true);
   if (single && t.single === 'level' && dir !== 'stop') return send(id, dir === 'open');

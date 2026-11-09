@@ -200,7 +200,7 @@ const Timers = (() => {
           row2.appendChild(u);
         }
         // gate: closing by time only with a light barrier (same rule as "automatisch schließen")
-        if (t.type === 'gate' && e.action === 'close' && !t.autoSafe) {
+        if (t.type === 'gate' && e.action === 'close' && !t.autoSafe && t.gateKind !== 'lock') {
           const w = document.createElement('span');
           w.className = 'muted';
           w.textContent = '⚠ Zu wird nur ausgeführt, wenn in der Kachel „Antrieb hat Lichtschranke / Schließkantensicherung“ angehakt ist.';

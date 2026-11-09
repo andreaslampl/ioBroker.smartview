@@ -1338,9 +1338,11 @@ test('adapter: time switch of a gate - checks like the buttons, closing only wit
         { id: 'g', type: 'gate', label: 'Tor', open: 'test.0.auf', close: 'test.0.zu', posOpen: 'test.0.offen', posClosed: 'test.0.geschlossen', barrier: 'test.0.ls', autoSafe: true },
         { id: 'n', type: 'gate', label: 'Ohne LS', open: 'test.0.auf', close: 'test.0.zu', posOpen: 'test.0.offen', posClosed: 'test.0.geschlossen' },
         { id: 'i', type: 'gate', label: 'Impuls', gateMode: 'single', single: 'impulse', state: 'test.0.imp' },
+        { id: 'lk', type: 'gate', label: 'Motorschloss', gateKind: 'lock', open: 'test.0.auf', close: 'test.0.zu' },
     ] }] };
     await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
-    const [g, n, i] = adapter.store.layout.pages[0].tiles;
+    const [g, n, i, lk] = adapter.store.layout.pages[0].tiles;
+    assert.equal(lk.gateKind, 'lock');
     const entry = { at: 'time', time: '22:00' };
     const writes = () => adapter.writes.map(w => w[0] + '=' + w[1]);
     adapter.change('test.0.geschlossen', true);
@@ -1367,4 +1369,6 @@ test('adapter: time switch of a gate - checks like the buttons, closing only wit
     w0 = adapter.writes.length;
     await adapter.fireTimer(i, 'open', undefined, entry, 'a/i');
     assert.equal(adapter.writes.length, w0, 'impulse with unknown position: nothing');
+    await adapter.fireTimer(lk, 'close', undefined, entry, 'a/lk');
+    assert.deepEqual(writes().slice(w0), ['test.0.zu=true'], 'motor lock: locked by time without the light barrier tick');
 });

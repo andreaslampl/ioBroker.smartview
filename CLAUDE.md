@@ -536,6 +536,9 @@ switches/buttons on them.
   document.hidden; old Safari cannot be trusted with MJPEG), `camSrc` keeps the last loaded URL so re-renders (every state change
   rebuilds #main) show it at once; tap -> `#camov` full view outside #main. Two per row (inline-block 49 %, border-box). ES5
   check + Playwright (sv/litecam-ui.js).
+- 0.61.1: owner's door has a motor lock, no light barrier -> gate option `gateKind` gate|lock (SELECTS, editor "Art"); lock: main
+  gateTimer / checkGates do not need `autoSafe` (nothing moves), timers.js no warning, app.js gateText Versperrt/Entriegelt and
+  "schon versperrt"/"versperren?". Adapter test (gate timer test) + Playwright (sv/locktimer-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
