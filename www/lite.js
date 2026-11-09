@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var S = { layout: null, page: null, states: {}, writable: {}, ws: null, retry: 1000, pending: null };
+  var S = { layout: null, page: null, states: {}, writable: {}, ws: null, retry: 1000, pending: null, canEdit: false, arrange: null };
   var SUPPORTED = { heading: 1, 'switch': 1, dimmer: 1, blind: 1, button: 1, value: 1, multi: 1, thermostat: 1, camera: 1 };
   var camSrc = {}; // camera -> last loaded picture (shown right away after a re-render, no white flash)
 
@@ -354,10 +354,84 @@
     for (i = 0; i < pages.length; i++) nav += '<a href="#' + encodeURIComponent(pages[i].id) + '"' + (pages[i] === cur ? ' class="sel"' : '') + '>' + esc(pages[i].name || pages[i].id) + '</a>';
     $('pages').innerHTML = nav;
     actions = [];
+    $('arrbtn').style.display = S.canEdit && cur && !S.arrange ? '' : 'none';
+    if (S.arrange && cur) return renderArrange(cur);
     var html = '';
-    if (cur) for (i = 0; i < cur.tiles.length; i++) if (visible(cur.tiles[i])) html += tileHtml(cur.tiles[i]);
+    var list = cur ? ordered(cur) : [];
+    for (i = 0; i < list.length; i++) html += tileHtml(list[i]);
     $('main').innerHTML = html || '<p class="hint">Auf dieser Seite gibt es nichts, was SmartView Lite anzeigen kann.<br>(Grundrisse, Sprechanlage, Energie usw. nur in der normalen App.)</p>';
   }
+
+  // ---------------- own order for Lite (page.liteOrder, saved on the server; the normal app keeps its order) ----------------
+
+  /** visible tiles of a page in Lite's order (tiles missing in liteOrder keep their place at the end) */
+  function ordered(page) {
+    var list = [];
+    var i;
+    for (i = 0; i < page.tiles.length; i++) if (visible(page.tiles[i]) && SUPPORTED[resolve(page.tiles[i]).type]) list.push(page.tiles[i]);
+    var order = page.liteOrder || [];
+    var pos = function (t) {
+      var k = order.indexOf(t.id);
+      return k < 0 ? 100000 + list.indexOf(t) : k;
+    };
+    var copy = list.slice();
+    copy.sort(function (a, b) { return pos(a) - pos(b); });
+    return copy;
+  }
+
+  function renderArrange(page) {
+    var ids = S.arrange.ids;
+    var byId = {};
+    for (var i = 0; i < page.tiles.length; i++) byId[page.tiles[i].id] = resolve(page.tiles[i]);
+    var names = { heading: 'Überschrift', 'switch': 'Schalter', dimmer: 'Dimmer', blind: 'Rollo', button: 'Taste', value: 'Wert', multi: 'Werte', thermostat: 'Heizung', camera: 'Kamera' };
+    var html = '<p class="hint">Reihenfolge für SmartView Lite – die normale App bleibt, wie sie ist.</p>';
+    for (var j = 0; j < ids.length; j++) {
+      var t = byId[ids[j]] || {};
+      html += '<div class="row arr"><div class="name">' + esc(t.label || names[t.type] || t.type) + '<small>' + esc(names[t.type] || '') + '</small></div><div class="btns">' +
+        '<button type="button" data-mv="' + j + '" data-d="-1"' + (j === 0 ? ' disabled' : '') + '>▲</button>' +
+        '<button type="button" data-mv="' + j + '" data-d="1"' + (j === ids.length - 1 ? ' disabled' : '') + '>▼</button></div></div>';
+    }
+    html += '<div class="arrbar"><button type="button" id="arrcancel">Abbrechen</button><button type="button" id="arrsave" class="pri">Fertig</button></div>';
+    $('main').innerHTML = html;
+    $('arrcancel').onclick = function () {
+      S.arrange = null;
+      render();
+    };
+    $('arrsave').onclick = function () {
+      var page = S.arrange.page;
+      var order = S.arrange.ids;
+      xhr('POST', '/api/liteorder', { page: page, order: order }, function (status, data) {
+        if (status !== 200) return toast((data && data.error) || 'Speichern fehlgeschlagen', true);
+        S.arrange = null;
+        toast('Reihenfolge gespeichert');
+        // the server sends {type:'layout'} -> the page reloads with the new order
+      });
+    };
+  }
+
+  function startArrange() {
+    var cur = null;
+    for (var i = 0; i < S.layout.pages.length; i++) if (S.layout.pages[i].id === S.page) cur = S.layout.pages[i];
+    if (!cur) return;
+    var list = ordered(cur);
+    var ids = [];
+    for (var j = 0; j < list.length; j++) ids.push(list[j].id);
+    S.arrange = { page: cur.id, ids: ids };
+    render();
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = target(e.target, 'data-mv');
+    if (!b || !S.arrange) return;
+    var j = Number(b.getAttribute('data-mv'));
+    var k = j + Number(b.getAttribute('data-d'));
+    var ids = S.arrange.ids;
+    if (k < 0 || k >= ids.length) return;
+    var x = ids[j];
+    ids[j] = ids[k];
+    ids[k] = x;
+    render();
+  });
 
   // render at most every 300 ms (many state changes at once)
   var renderTimer = null;
@@ -455,7 +529,10 @@
   document.addEventListener('touchcancel', pushUp, false);
   document.addEventListener('mouseup', pushUp, false);
 
+  $('arrbtn').onclick = startArrange;
+
   window.addEventListener('hashchange', function () {
+    S.arrange = null;
     S.page = decodeURIComponent(location.hash.slice(1));
     try {
       localStorage.setItem('sv.lite.page', S.page);
@@ -534,6 +611,7 @@
         return;
       }
       S.layout = data.layout;
+      S.canEdit = Boolean(data.allowEdit);
       $('title').textContent = S.layout.title || 'SmartView';
       render();
       if (cb) cb();

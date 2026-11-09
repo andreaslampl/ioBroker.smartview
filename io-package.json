@@ -1,9 +1,13 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.61.1",
+    "version": "0.63.0",
     "news": {
-      "0.61.1": {
+      "0.63.0": {
+        "en": "SmartView Lite: own tile order per page (Anordnen with up/down, admin), the app keeps its order",
+        "de": "SmartView Lite: eigene Reihenfolge der Kacheln pro Seite (Anordnen mit ▲ ▼, Admin), die App behält ihre Reihenfolge"
+      },
+      "0.62.1": {
         "en": "Gate tile: kind \"door with motor lock\" - locking by time switch / automatically without the light barrier tick; shows Versperrt",
         "de": "Tor-Kachel: Art „Tür mit Motorschloss“ – Zusperren per Zeitschaltuhr / automatisch ohne Lichtschranken-Haken; zeigt Versperrt"
       },

@@ -1372,3 +1372,25 @@ test('adapter: time switch of a gate - checks like the buttons, closing only wit
     await adapter.fireTimer(lk, 'close', undefined, entry, 'a/lk');
     assert.deepEqual(writes().slice(w0), ['test.0.zu=true'], 'motor lock: locked by time without the light barrier tick');
 });
+
+test('adapter: SmartView Lite order - own field per page, app order and PIN untouched', async t => {
+    const { adapter, api } = await startAdapter(t);
+    const layout = { pages: [{ id: 'a', name: 'A', tiles: [
+        { id: 'x', type: 'switch', label: 'X', state: 'knx.0.EG.Licht.Wohnzimmer', pin: '4711' },
+        { id: 'y', type: 'dimmer', label: 'Y', state: 'knx.0.EG.Licht.Essen_Dimmer' },
+        { id: 'z', type: 'heading', label: 'Z' },
+    ] }] };
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    const hash = adapter.store.layout.pages[0].tiles[0].pinHash;
+    const res = await api('liteorder', { method: 'POST', body: JSON.stringify({ page: 'a', order: ['z', 'y', 'x', 'nope'] }) });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.order, ['z', 'y', 'x']);
+    const page = adapter.store.layout.pages[0];
+    assert.deepEqual(page.tiles.map(x => x.id), ['x', 'y', 'z'], 'the app keeps its order');
+    assert.equal(page.tiles[0].pinHash, hash, 'PIN kept');
+    assert.equal((await api('liteorder', { method: 'POST', body: JSON.stringify({ page: 'nix', order: [] }) })).status, 400);
+    // a normal save from the app editor keeps the Lite order
+    const got = (await api('layout')).body.layout;
+    await api('layout', { method: 'PUT', body: JSON.stringify(got) });
+    assert.deepEqual(adapter.store.layout.pages[0].liteOrder, ['z', 'y', 'x']);
+});

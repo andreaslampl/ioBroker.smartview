@@ -536,9 +536,13 @@ switches/buttons on them.
   document.hidden; old Safari cannot be trusted with MJPEG), `camSrc` keeps the last loaded URL so re-renders (every state change
   rebuilds #main) show it at once; tap -> `#camov` full view outside #main. Two per row (inline-block 49 %, border-box). ES5
   check + Playwright (sv/litecam-ui.js).
-- 0.61.1: owner's door has a motor lock, no light barrier -> gate option `gateKind` gate|lock (SELECTS, editor "Art"); lock: main
+- 0.62.1 (first pushed as 0.61.1 by mistake - lower than 0.62.0; renumbered in 0.63.0): owner's door has a motor lock, no light barrier -> gate option `gateKind` gate|lock (SELECTS, editor "Art"); lock: main
   gateTimer / checkGates do not need `autoSafe` (nothing moves), timers.js no warning, app.js gateText Versperrt/Entriegelt and
   "schon versperrt"/"versperren?". Adapter test (gate timer test) + Playwright (sv/locktimer-ui.js).
+- 0.63.0: owner asked to move tiles in Lite -> page `liteOrder` (cleanLayout keeps it for every page type, the app editor's PUT
+  keeps it) set only via POST /api/liteorder {page, order} (admin + allowEdit; copies the stored layout, so pinHash etc. stay);
+  lite.js `ordered()` (unknown tiles at the end), "Anordnen" button (allowEdit from /api/layout) -> `renderArrange()` list with
+  ▲ ▼ (no dragging: reliable on iOS 9), Fertig posts, the {type:'layout'} broadcast reloads. Adapter test + Playwright (sv/litearr-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

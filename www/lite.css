@@ -43,3 +43,10 @@ form.login button { font-size: 18px; width: 100%; padding: 14px; border-radius: 
 #camov .bar span { -webkit-flex: 1; flex: 1; font-size: 19px; }
 #camov .bar button { font-size: 17px; padding: 12px 18px; border-radius: 10px; border: 0; background: #2f81f7; color: #fff; }
 #camov img { display: block; width: 100%; max-height: 90%; object-fit: contain; }
+/* arranging the tiles (admin) */
+#arrbtn { font-size: 15px; padding: 8px 12px; margin-right: 12px; border-radius: 10px; border: 1px solid #39424d; background: #252c35; color: #e8eaed; font-family: inherit; -webkit-appearance: none; }
+.row.arr .btns button { min-width: 56px; }
+.row.arr .btns button[disabled] { opacity: 0.3; }
+.arrbar { text-align: right; margin: 14px 0 30px; }
+.arrbar button { font-size: 18px; padding: 14px 22px; margin-left: 8px; border-radius: 10px; border: 1px solid #39424d; background: #252c35; color: #e8eaed; font-family: inherit; -webkit-appearance: none; }
+.arrbar button.pri { background: #2f81f7; border-color: #2f81f7; color: #fff; }

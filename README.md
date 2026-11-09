@@ -764,6 +764,7 @@ Adresse automatisch dorthin geschickt.
 - Schalter (auch nur true / nur false / Taster), Dimmer (Aus − + Ein), Rollo (Auf / Stopp / Ab), Taste / Szene,
   Kacheln mit mehreren Einträgen (Zentralfunktionen), Werte, Mehrfach-Werte, Heizung (Soll − / +, Ist, Heizkreise), Überschriften
 - Kameras als Bilder (alle 1,5 Sekunden ein neues, antippen = groß)
+- **Anordnen** (oben, nur für Admins): Reihenfolge der Kacheln mit ▲ ▼ – gilt nur für Lite, die normale App bleibt, wie sie ist
 - Benutzer, Rechte und PIN gelten wie in der App (PIN wird abgefragt)
 - **Nicht** in Lite: Grundrisse, Kamera-Video, Sprechanlage, Energie-Fluss, Alarm, Zeitschaltuhr, Bearbeiten, Push-Mitteilungen
 
