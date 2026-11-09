@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.60.0",
+    "version": "0.61.0",
     "news": {
+      "0.61.0": {
+        "en": "Time switch for gate / door tiles (open / close; closing only with the light barrier tick, checks like the buttons)",
+        "de": "Zeitschaltuhr für Tor-/Tür-Kacheln (Auf / Zu; Zu nur mit Haken Lichtschranke, Prüfungen wie bei den Knöpfen)"
+      },
       "0.60.0": {
         "en": "Time switch also for PIN protected tiles: saving asks for the PIN; after a PIN change the time switch has to be saved again",
         "de": "Zeitschaltuhr auch für Kacheln mit PIN: beim Speichern wird die PIN abgefragt; nach einer PIN-Änderung muss die Zeitschaltuhr neu gespeichert werden"

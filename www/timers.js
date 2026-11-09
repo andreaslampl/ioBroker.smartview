@@ -11,6 +11,7 @@ const Timers = (() => {
     dimmer: [['on', 'Ein (100 %)'], ['off', 'Aus'], ['level', 'Helligkeit …']],
     blind: [['up', 'Auf'], ['down', 'Ab'], ['position', 'Position (% offen) …']],
     button: [['press', 'Auslösen']],
+    gate: [['open', 'Auf'], ['close', 'Zu']],
   };
 
   async function load() {
@@ -37,7 +38,7 @@ const Timers = (() => {
     // a PIN protected tile gets no time switch (it would switch without the PIN)
     const many = Array.isArray(t.entries) && t.entries.length > 0;
     // PIN tiles too: saving asks for the PIN (the server checks it), the time switch then runs without one
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState || many)) && !(t.type === 'switch' && t.sendMode === 'push' && !many) && !(SV.me && SV.me.control === false);
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState || t.open || t.close || many)) && !(t.type === 'switch' && t.sendMode === 'push' && !many) && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {
@@ -82,7 +83,7 @@ const Timers = (() => {
   function open(t) {
     const key = keyOf(t);
     if (!key) return toast('Zuerst die Ansicht speichern', true);
-    if (!supports(t)) return toast('Zeitschaltuhr gibt es für Schalter, Dimmer und Rollläden', true);
+    if (!supports(t)) return toast('Zeitschaltuhr gibt es für Schalter, Dimmer, Rollläden, Tasten, Tore und Klima', true);
     closeSheet();
     const cur = timerOf(t) || { enabled: true, entries: [] };
     const tm = JSON.parse(JSON.stringify(cur));
@@ -197,6 +198,13 @@ const Timers = (() => {
           u.className = 'muted';
           u.textContent = '%';
           row2.appendChild(u);
+        }
+        // gate: closing by time only with a light barrier (same rule as "automatisch schließen")
+        if (t.type === 'gate' && e.action === 'close' && !t.autoSafe) {
+          const w = document.createElement('span');
+          w.className = 'muted';
+          w.textContent = '⚠ Zu wird nur ausgeführt, wenn in der Kachel „Antrieb hat Lichtschranke / Schließkantensicherung“ angehakt ist.';
+          row2.appendChild(w);
         }
         box.appendChild(row2);
         // tile with several entries: which ones

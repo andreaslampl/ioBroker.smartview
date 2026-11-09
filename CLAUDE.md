@@ -528,6 +528,10 @@ switches/buttons on them.
   `pinSig` in the timer (Timers.set third arg; the PIN itself is never stored); main `fireTimer(…, key)` fires a protected tile
   only if timer.pinSig equals the current sig (PIN changed -> warn, skip). Client Timers.supports allows PIN tiles, save asks
   askPin(). Adapter test + Playwright (scratchpad sv/pintimer-ui.js).
+- 0.61.0: owner wanted the time switch for gate / door tiles -> lib/timers ACTIONS gate open|close, main `fireOne()` -> `gateTimer()`:
+  already open/closed -> nothing; single impulse + unknown/moving -> nothing; close only with `autoSafe` (same rule as autoClose)
+  and not while `gateBlocked()`; then `gateOpen()` (new, like gateClose) / `gateClose()`; skips logged. www/timers.js ACTIONS gate
+  + warning in the editor when Zu without autoSafe; supports() accepts open/close ids. Adapter test + Playwright (sv/gatetimer-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

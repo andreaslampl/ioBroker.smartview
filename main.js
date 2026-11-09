@@ -394,6 +394,47 @@ class SmartView extends utils.Adapter {
     }
 
     /** the close command like the page's "Zu" button (level false, impulse, or the close data point) */
+    /** open command like the "Auf" button (level: true, impulse: true then false after 1 s) */
+    async gateOpen(t) {
+        const single = t.gateMode === 'single';
+        const id = single ? t.state : t.open;
+        if (!id) {
+            throw new Error('kein Datenpunkt für „Auf“');
+        }
+        await this.setValue(id, true);
+        if (single ? t.single === 'impulse' : t.impulse) {
+            setTimeout(() => this.setValue(id, false, { force: true }).catch(() => {}), 1000);
+        }
+    }
+
+    /**
+     * Time switch of a gate tile, with the checks of the buttons: nothing when it already is open / closed; an impulse
+     * (one data point, direction unknown) only with a known end position; closing only with the tick "Lichtschranke"
+     * (`autoSafe`, like "automatisch schließen") and not while the light barrier is interrupted.
+     */
+    async gateTimer(t, action) {
+        const name = t.label || t.id;
+        const stt = this.gateStatus(t);
+        const close = action === 'close';
+        if (close && !t.autoSafe) {
+            this.log.warn(`Timer "${name}": Zu nicht ausgeführt – automatisch schließen nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“`);
+            return;
+        }
+        if ((close && stt === 'closed') || (!close && stt === 'open')) {
+            this.log.info(`Timer "${name}": schon ${close ? 'zu' : 'offen'}, nichts gesendet`);
+            return;
+        }
+        if (t.gateMode === 'single' && t.single === 'impulse' && (stt === 'unknown' || stt === 'moving')) {
+            this.log.warn(`Timer "${name}": Stellung unbekannt – ein Impuls könnte in die falsche Richtung fahren, nichts gesendet`);
+            return;
+        }
+        if (close && this.gateBlocked(t)) {
+            this.log.warn(`Timer "${name}": Lichtschranke unterbrochen, nicht geschlossen`);
+            return;
+        }
+        await (close ? this.gateClose(t) : this.gateOpen(t));
+    }
+
     async gateClose(t) {
         const single = t.gateMode === 'single';
         const id = single ? t.state : t.close;
@@ -1680,7 +1721,9 @@ class SmartView extends utils.Adapter {
 
     /** one tile (or one entry of a tile) of a time switch */
     async fireOne(tile, action, value) {
-        if (tile.type === 'button') {
+        if (tile.type === 'gate') {
+            await this.gateTimer(tile, action);
+        } else if (tile.type === 'button') {
             await this.setValue(tile.state, tile.value === undefined || tile.value === '' ? true : tile.value);
         } else if (tile.type === 'switch' || tile.type === 'climate') {
             const on = action === 'on';

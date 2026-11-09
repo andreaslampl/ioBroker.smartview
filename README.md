@@ -235,6 +235,11 @@ nicht ab – dort eigene Schutzmöglichkeiten nutzen.
 - Ist das Tor schon offen und man drückt Auf, kommt **„… ist schon offen“** und es wird nichts gesendet (ebenso
   „schon zu“). Beim Taster-Impuls mit unbekannter Stellung wird vorher nachgefragt; optional immer nachfragen.
 
+**Zeitschaltuhr (Tor / Tür):** lange drücken bzw. ⏰ im Bedienfenster → Auf oder Zu zu festen Zeiten oder nach Sonnenauf-/-untergang.
+Es gelten dieselben Prüfungen wie bei den Knöpfen: schon offen / schon zu → nichts; Impuls-Tor mit unbekannter Stellung → nichts
+(der Impuls könnte in die falsche Richtung fahren). **Zu** nur mit dem Haken „Antrieb hat Lichtschranke / Schließkantensicherung“
+und nicht, solange die Lichtschranke unterbrochen ist. Mit PIN: beim Speichern abgefragt. Was nicht ausgeführt wird, steht im Log.
+
 **Automatisch schließen:** „Automatisch schließen nach … Minuten“ – ist das Tor so lange offen, schickt der Adapter
 einmal „Zu“ (auch ohne offene Seite). Das geht **nur** mit dem Haken „Der Antrieb hat eine Lichtschranke /
 Schließkantensicherung“ und einer Endlage (oben oder unten). Mit dem optionalen **Lichtschranken-Datenpunkt** (true =

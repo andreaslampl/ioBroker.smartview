@@ -1327,3 +1327,44 @@ test('adapter: the ways of a tile\'s messages can be chosen (here "Haus verlasse
     await new Promise(r => setTimeout(r, 200));
     assert.equal(pushed.filter(p => p.title === 'Weg').length, 0, 'no app push');
 });
+
+test('adapter: time switch of a gate - checks like the buttons, closing only with light barrier tick', async t => {
+    const { adapter, api } = await startAdapter(t, {}, a => {
+        for (const id of ['test.0.auf', 'test.0.zu', 'test.0.imp', 'test.0.offen', 'test.0.geschlossen', 'test.0.ls']) {
+            a.add(id, { name: id, type: 'boolean', role: 'switch', write: true }, false);
+        }
+    });
+    const layout = { pages: [{ id: 'a', name: 'A', tiles: [
+        { id: 'g', type: 'gate', label: 'Tor', open: 'test.0.auf', close: 'test.0.zu', posOpen: 'test.0.offen', posClosed: 'test.0.geschlossen', barrier: 'test.0.ls', autoSafe: true },
+        { id: 'n', type: 'gate', label: 'Ohne LS', open: 'test.0.auf', close: 'test.0.zu', posOpen: 'test.0.offen', posClosed: 'test.0.geschlossen' },
+        { id: 'i', type: 'gate', label: 'Impuls', gateMode: 'single', single: 'impulse', state: 'test.0.imp' },
+    ] }] };
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    const [g, n, i] = adapter.store.layout.pages[0].tiles;
+    const entry = { at: 'time', time: '22:00' };
+    const writes = () => adapter.writes.map(w => w[0] + '=' + w[1]);
+    adapter.change('test.0.geschlossen', true);
+    await until(() => adapter.gateStatus(g) === 'closed');
+    let w0 = adapter.writes.length;
+    await adapter.fireTimer(g, 'close', undefined, entry, 'a/g');
+    assert.equal(adapter.writes.length, w0, 'already closed: nothing');
+    await adapter.fireTimer(g, 'open', undefined, entry, 'a/g');
+    assert.deepEqual(writes().slice(w0), ['test.0.auf=true']);
+    adapter.change('test.0.geschlossen', false);
+    adapter.change('test.0.offen', true);
+    await until(() => adapter.gateStatus(g) === 'open');
+    w0 = adapter.writes.length;
+    await adapter.fireTimer(n, 'close', undefined, entry, 'a/n');
+    assert.equal(adapter.writes.length, w0, 'no light barrier tick: never closed by time');
+    adapter.change('test.0.ls', true);
+    await until(() => adapter.gateBlocked(g));
+    await adapter.fireTimer(g, 'close', undefined, entry, 'a/g');
+    assert.equal(adapter.writes.length, w0, 'light barrier interrupted: not closed');
+    adapter.change('test.0.ls', false);
+    await until(() => !adapter.gateBlocked(g));
+    await adapter.fireTimer(g, 'close', undefined, entry, 'a/g');
+    assert.deepEqual(writes().slice(w0), ['test.0.zu=true']);
+    w0 = adapter.writes.length;
+    await adapter.fireTimer(i, 'open', undefined, entry, 'a/i');
+    assert.equal(adapter.writes.length, w0, 'impulse with unknown position: nothing');
+});
