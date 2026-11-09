@@ -785,7 +785,7 @@ test('adapter: awning retracts on wind/rain, stays locked, gate impulse', async 
     assert.deepEqual(adapter.writes.filter(w => w[0] === 'knx.0.Tor.Taster').map(w => w[1]), [true, false]);
 });
 
-test('adapter: PIN protected tiles - hash only on the server, every command checked, wrong PINs locked, no time switch', async t => {
+test('adapter: PIN protected tiles - hash only on the server, every command checked, wrong PINs locked, time switch only with PIN', async t => {
     const { adapter, port, api } = await startAdapter(t);
     const layout = {
         pages: [{ id: 'a', name: 'A', tiles: [
@@ -802,7 +802,28 @@ test('adapter: PIN protected tiles - hash only on the server, every command chec
     // saving again with pin: true keeps the PIN
     await api('layout', { method: 'PUT', body: JSON.stringify(got.body.layout) });
     assert.match(adapter.store.layout.pages[0].tiles[0].pinHash, /^s1\$/);
-    assert.equal((await api('timers/a/door', { method: 'PUT', body: JSON.stringify({ entries: [{ days: [1], at: 'time', time: '07:00', action: 'on' }] }) })).status, 403);
+    // time switch on a PIN tile: only saved with the right PIN; it then fires without one - until the PIN changes
+    const timer = { entries: [{ days: [1, 2, 3, 4, 5, 6, 7], at: 'time', time: '07:00', action: 'on' }] };
+    const noPin = await api('timers/a/door', { method: 'PUT', body: JSON.stringify(timer) });
+    assert.equal(noPin.status, 403);
+    assert.equal(noPin.body.pin, 'need');
+    assert.equal((await api('timers/a/door', { method: 'PUT', body: JSON.stringify({ ...timer, pin: '9999' }) })).body.pin, 'wrong');
+    assert.equal((await api('timers/a/door', { method: 'PUT', body: JSON.stringify({ ...timer, pin: '4711' }) })).status, 200);
+    const stored = adapter.timers.list()['a/door'];
+    assert.match(stored.pinSig, /^[0-9a-f]{16}$/);
+    assert.ok(!JSON.stringify(stored).includes('4711'), 'the PIN itself is not stored');
+    const door = adapter.store.layout.pages[0].tiles[0];
+    let w0 = adapter.writes.length;
+    await adapter.fireTimer(door, 'on', undefined, stored.entries[0], 'a/door');
+    assert.equal(adapter.writes.length, w0 + 1, 'saved with the PIN: fires');
+    const changed = (await api('layout')).body.layout;
+    changed.pages[0].tiles[0].pin = '5555';
+    await api('layout', { method: 'PUT', body: JSON.stringify(changed) });
+    w0 = adapter.writes.length;
+    await adapter.fireTimer(adapter.store.layout.pages[0].tiles[0], 'on', undefined, stored.entries[0], 'a/door');
+    assert.equal(adapter.writes.length, w0, 'after a PIN change the old time switch does not fire');
+    changed.pages[0].tiles[0].pin = '4711';
+    await api('layout', { method: 'PUT', body: JSON.stringify(changed) });
 
     const c = wsClient(`ws://127.0.0.1:${port}/ws`);
     t.after(() => c.ws.close());

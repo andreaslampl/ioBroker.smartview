@@ -221,7 +221,9 @@ Jede schaltende Kachel hat das Feld **„PIN-Schutz“** (4–8 Ziffern). Vor je
 die PIN wird **vom ioBroker geprüft** (sie steht nur verschlüsselt im Adapter und wird nie an Browser geschickt),
 auch für andere Kacheln, die denselben Datenpunkt schalten. Nach 5 falschen PINs ist das Gerät 5 Minuten gesperrt
 (Warnung im Log). Die PIN wird **bei jedem Schalten** neu abgefragt, sie wird nirgends gemerkt.
-PIN-geschützte Kacheln bekommen keine Zeitschaltuhr. Achtung: Apple Home und Alexa (homekit-easy) fragen diese PIN
+Zeitschaltuhr bei PIN-Kacheln: beim **Speichern** wird die PIN abgefragt, zur eingestellten Zeit schaltet der ioBroker dann
+ohne Abfrage. Wird die PIN geändert, schalten die alten Zeiten nicht mehr (Warnung im Log), bis die Zeitschaltuhr mit der
+neuen PIN nochmal gespeichert wird. Achtung: Apple Home und Alexa (homekit-easy) fragen diese PIN
 nicht ab – dort eigene Schutzmöglichkeiten nutzen.
 
 ### Tor / Garagentor

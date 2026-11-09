@@ -247,7 +247,7 @@ switches/buttons on them.
   on GET/PUT /api/layout), the editor sends digits (new), true (keep, `resolvePins()` copies the old hash) or nothing;
   server `_pinOk()` checks every ws set/pulse to a data point of ANY protected tile (`protectedIds()` +
   `tileWriteIds()`), replies {type:'pin', result need|wrong|locked}; `PinGuard` 5 wrong per address -> 5 min lock.
-  No timers for PIN tiles (API 403, fireTimer skips, Timers.supports). Client `withPin()`/`askPin()` (pad + keyboard,
+  No timers for PIN tiles until 0.60.0 (now saved with the PIN, see there). Client `withPin()`/`askPin()` (pad + keyboard,
   PIN cached 20 s per data point), wrong PIN restores the previous state. Tile type `alarm` {status, command, alarm,
   error, valueOff/Arm/Home, area -> `fillAlarm()` for NOX}. Window logic moved to `www/winlogic.js` (page + adapter);
   windows option `notify` -> main `checkWindows()` (on state changes + every 30 s; once per opening / per warning,
@@ -522,6 +522,12 @@ switches/buttons on them.
   (preferences received), so `robotDevices()` found nothing -> lists `system.adapter.roomba.*` instances ("– noch nicht verbunden"
   unless states._connected is true). main onStateChange re-reads the object of a subscribed id whose meta had no type (did not
   exist at subscribe time). Playwright (sv/roomba-ui.js with a never-connected roomba.1).
+- 0.60.0: owner wants time switches on PIN tiles, with the PIN asked -> asked on SAVING (it cannot be asked at 7:00): lib/pin.js
+  `pinHashesFor(layout, tile, tileWriteIds)` (own PIN + other tiles protecting the same ids) + `pinSig()` (sha256 of the hashes,
+  16 hex); server PUT /api/timers needs `pin` in the body when hashes exist (PinGuard, 403 {pin need|wrong|locked}), stores
+  `pinSig` in the timer (Timers.set third arg; the PIN itself is never stored); main `fireTimer(…, key)` fires a protected tile
+  only if timer.pinSig equals the current sig (PIN changed -> warn, skip). Client Timers.supports allows PIN tiles, save asks
+  askPin(). Adapter test + Playwright (scratchpad sv/pintimer-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

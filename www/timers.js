@@ -36,7 +36,8 @@ const Timers = (() => {
   function supports(t) {
     // a PIN protected tile gets no time switch (it would switch without the PIN)
     const many = Array.isArray(t.entries) && t.entries.length > 0;
-    return Boolean(ACTIONS[t.type] && (t.state || t.switchState || many)) && !(t.type === 'switch' && t.sendMode === 'push' && !many) && !t.pin && !(SV.me && SV.me.control === false);
+    // PIN tiles too: saving asks for the PIN (the server checks it), the time switch then runs without one
+    return Boolean(ACTIONS[t.type] && (t.state || t.switchState || many)) && !(t.type === 'switch' && t.sendMode === 'push' && !many) && !(SV.me && SV.me.control === false);
   }
 
   function timerOf(t) {
@@ -274,7 +275,13 @@ const Timers = (() => {
         try {
           if (tm.entries.some(e => !e.days.length)) return toast('Bei jeder Schaltzeit mindestens einen Tag wählen', true);
           if (tileEntries(t) && tm.entries.some(e => !e.targets || !e.targets.length)) return toast('Bei jeder Schaltzeit mindestens einen Eintrag ankreuzen', true);
-          await api('timers/' + key, { method: 'PUT', body: JSON.stringify(tm) });
+          let body = tm;
+          if (t.pin || tileIds(t).some(id => SV.pinIds && SV.pinIds.has(id))) {
+            const pin = await askPin();
+            if (!pin) return;
+            body = Object.assign({}, tm, { pin });
+          }
+          await api('timers/' + key, { method: 'PUT', body: JSON.stringify(body) });
           await load();
           toast('Zeitschaltuhr gespeichert');
           close();

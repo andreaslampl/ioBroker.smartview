@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.59.1",
+    "version": "0.60.0",
     "news": {
+      "0.60.0": {
+        "en": "Time switch also for PIN protected tiles: saving asks for the PIN; after a PIN change the time switch has to be saved again",
+        "de": "Zeitschaltuhr auch für Kacheln mit PIN: beim Speichern wird die PIN abgefragt; nach einer PIN-Änderung muss die Zeitschaltuhr neu gespeichert werden"
+      },
       "0.59.1": {
         "en": "Robot tile: every roomba instance is selectable, also before it has connected to its robot; data points created later are recognised",
         "de": "Roboter-Kachel: jede roomba-Instanz auswählbar, auch bevor sie mit dem Roboter verbunden war; später angelegte Datenpunkte werden erkannt"

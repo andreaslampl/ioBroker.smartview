@@ -6,7 +6,8 @@ const path = require('node:path');
 const http = require('node:http');
 const https = require('node:https');
 const utils = require('@iobroker/adapter-core');
-const { LayoutStore, stateIds } = require('./lib/layout');
+const { LayoutStore, stateIds, tileWriteIds } = require('./lib/layout');
+const { pinHashesFor, pinSig } = require('./lib/pin');
 const { Push, matches, triggers, fill } = require('./lib/push');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
@@ -110,7 +111,7 @@ class SmartView extends utils.Adapter {
             location,
             log: this.log,
             tile: key => this.tileByKey(key),
-            fire: (tile, action, value, key, entry) => this.fireTimer(tile, action, value, entry),
+            fire: (tile, action, value, key, entry) => this.fireTimer(tile, action, value, entry, key),
         });
         this.timers.start();
 
@@ -180,7 +181,7 @@ class SmartView extends utils.Adapter {
                 homekitDevices: () => this.homekitDevices(),
                 pushDevices: n => this.setState('push.devices', n, true),
                 timers: () => ({ timers: this.timers.list(), sun: this.timers.sunToday(), location: Boolean(this.timers.location) }),
-                setTimer: (key, timer) => this.timers.set(key, timer),
+                setTimer: (key, timer, sig) => this.timers.set(key, timer, sig),
                 tileByKey: key => this.tileByKey(key),
                 scenePlan: tile => this.scenePlan(tile),
                 dnd: () => this.dndInfo(),
@@ -1650,9 +1651,12 @@ class SmartView extends utils.Adapter {
     }
 
     /** A time switch is due: write like the buttons in the app do. */
-    async fireTimer(tile, action, value, entry) {
-        if (tile.pinHash) {
-            this.log.warn(`Timer "${tile.label || tile.id}" nicht ausgeführt: die Kachel ist mit PIN geschützt`);
+    async fireTimer(tile, action, value, entry, key) {
+        // PIN protected: only time switches saved with the current PIN (server checks it on PUT /api/timers)
+        const sig = pinSig(pinHashesFor(this.store.layout, tile, tileWriteIds));
+        const timer = key ? this.timers.list()[key] : null;
+        if (sig && (!timer || timer.pinSig !== sig)) {
+            this.log.warn(`Timer "${tile.label || tile.id}" nicht ausgeführt: die PIN der Kachel wurde geändert – die Zeitschaltuhr mit der neuen PIN nochmal speichern`);
             return;
         }
         const when = entry.at === 'time' ? entry.time : `${entry.at === 'sunrise' ? 'Sonnenaufgang' : 'Sonnenuntergang'}${entry.offset ? ` ${entry.offset > 0 ? '+' : ''}${entry.offset} min` : ''}`;
