@@ -1814,8 +1814,34 @@ function freeNarrow(box, page) {
 }
 
 /** Page laid out at a fixed width and scaled to the screen (not on the phone, not while editing): that width, else 0. */
+/**
+ * Fit of a page on THIS device: an own choice of the device (localStorage sv.fit.<page>, set in the menu or the page dialog
+ * with "nur dieses Gerät") wins over the page setting that applies to all devices. {fit: ''|'width'|'screen', designW}
+ */
+function pageFit(page) {
+  if (!page) return { fit: '', designW: 0 };
+  let own = null;
+  try {
+    own = JSON.parse(localStorage.getItem('sv.fit.' + page.id) || 'null');
+  } catch (e) {
+    own = null;
+  }
+  if (own && own.fit) return own.fit === 'off' ? { fit: '', designW: 0 } : { fit: own.fit, designW: own.designW || page.designW || 1280 };
+  return { fit: page.fit || '', designW: page.designW || 1280 };
+}
+
+function setOwnFit(pageId, value) {
+  try {
+    if (value) localStorage.setItem('sv.fit.' + pageId, JSON.stringify(value));
+    else localStorage.removeItem('sv.fit.' + pageId);
+  } catch (e) {
+    // private mode: nothing remembered
+  }
+}
+
 function fitWidth(page) {
-  return page && page.fit && !SV.editing && device() !== 'phone' ? page.designW || 1280 : 0;
+  const f = pageFit(page);
+  return f.fit && !SV.editing && device() !== 'phone' ? f.designW : 0;
 }
 
 /** Zoom of a scaled page: width of the container / design width; "screen" also fits the height (no scrolling). */
@@ -1829,7 +1855,7 @@ function applyFit(grid) {
   grid.style.zoom = '';
   const w = fitWidth(page);
   let z = Math.max(0.1, (box.clientWidth - padX) / w);
-  if (page.fit === 'screen' && box.id === 'main') {
+  if (pageFit(page).fit === 'screen' && box.id === 'main') {
     const h = grid.offsetHeight;
     // a few px to spare: rounding of the zoomed rows must not bring back a scroll bar
     if (h > 0) z = Math.min(z, (box.clientHeight - padY - 10) / h);
@@ -2678,7 +2704,7 @@ function applyPlanFit(plan) {
   if (!page || !wrap || !img || !img.naturalWidth) return;
   const w = fitWidth(page);
   let z = wrap.clientWidth / w;
-  if (page.fit === 'screen') {
+  if (pageFit(page).fit === 'screen') {
     const box = wrap.closest('#main, .sidecontent') || wrap.parentElement;
     const pad = parseFloat(getComputedStyle(box).paddingBottom) || 0;
     const bottom = Math.min(innerHeight, box.getBoundingClientRect().bottom) - pad;
@@ -3383,7 +3409,7 @@ async function openMenu() {
   closeSheet();
   const ov = document.createElement('div');
   ov.className = 'overlay bottom';
-  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-dnd></div><div data-ic></div><div data-screen></div><div data-users></div>' +
+  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-dnd></div><div data-ic></div><div data-screen></div><div data-fit></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
     (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + (document.fullscreenElement ? 'Vollbild beenden' : 'Vollbild (bleibt nach dem Sperren)') + '</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
@@ -3410,7 +3436,38 @@ async function openMenu() {
   if (layout().ring.intercom || layout().ring.state) dndMenuItem(ov.querySelector('[data-dnd]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
   if (typeof Screen !== 'undefined') Screen.menuItems(ov.querySelector('[data-screen]'));
+  fitMenuItem(ov.querySelector('[data-fit]'));
   Users.menuItems(ov.querySelector('[data-users]'));
+}
+
+/** ⚙ menu: fit of the shown page on this device only (cycles: as set for all / off / width / whole screen) */
+function fitMenuItem(box) {
+  const page = SV.page;
+  if (!box || !page || device() === 'phone') return;
+  const steps = ['', 'off', 'width', 'screen'];
+  const words = { '': 'wie für alle eingestellt', off: 'aus', width: 'Breite', screen: 'ganzer Bildschirm' };
+  const own = () => {
+    try {
+      return (JSON.parse(localStorage.getItem('sv.fit.' + page.id) || 'null') || {}).fit || '';
+    } catch (e) {
+      return '';
+    }
+  };
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'item';
+  const label = () => icon('fullscreen') + '„' + esc(page.name || '') + '“ anpassen (dieses Gerät): <b>' + words[own()] + '</b>';
+  b.innerHTML = label();
+  b.onclick = () => {
+    const next = steps[(steps.indexOf(own()) + 1) % steps.length];
+    const m = $('main');
+    const c = getComputedStyle(m);
+    const w = Math.round(m.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight));
+    setOwnFit(page.id, next ? { fit: next, designW: page.designW || w } : null);
+    b.innerHTML = label();
+    render();
+  };
+  box.appendChild(b);
 }
 
 async function renderPushMenu(box) {

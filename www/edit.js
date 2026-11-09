@@ -1978,6 +1978,15 @@ const Editor = (() => {
     const fitBox = document.createElement('div');
     body.appendChild(fitBox);
     const fit = field(fitBox, 'An Bildschirm anpassen', select([['', 'nein (wie bisher)'], ['width', 'Breite – alles mitskalieren, senkrecht scrollen'], ['screen', 'Ganzer Bildschirm – alles sichtbar, kein Scrollen']], p.fit || ''), 'Die Seite wird für die Entwurfsbreite angeordnet und dann auf jedem Bildschirm gleichmäßig vergrößert oder verkleinert (auch Schrift und Symbole im Grundriss) – wie „Skalieren“ in VIS. Am Handy und im Bearbeiten-Modus wird nicht skaliert.');
+    // only this device (localStorage, see app.js pageFit) or all devices (layout)
+    let ownFit = null;
+    try {
+      ownFit = JSON.parse(localStorage.getItem('sv.fit.' + p.id) || 'null');
+    } catch (e) {
+      ownFit = null;
+    }
+    if (ownFit && ownFit.fit) fit.value = ownFit.fit === 'off' ? '' : ownFit.fit;
+    const fitWhere = field(fitBox, 'Anpassen gilt für', select([['all', 'alle Geräte (außer Handy)'], ['device', 'nur dieses Gerät (dieser Browser)']], ownFit && ownFit.fit ? 'device' : 'all'), 'z. B. nur den Touch-PC anpassen und am großen PC-Monitor die normale Ansicht lassen. Pro Gerät geht es auch ohne Bearbeiten: Menü ⚙ → „… anpassen (dieses Gerät)“.');
     const dwBox = document.createElement('div');
     fitBox.appendChild(dwBox);
     const mainW = () => {
@@ -2046,8 +2055,23 @@ const Editor = (() => {
       p.markerSize = ms.value;
       p.hidden = hid.input.checked;
       p.free = type.value === 'tiles' && fr.input.checked;
-      p.fit = fit.value;
       p.designW = Math.round(Number(dw.value)) || mainW();
+      if (fitWhere.value === 'device') {
+        // only here: remembered in this browser, the page itself keeps no fit for the other devices
+        try {
+          localStorage.setItem('sv.fit.' + p.id, JSON.stringify({ fit: fit.value || 'off', designW: p.designW }));
+        } catch (e) {
+          // private mode
+        }
+        p.fit = '';
+      } else {
+        try {
+          localStorage.removeItem('sv.fit.' + p.id);
+        } catch (e) {
+          // ignore
+        }
+        p.fit = fit.value;
+      }
       p.cols = Number(cols.value);
       if (phr && phr.input.checked) delete p.phoneOrder;
       const i = l.pages.findIndex(x => x.id === p.id);

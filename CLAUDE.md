@@ -543,6 +543,11 @@ switches/buttons on them.
   keeps it) set only via POST /api/liteorder {page, order} (admin + allowEdit; copies the stored layout, so pinHash etc. stay);
   lite.js `ordered()` (unknown tiles at the end), "Anordnen" button (allowEdit from /api/layout) -> `renderArrange()` list with
   ▲ ▼ (no dragging: reliable on iOS 9), Fertig posts, the {type:'layout'} broadcast reloads. Adapter test + Playwright (sv/litearr-ui.js).
+- 0.64.0: owner: fit should apply to the device where it is set (touch PC fitted, bigger PC monitor normal) -> per-device override
+  in localStorage `sv.fit.<page>` {fit off|width|screen, designW}: app.js `pageFit(page)` (override wins, 'off' = none) used by
+  fitWidth/applyFit/plan fit; ⚙ menu `fitMenuItem()` cycles as-set/off/width/screen for the shown page (designW = page's or this
+  screen's width); page dialog "Anpassen gilt für" all | device (device: localStorage + page.fit cleared). Playwright with two
+  viewports (sv/devfit-ui.js, devfit-dlg.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

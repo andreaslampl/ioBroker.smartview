@@ -754,6 +754,11 @@ Bild kleiner, die Symbole nicht). Die Tasten − / + zoomen zusätzlich.
 
 Die Entwurfsbreite am besten am Hauptgerät mit **„Breite dieses Bildschirms übernehmen“** setzen. Am Handy und im
 Bearbeiten-Modus wird nicht skaliert.
+
+**Nur auf einem Gerät anpassen:** im Seiten-Dialog „Anpassen gilt für: **nur dieses Gerät**“ – z. B. den Touch-PC anpassen
+und am großen PC-Monitor die normale Ansicht lassen. Ohne Bearbeiten geht das auch im Menü ⚙ → „… anpassen (dieses Gerät)“:
+wie für alle eingestellt / aus / Breite / ganzer Bildschirm. Gemerkt wird das im Browser des Geräts.
+
 ## Alte Geräte: SmartView Lite
 
 Für alte Tablets, deren Browser SmartView nicht mehr kann (z. B. iPad 2/3/mini 1 mit iOS 9.3.5), gibt es eine einfache Seite:

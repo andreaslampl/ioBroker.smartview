@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.63.0",
+    "version": "0.64.0",
     "news": {
+      "0.64.0": {
+        "en": "Fit to screen per device: page dialog \"only this device\" or menu entry (as set / off / width / whole screen), e.g. only the touch PC fitted",
+        "de": "An Bildschirm anpassen pro Gerät: Seiten-Dialog „nur dieses Gerät“ oder Menü-Eintrag (wie eingestellt / aus / Breite / ganzer Bildschirm), z. B. nur den Touch-PC anpassen"
+      },
       "0.63.0": {
         "en": "SmartView Lite: own tile order per page (Anordnen with up/down, admin), the app keeps its order",
         "de": "SmartView Lite: eigene Reihenfolge der Kacheln pro Seite (Anordnen mit ▲ ▼, Admin), die App behält ihre Reihenfolge"
