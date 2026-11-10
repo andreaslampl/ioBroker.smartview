@@ -556,6 +556,8 @@ switches/buttons on them.
   fault/detoff (new classes fault yellow, detoff grey crossed; firedet alert marker filled red + pulse), sheet with Abschalten /
   Einschalten (`fireModes()`, action fdself, confirm). Editor `fireDevField()` (optgroups per panel), plan toolbar `fireAllButton()`
   (missing ones in rows of 12 at the top left, layer brand). Adapter test + Playwright (sv/firedet-ui.js); not on the real FC20.
+- 0.65.1: owner: arrows do not fit a motor lock -> gateKind lock: `gateButtons()` unlock / lock icons (new icon `unlock`) with Aufsperren /
+  Zusperren, default tile icon lock, timer editor words. Playwright (sv/lockbtn-ui.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

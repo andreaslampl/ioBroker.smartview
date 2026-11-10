@@ -131,6 +131,7 @@ function tileIcon(t) {
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
   if (!t.icon && t.type === 'robot' && t.robotKind === 'mower') return 'mower';
   if (!t.icon && t.type === 'firedet') return FD_ICON[t.fdKind || t.fdAuto] || 'smokedet';
+  if (!t.icon && t.type === 'gate' && t.gateKind === 'lock') return 'lock';
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
@@ -401,6 +402,8 @@ function pulse(id) {
 
 function gateButtons(t, big) {
   const b = (a, ic, txt) => '<button type="button" data-a="' + a + '" aria-label="' + txt + '">' + icon(ic) + (big ? txt : '') + '</button>';
+  // motor lock: open / closed padlock instead of arrows
+  if (t.gateKind === 'lock') return b('gopen', 'unlock', 'Aufsperren') + (t.stop ? b('gstop', 'stop', 'Stopp') : '') + b('gclose', 'lock', 'Zusperren');
   return b('gopen', 'up', 'Auf') + (t.stop ? b('gstop', 'stop', 'Stopp') : '') + b('gclose', 'down', 'Zu');
 }
 

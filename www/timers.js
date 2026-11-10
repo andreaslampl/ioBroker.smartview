@@ -172,7 +172,10 @@ const Timers = (() => {
         const row2 = document.createElement('div');
         row2.className = 'trow';
         const act = document.createElement('select');
-        for (const [v, txt] of ACTIONS[t.type]) {
+        // motor lock: the time switch says what it does
+        const lockWords = t.type === 'gate' && t.gateKind === 'lock' ? { open: 'Aufsperren', close: 'Zusperren' } : {};
+        for (const [v, txt0] of ACTIONS[t.type]) {
+          const txt = lockWords[v] || txt0;
           const o = document.createElement('option');
           o.value = v;
           o.textContent = txt;

@@ -22,6 +22,7 @@ const ICON_PATHS = {
   garage: '<path d="M3 10l9-6 9 6v11H3z"/><path d="M7 21v-8h10v8M7 16h10"/>',
   gate: '<path d="M3 20V8M21 20V8"/><path d="M3 10c3-2 15-2 18 0"/><path d="M7 9.5V20M11 9V20M15 9V20M19 9.5V20"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/>',
+  unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/><path d="M12 15v2"/>',
   alarm: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M12 8v5M12 16v.5"/>',
   shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
   motion: '<circle cx="13" cy="4.5" r="1.8"/><path d="M9 21l2.5-6 2.5 2v4"/><path d="M7 11l3-3h4l2 4 3 1"/><path d="M11.5 15l1.5-7"/>',
@@ -88,7 +89,7 @@ const ICON_LABELS = {
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', leave: 'Verlassen', arrive: 'Ankommen', away: 'Haus gesichert', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
-  smokedet: 'Rauchmelder', heatdet: 'Wärmemelder', callpoint: 'Handmelder', sounder: 'Sounder',
+  unlock: 'Schloss offen', smokedet: 'Rauchmelder', heatdet: 'Wärmemelder', callpoint: 'Handmelder', sounder: 'Sounder',
   scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', vacuum: 'Saugroboter', mower: 'Mähroboter', tree: 'Garten', info: 'Info',
   star: 'Favorit', gauge: 'Anzeige', washer: 'Waschmaschine', dryer: 'Trockner', dishwasher: 'Geschirrspüler', oven: 'Backofen',
 };
