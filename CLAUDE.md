@@ -558,6 +558,8 @@ switches/buttons on them.
   (missing ones in rows of 12 at the top left, layer brand). Adapter test + Playwright (sv/firedet-ui.js); not on the real FC20.
 - 0.65.1: owner: arrows do not fit a motor lock -> gateKind lock: `gateButtons()` unlock / lock icons (new icon `unlock`) with Aufsperren /
   Zusperren, default tile icon lock, timer editor words. Playwright (sv/lockbtn-ui.js).
+- 0.65.2: owner put the plan as a planview tile on the main page; a tap on an empty spot jumped to the plan page -> planview option `openPlan`
+  (default off: tileTap does nothing, no .tap class). Playwright (sv/planview-tap.js).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

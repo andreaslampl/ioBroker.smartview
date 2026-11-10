@@ -135,7 +135,10 @@ const TYPE_FIELDS = {
     ['entryLabel', 'Name dieses Eintrags (nur mit weiteren Einträgen)', 'text', 'Mit weiteren Einträgen öffnet ein Tipp auf die Kachel eine Liste mit allen – die Felder oben sind Eintrag 1 (leer lassen, wenn nur die Liste gebraucht wird).'],
     ['entries', 'Weitere Einträge (optional, z. B. Zentralfunktionen)', 'entries'],
   ],
-  planview: [['target', 'Grundriss-Seite', 'planpage']],
+  planview: [
+    ['target', 'Grundriss-Seite', 'planpage'],
+    ['openPlan', 'Tippen neben die Symbole öffnet die Grundriss-Seite', 'check', 'Ohne Haken passiert beim Tippen auf eine freie Stelle des Plans nichts – nur die Symbole reagieren.'],
+  ],
   gate: [
     ['gateKind', 'Art', 'select:gate=Tor / Tür mit Antrieb (fährt zu);lock=Tür mit Motorschloss / Türöffner (nichts fährt)', 'Bei Motorschloss darf auch ohne Lichtschranke per Zeitschaltuhr bzw. „automatisch“ zugesperrt werden – es bewegt sich ja nichts, das jemanden einklemmen könnte.'],
     ['gateMode', 'Ansteuerung', 'select:separate=getrennte Datenpunkte für Auf und Zu;single=ein Datenpunkt für Auf und Zu'],

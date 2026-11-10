@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.65.1",
+    "version": "0.65.2",
     "news": {
+      "0.65.2": {
+        "en": "Floor plan tile: a tap on an empty spot no longer opens the plan page (tick \"openPlan\" if wanted)",
+        "de": "Grundriss-Kachel: Tippen auf eine freie Stelle wechselt nicht mehr zur Grundriss-Seite (Haken, falls gewünscht)"
+      },
       "0.65.1": {
         "en": "Gate tile as motor lock: padlock buttons (Aufsperren / Zusperren) instead of arrows, padlock symbol, time switch words",
         "de": "Tor-Kachel als Motorschloss: Schloss-Knöpfe (Aufsperren / Zusperren) statt Pfeilen, Schloss-Symbol, Zeitschaltuhr mit diesen Wörtern"

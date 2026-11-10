@@ -2295,9 +2295,9 @@ function tileTap(t) {
     return;
   }
   if (t.type === 'multi' || t.type === 'energy') return openSheet(t);
-  // plan tile: a tap beside the symbols opens the plan page
+  // plan tile: a tap beside the symbols opens the plan page only with the tick "openPlan"
   if (t.type === 'planview') {
-    if (t.target) location.hash = encodeURIComponent(t.target);
+    if (t.target && t.openPlan) location.hash = encodeURIComponent(t.target);
     return;
   }
   if (tileEntries(t)) return openSheet(t);
@@ -2321,7 +2321,7 @@ function fillTile(el, t) {
   el.classList.toggle('fault', stt === 'fault');
   el.classList.toggle('detoff', stt === 'detoff');
   el.classList.toggle('missing', missing(t));
-  el.classList.toggle('tap', !['heading', 'html', 'windows', 'appliances'].includes(t.type));
+  el.classList.toggle('tap', !['heading', 'html', 'windows', 'appliances'].includes(t.type) && !(t.type === 'planview' && !t.openPlan));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
   const ic = '<span class="tic">' + tileIc(t) + '</span>';
   let html = '';
