@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.64.0",
+    "version": "0.65.0",
     "news": {
+      "0.65.0": {
+        "en": "Single fire detectors / sounders of the FC20 as floor plan symbols (smoke, heat, manual call point, sounder; alarm, pre-alarm, fault, disabled; switch off/on), button \"Alle Brandmelder hinzufügen\"",
+        "de": "Einzelne Brandmelder / Sounder der FC20 als Lageplan-Symbole (Rauch-, Wärme-, Handmelder, Sounder; Alarm, Voralarm, Störung, abgeschaltet; ab-/einschalten), Knopf „Alle Brandmelder hinzufügen“"
+      },
       "0.64.0": {
         "en": "Fit to screen per device: page dialog \"only this device\" or menu entry (as set / off / width / whole screen), e.g. only the touch PC fitted",
         "de": "An Bildschirm anpassen pro Gerät: Seiten-Dialog „nur dieses Gerät“ oder Menü-Eintrag (wie eingestellt / aus / Breite / ganzer Bildschirm), z. B. nur den Touch-PC anpassen"

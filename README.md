@@ -493,6 +493,15 @@ Datenpunkte füllen sich selbst. **„Mitteilung bei Brandalarm und Voralarm“*
   (mit Nachfrage) und **Melder abschalten / einschalten** (über die Betriebsart, mit Nachfrage beim Abschalten).
   Dafür muss im FC20-Adapter „Befehle erlauben“ gesetzt sein. Eine **PIN** ist dringend empfohlen.
 
+**Einzelne Melder im Lageplan:** Kachel **„Brandmelder / Sounder einzeln“** – Melder oder Sounder aus der Liste des
+FC20-Adapters wählen, beim Speichern füllen sich die Datenpunkte und die Beschriftung selbst. Das Symbol kommt aus der
+Zentrale (**Rauchmelder**, **Wärmemelder**, **Handmelder**, **Sounder**) oder wird im Dialog gewählt. Auf dem Plan:
+**Alarm** rot und pulsierend (bleibt sichtbar, auch wenn die Ebene „Brand“ ausgeblendet ist), **Voralarm** orange,
+**Störung** gelb, **abgeschaltet** grau durchgestrichen. Antippen zeigt den Zustand, mit **„Abschalten / Einschalten
+erlauben“** auch diese Knöpfe (PIN empfohlen). Auf Grundriss-Seiten im Bearbeiten-Modus legt **„🔥 Alle Brandmelder
+hinzufügen“** für jeden Melder und Sounder, der noch nicht auf dem Plan ist, ein Symbol oben links an – dann an den
+richtigen Platz ziehen und speichern.
+
 ### Haus verlassen
 
 Kachel **„Haus verlassen (alles aus mit einem Knopf)“**. Sie braucht keine eigenen Datenpunkte, sondern nimmt die

@@ -31,6 +31,7 @@ const TYPE_LABELS = {
   leave: 'Haus verlassen (alles aus mit einem Knopf)',
   arrive: 'Ankommen (Alarm aus, Heizung, Licht)',
   fire: 'Brandmeldeanlage (FC20 / Cerberus PRO)',
+  firedet: 'Brandmelder / Sounder einzeln (FC20, für den Lageplan)',
   ref: 'Verknüpfung zu einer anderen Kachel (z. B. im Lageplan)',
 };
 
@@ -237,6 +238,11 @@ const TYPE_FIELDS = {
   ],
   ref: [
     ['ref', 'Original-Kachel', 'reftile', 'Zeigt genau diese Kachel: gleiche Datenpunkte, Einstellungen, PIN und Zeitschaltuhr. Ändern nur beim Original – die Verknüpfung zieht mit. Eigene Position, Größe, Beschriftung (leer = vom Original) und Ebene.'],
+  ],
+  firedet: [
+    ['fireSrc', 'Melder / Sounder', 'firedev', 'Liste aus dem FC20-Adapter. Beim Speichern werden Zustand, Alarm, Störung, Abschaltung und Betriebsart selbst eingetragen, die Beschriftung auch (wenn leer).'],
+    ['fdKind', 'Symbol', 'select:=automatisch (aus der Zentrale);smoke=Rauchmelder;heat=Wärmemelder;manual=Handmelder;sounder=Sounder', 'Automatisch: aus der Objektart der Zentrale. Ein eigenes Symbol (Feld „Symbol“ unten) geht auch.'],
+    ['control', 'Abschalten / Einschalten erlauben', 'check', 'Ohne Haken nur Anzeige. Mit Haken am besten eine PIN setzen. Der FC20-Adapter braucht dafür „Befehle erlauben“.'],
   ],
   fire: [
     ['panel', 'FC20-Instanz', 'fc20panel', 'Füllt die Datenpunkte unten (Adapter fc20-cerberus-bacnet).'],
@@ -817,6 +823,38 @@ const Editor = (() => {
       s.appendChild(o);
     }
     s.value = value === undefined ? list[0] || '' : value || '';
+    return s;
+  }
+
+  /** one detector / sounder of the FC20 adapters (value = channel id) */
+  async function fireDevField(box, value, label, help) {
+    const s = select([['', '(wählen)']], value || '');
+    field(box, label, s, help);
+    let list = [];
+    try {
+      list = (await api('energy')).fireDevs || [];
+    } catch (e) {
+      // FC20 adapter not installed
+    }
+    const words = { smoke: 'Rauchmelder', heat: 'Wärmemelder', manual: 'Handmelder', sounder: 'Sounder' };
+    const groups = {};
+    for (const d of list) {
+      const g = groups[d.panel] || (groups[d.panel] = document.createElement('optgroup'));
+      g.label = d.panel;
+      const o = document.createElement('option');
+      o.value = d.id;
+      o.textContent = d.label + ' – ' + (words[d.kind] || d.kind);
+      g.appendChild(o);
+    }
+    Object.values(groups).forEach(g => s.appendChild(g));
+    if (value && !list.some(d => d.id === value)) {
+      const o = document.createElement('option');
+      o.value = value;
+      o.textContent = value + ' (nicht gefunden)';
+      s.appendChild(o);
+    }
+    if (!list.length) field(box, '', document.createElement('span'), 'Keine Melder gefunden – ist der FC20-Adapter installiert und mit der Zentrale verbunden?');
+    s.value = value || '';
     return s;
   }
 
@@ -1656,6 +1694,7 @@ const Editor = (() => {
           }
           inputs[key] = field(body, label, select(opts, t[key] || ''), help);
         } else if (kind === 'fc20panel') fc20Field(body, t[key], label, help).then(s => (inputs[key] = s));
+        else if (kind === 'firedev') fireDevField(body, t[key], label, help).then(s => (inputs[key] = s));
         else if (kind === 'extra') inputs[key] = extraField(body, t[key] || [], t.type);
         else if (kind === 'iconsel') {
           const opts = [['', 'Fenster-Symbol (Standard)']].concat(Object.keys(ICON_LABELS).map(n => [n, ICON_LABELS[n]]));
@@ -2128,11 +2167,42 @@ const Editor = (() => {
     };
     bar.appendChild(pick);
     bar.appendChild(file);
+    if (page.image) bar.appendChild(fireAllButton(page));
     const hint = document.createElement('span');
     hint.className = 'muted';
     hint.textContent = page.image ? 'Auf den Plan tippen = Symbol setzen · Symbol ziehen = verschieben · Symbol antippen = bearbeiten' : 'PNG, JPG, SVG oder PDF (z. B. der Plan vom Architekten) – PDFs werden automatisch in ein Bild umgewandelt';
     bar.appendChild(hint);
     return bar;
+  }
+
+  /** floor plan: one symbol per detector / sounder of the FC20 that is not on this plan yet, in rows at the top left */
+  function fireAllButton(page) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '🔥 Alle Brandmelder hinzufügen';
+    b.title = 'Legt für jeden Melder und Sounder der Brandmeldezentrale (FC20-Adapter) ein Symbol an – danach an ihren Platz ziehen';
+    b.onclick = async () => {
+      let list = [];
+      try {
+        list = (await api('energy')).fireDevs || [];
+      } catch (e) {
+        // ignore
+      }
+      if (!list.length) return toast('Keine Melder gefunden – FC20-Adapter installiert und verbunden?', true);
+      const have = new Set(page.tiles.map(t => t.fireSrc).filter(Boolean));
+      const add = list.filter(d => !have.has(d.id));
+      if (!add.length) return toast('Alle Melder sind schon auf diesem Plan');
+      if (!confirm(add.length + ' Symbole für Brandmelder / Sounder hinzufügen? Sie stehen danach oben links und werden an ihren Platz gezogen.')) return;
+      add.forEach((d, i) => {
+        page.tiles.push({
+          id: newId(page.tiles, 't'), type: 'firedet', label: d.label, fireSrc: d.id, fdAuto: d.kind, layer: 'brand', size: '1', device: 'all',
+          x: 4 + (i % 12) * 7.5, y: 5 + Math.floor(i / 12) * 9,
+        });
+      });
+      render();
+      toast(add.length + ' Symbole hinzugefügt – an ihren Platz ziehen und dann Speichern');
+    };
+    return b;
   }
 
   /**

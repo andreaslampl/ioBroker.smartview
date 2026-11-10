@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { car: 'car', robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { firedet: 'smokedet', car: 'car', robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -130,6 +130,7 @@ function tileIcon(t) {
   }
   if (!t.icon && t.type === 'climate' && t.climKind === 'ac') return 'aircon';
   if (!t.icon && t.type === 'robot' && t.robotKind === 'mower') return 'mower';
+  if (!t.icon && t.type === 'firedet') return FD_ICON[t.fdKind || t.fdAuto] || 'smokedet';
   return t.icon || DEFAULT_ICON[t.type] || 'info';
 }
 
@@ -1137,7 +1138,27 @@ function windowsHtml(t) {
     (entries.length ? '<div class="wlist">' + entries.map(row).join('') + '</div>' : '');
 }
 
+// ---------------- single detector / sounder of the FC20 (floor plan symbols) ----------------
+
+const FD_ICON = { smoke: 'smokedet', heat: 'heatdet', manual: 'callpoint', sounder: 'sounder' };
+const FD_WORD = { smoke: 'Rauchmelder', heat: 'Wärmemelder', manual: 'Handmelder', sounder: 'Sounder' };
+
+/** worst first: ALARM > Voralarm > Störung > abgeschaltet > Ruhe; text = the panel's own state text when there is one */
+function fdInfo(t) {
+  const on = id => Boolean(id && truthy(val(id)));
+  const f = { alarm: on(t.alarm), pre: on(t.preAlarm), fault: on(t.fault), off: on(t.disabled) };
+  const own = t.state ? String(val(t.state) || '') : '';
+  f.text = f.alarm ? 'ALARM' : f.pre ? 'Voralarm' : f.fault ? 'Störung' : f.off ? 'abgeschaltet' : 'Ruhe';
+  f.detail = own && own.toLowerCase() !== f.text.toLowerCase() ? own : '';
+  f.known = Boolean(t.state || t.alarm);
+  return f;
+}
+
 function tileState(t, pageId) {
+  if (t.type === 'firedet') {
+    const f = fdInfo(t);
+    return f.alarm ? 'alert' : f.pre ? 'warn' : f.fault ? 'fault' : f.off ? 'detoff' : '';
+  }
   if (t.type === 'appliances') return appliancesState(t, pageId);
   if (t.type === 'windows') {
     if (windowsWarn(t)) return 'alert';
@@ -2039,7 +2060,7 @@ function renderList(box, page) {
     el.addEventListener('click', e => {
       if (SV.editing) return Editor.justDragged() || Editor.editTile(page, t);
       if (e.target.closest('button, input')) return;
-      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'color', 'robot', 'car'].includes(t.type)) tileTap(t);
+      if (['camera', 'link', 'page', 'thermostat', 'value', 'multi', 'dimmer', 'blind', 'alarm', 'radio', 'climate', 'contact', 'leave', 'arrive', 'fire', 'firedet', 'color', 'robot', 'car'].includes(t.type)) tileTap(t);
     });
     list.appendChild(el);
   }
@@ -2100,6 +2121,8 @@ function fillRow(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('warn', stt === 'warn');
+  el.classList.toggle('fault', stt === 'fault');
+  el.classList.toggle('detoff', stt === 'detoff');
   el.classList.toggle('missing', missing(t));
   const head = '<span class="lic">' + tileIc(t) + '</span><span class="lname">' + esc(t.label || '') + '</span>';
   let ctl = '';
@@ -2169,6 +2192,11 @@ function fillRow(el, t) {
       const line = alarmLine(t, c, a);
       ctl = (c._circs ? '<button type="button" data-a="circ" data-v="1" aria-label="nächster Bereich">⇄</button><span class="lsub">' + esc(c._circs[c._circ].label) + '</span>' : '') +
         (line ? '<span class="lsub ' + line[0] + '">' + esc(line[1]) + '</span>' : '') + '<span class="lval">' + esc(a.text) + '</span>';
+      break;
+    }
+    case 'firedet': {
+      const f = fdInfo(t);
+      ctl = (f.detail ? '<span class="lsub">' + esc(f.detail) + '</span>' : '') + '<span class="lval' + (f.alarm ? ' alarmtxt' : '') + '">' + esc(f.text) + '</span>';
       break;
     }
     case 'fire': {
@@ -2276,7 +2304,7 @@ function tileTap(t) {
   if (t.type === 'button') return press(t);
   if (t.type === 'camera') return openCam(t.camera, t.label);
   if (t.type === 'link') return openLink(t);
-  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot' || t.type === 'car') return openSheet(t);
+  if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot' || t.type === 'car' || t.type === 'firedet') return openSheet(t);
 }
 
 function fillTile(el, t) {
@@ -2287,6 +2315,8 @@ function fillTile(el, t) {
   el.classList.toggle('on', stt === 'on');
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('warn', stt === 'warn');
+  el.classList.toggle('fault', stt === 'fault');
+  el.classList.toggle('detoff', stt === 'detoff');
   el.classList.toggle('missing', missing(t));
   el.classList.toggle('tap', !['heading', 'html', 'windows', 'appliances'].includes(t.type));
   const label = '<div class="lbl">' + esc(t.label || '') + '</div>';
@@ -2349,6 +2379,11 @@ function fillTile(el, t) {
       const line = alarmLine(t, c, a);
       html = '<div class="row1">' + ic + '</div><div class="big">' + esc(a.text) + '</div>' +
         (line ? '<div class="tsub ' + line[0] + '">' + esc(line[1]) + '</div>' : '') + (c._circs ? circSwitcher(c) : label);
+      break;
+    }
+    case 'firedet': {
+      const f = fdInfo(t);
+      html = '<div class="row1">' + ic + '<span class="tval' + (f.alarm ? ' alarmtxt' : '') + '">' + esc(f.text) + '</span></div>' + label;
       break;
     }
     case 'fire': {
@@ -2536,6 +2571,15 @@ function bindControls(el, t) {
       else if (a === 'fsilence') send(t.silence, true);
       else if (a === 'freset') {
         if (confirm('Brandmeldeanlage wirklich zurücksetzen?')) send(t.reset, true);
+      } else if (a === 'fdself') {
+        // single detector tile: off / on via its mode
+        if (!t.mode || !t.control) return;
+        const off = Boolean(t.disabled && truthy(val(t.disabled)));
+        const m = fireModes(t);
+        const v = off ? m.on : m.off;
+        if (v === undefined) return toast('Diese Betriebsart kennt der Melder nicht', true);
+        if (!off && !confirm('„' + (t.label || 'Melder') + '“ abschalten? ' + (t.fdAuto === 'sounder' || t.fdKind === 'sounder' ? 'Er alarmiert dann nicht mehr.' : 'Er meldet dann keinen Brand mehr.'))) return;
+        send(t.mode, Number(v));
       } else if (a === 'fdet') {
         const d = (t.detectors || [])[Number(b.dataset.v)];
         if (!d || !d.mode) return;
@@ -2765,14 +2809,14 @@ const LAYERS = [
   ['energie', 'Energie', 'bolt'],
   ['sonstiges', 'Sonstiges', 'info'],
 ];
-const LAYER_TYPE = { fire: 'brand', contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht', color: 'licht' };
+const LAYER_TYPE = { firedet: 'brand', fire: 'brand', contact: 'fenster', climate: 'klima', alarm: 'sicherheit', camera: 'kamera', blind: 'beschattung', thermostat: 'klima', gate: 'fenster', windows: 'fenster', energy: 'energie', wallbox: 'energie', dimmer: 'licht', color: 'licht' };
 const LAYER_ICON = {
   bulb: 'licht', lamp: 'licht', walllamp: 'licht', ceiling: 'licht', lantern: 'licht',
   blind: 'beschattung', awning: 'beschattung',
   heat: 'klima', thermometer: 'klima', fan: 'klima', drop: 'klima',
   window: 'fenster', door: 'fenster', garage: 'fenster', gate: 'fenster',
   alarm: 'sicherheit', shield: 'sicherheit', lock: 'sicherheit', motion: 'sicherheit',
-  fire: 'brand', camera: 'kamera', cctv: 'kamera', dome: 'kamera', contact: 'fenster', dehum: 'klima', aircon: 'klima',
+  fire: 'brand', smokedet: 'brand', heatdet: 'brand', callpoint: 'brand', sounder: 'brand', camera: 'kamera', cctv: 'kamera', dome: 'kamera', contact: 'fenster', dehum: 'klima', aircon: 'klima',
   socket: 'energie', power: 'energie', bolt: 'energie', energy: 'energie', charger: 'energie', car: 'energie',
 };
 
@@ -2899,6 +2943,8 @@ function fillMarker(el, t) {
   el.classList.toggle('alert', stt === 'alert');
   el.classList.toggle('cam', t.type === 'camera');
   el.classList.toggle('warn', stt === 'warn');
+  el.classList.toggle('fault', stt === 'fault');
+  el.classList.toggle('detoff', stt === 'detoff');
   el.classList.toggle('chide', contactHidden(t));
   let v = '';
   if (t.type === 'value') {
@@ -2912,6 +2958,7 @@ function fillMarker(el, t) {
   else if (t.type === 'gate') v = gateText(t);
   else if (t.type === 'alarm') v = alarmInfo(alarmCur(t)).text;
   else if (t.type === 'fire') v = fireInfo(t).text === 'Ruhe' ? '' : fireInfo(t).text;
+  else if (t.type === 'firedet') v = fdInfo(t).text === 'Ruhe' ? '' : fdInfo(t).text;
   else if (t.type === 'radio') v = radioPlaying(radioCur(t)) ? radioText(radioCur(t)) : '';
   else if (t.type === 'climate') {
     const m = climMain(t);
@@ -3119,6 +3166,19 @@ function fillSheet(sh, t) {
       (t.ack && t.control ? '<div class="row"><button type="button" data-a="alarmack"' + (a.alarm || alarmElsewhere(t).length ? ' class="primary"' : '') + '>Alarm quittieren</button></div>' : '') +
       (info.length ? '<div class="mrows sheetrows">' + info.map(([k, v]) => '<div class="mrow"><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' : '') +
       alarmDetectors(c);
+  } else if (t.type === 'firedet') {
+    const f = fdInfo(t);
+    const kind = t.fdKind || t.fdAuto || 'smoke';
+    const info = [['Art', esc(FD_WORD[kind] || 'Melder')]];
+    if (f.detail) info.push(['Zustand der Zentrale', esc(f.detail)]);
+    if (f.fault) info.push(['Störung', '<span class="warnc">ja</span>']);
+    if (f.off) info.push(['Abgeschaltet', '<span class="warnc">ja</span>']);
+    const m = fireModes(t);
+    const v = f.off ? m.on : m.off;
+    const btn = t.control && t.mode && v !== undefined ? '<div class="row"><button type="button" data-a="fdself"' + (f.off ? ' class="primary"' : '') + '>' + (f.off ? 'Einschalten' : 'Abschalten') + '</button></div>' : '';
+    body = '<div class="bigval' + (f.alarm ? ' alarmtxt' : '') + '">' + esc(f.text) + '</div>' + btn +
+      '<div class="mrows sheetrows">' + info.map(([k, x]) => '<div class="mrow"><span>' + k + '</span><b>' + x + '</b></div>').join('') + '</div>' +
+      (f.known ? '' : '<p class="hint">Noch keine Datenpunkte – im Bearbeiten-Modus den Melder wählen und speichern.</p>');
   } else if (t.type === 'fire') {
     const f = fireInfo(t);
     const info = [];

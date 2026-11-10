@@ -48,6 +48,11 @@ const ICON_PATHS = {
   scene: '<path d="M4 20l11-11"/><path d="M13 7l2-2 2 2-2 2z"/><path d="M19 3v2M18 4h2M8 4v2M7 5h2M19 12v2M18 13h2"/>',
   home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
   fire: '<path d="M12 21a7 7 0 0 0 7-7c0-4-3-6-4-9-1 3-3 4-4 2-1 2-6 4-6 7a7 7 0 0 0 7 7z"/><path d="M12 21a3 3 0 0 0 3-3c0-2-2-3-3-5-1 2-3 3-3 5a3 3 0 0 0 3 3z"/>',
+  // fire detection on floor plans: ceiling smoke detector, heat detector, manual call point, sounder
+  smokedet: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>',
+  heatdet: '<circle cx="12" cy="12" r="9"/><path d="M12 6.5v7"/><circle cx="12" cy="15.5" r="2.2"/><path d="M14.5 8.5h1.5M14.5 11h1.5"/>',
+  callpoint: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><rect x="7.5" y="7.5" width="9" height="9" rx="1"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
+  sounder: '<path d="M4 9.5h3.5L13 5v14l-5.5-4.5H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/>',
   water: '<path d="M3 15c2 0 2 1.5 4.5 1.5S9.5 15 12 15s2.5 1.5 4.5 1.5S19 15 21 15"/><path d="M3 19c2 0 2 1.5 4.5 1.5S9.5 19 12 19s2.5 1.5 4.5 1.5S19 19 21 19"/><path d="M12 3s4 4 4 7a4 4 0 0 1-8 0c0-3 4-7 4-7z"/>',
   charger: '<rect x="4" y="3" width="10" height="18" rx="2"/><path d="M10 7l-3 4h3l-2 4"/><path d="M14 11h2a2 2 0 0 1 2 2v4a2 2 0 0 0 4 0V9l-2-2"/>',
   car: '<path d="M5 16V12l2-5h10l2 5v4"/><path d="M3 12h18v4H3z"/><circle cx="7.5" cy="16.5" r="1.5"/><circle cx="16.5" cy="16.5" r="1.5"/>',
@@ -83,6 +88,7 @@ const ICON_LABELS = {
   door: 'Tür', garage: 'Garage', gate: 'Tor', lock: 'Schloss', alarm: 'Alarm', shield: 'Sicherheit',
   motion: 'Bewegung', thermometer: 'Temperatur', heat: 'Heizung', drop: 'Feuchte', fan: 'Lüftung', sun: 'Sonne',
   moon: 'Nacht', bolt: 'Strom', energy: 'Energie', camera: 'Kamera', cctv: 'Überwachungskamera', leave: 'Verlassen', arrive: 'Ankommen', away: 'Haus gesichert', contact: 'Magnetkontakt', dehum: 'Luftentfeuchter', aircon: 'Klimagerät', dome: 'Dome-Kamera', bell: 'Klingel', music: 'Musik', tv: 'TV',
+  smokedet: 'Rauchmelder', heatdet: 'Wärmemelder', callpoint: 'Handmelder', sounder: 'Sounder',
   scene: 'Szene', home: 'Haus', fire: 'Brand', water: 'Wasser', car: 'Auto', charger: 'Wallbox', vacuum: 'Saugroboter', mower: 'Mähroboter', tree: 'Garten', info: 'Info',
   star: 'Favorit', gauge: 'Anzeige', washer: 'Waschmaschine', dryer: 'Trockner', dishwasher: 'Geschirrspüler', oven: 'Backofen',
 };

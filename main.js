@@ -175,6 +175,7 @@ class SmartView extends utils.Adapter {
                 energyInstances: () => this.instancesOf('energie'),
                 chargerInstances: () => this.instancesOf('versicharge'),
                 fc20Instances: () => this.instancesOf('fc20-cerberus-bacnet'),
+                fireDevices: () => this.fireDevices(),
                 robotDevices: () => this.robotDevices(),
                 carDevices: () => this.carDevices(),
                 energyDay: (instance, date) => this.energyDay(instance, date),
@@ -1342,6 +1343,10 @@ class SmartView extends utils.Adapter {
                     await this.fillCar(t);
                     continue;
                 }
+                if (t && t.type === 'firedet') {
+                    await this.fillFireDet(t);
+                    continue;
+                }
                 if (t && t.type === 'robot') {
                     await this.fillRobotAreas(t);
                     continue;
@@ -1390,6 +1395,69 @@ class SmartView extends utils.Adapter {
         }
         out.sort((x, y) => x.nr - y.nr);
         return out.map(({ nr: _nr, ...d }) => d);
+    }
+
+    /**
+     * Symbol kind of a Cerberus object from its BACnet name ("LP_SENSOR_AUTOMATIC_…", "LP_MANUAL_…", "LP_SOUNDER_…"):
+     * manual call point, heat detector, sounder, else smoke detector.
+     */
+    static fireKind(objectName, folder) {
+        const n = String(objectName || '').toUpperCase();
+        if (/SOUNDER|SIREN|BEACON|ALARM_DEVICE/.test(n) || folder === 'sounder') {
+            return 'sounder';
+        }
+        if (/MANUAL|CALL_POINT/.test(n)) {
+            return 'manual';
+        }
+        if (/HEAT|THERM|TEMP/.test(n)) {
+            return 'heat';
+        }
+        return 'smoke';
+    }
+
+    /** detectors and sounders of all FC20 instances for the tile dialog: [{id (channel), label, kind, panel}] */
+    async fireDevices() {
+        const out = [];
+        for (const panel of await this.instancesOf('fc20-cerberus-bacnet')) {
+            const objs = await this.getForeignObjectsAsync(`${panel}.objects.*`, 'channel').catch(() => ({}));
+            for (const [id, o] of Object.entries(objs || {})) {
+                const m = /\.objects\.(melder|sounder)\.[^.]+$/.exec(id);
+                if (!m) {
+                    continue;
+                }
+                const name = o && o.common && o.common.name;
+                out.push({
+                    id,
+                    panel,
+                    label: (typeof name === 'object' && name ? name.de || name.en : name) || id.split('.').pop(),
+                    kind: SmartView.fireKind(o && o.native && o.native.objectName, m[1]),
+                });
+            }
+        }
+        out.sort((a, b) => a.label.localeCompare(b.label, 'de', { numeric: true }));
+        return out;
+    }
+
+    /** single detector tile: data points of the chosen channel (only those that exist) and the symbol kind */
+    async fillFireDet(t) {
+        const src = String(t.fireSrc || '');
+        if (!src) {
+            return;
+        }
+        const ch = await this.getForeignObjectAsync(src).catch(() => null);
+        if (!ch) {
+            this.log.warn(`Brandmelder-Kachel "${t.label || t.id}": ${src} gibt es nicht (FC20-Adapter verbunden?)`);
+            return;
+        }
+        for (const [k, sub] of [['state', 'state'], ['alarm', 'alarm'], ['preAlarm', 'preAlarm'], ['fault', 'fault'], ['disabled', 'disabled'], ['mode', 'mode']]) {
+            const id = `${src}.${sub}`;
+            t[k] = (await this.getForeignObjectAsync(id).catch(() => null)) ? id : '';
+        }
+        t.fdAuto = SmartView.fireKind(ch.native && ch.native.objectName, src.split('.').slice(-2, -1)[0]);
+        if (!t.label) {
+            const name = ch.common && ch.common.name;
+            t.label = (typeof name === 'object' && name ? name.de || name.en : name) || '';
+        }
     }
 
     /** detectors of an FC20 panel (fc20-cerberus-bacnet.N.objects.melder.<id>.*), sorted by name */

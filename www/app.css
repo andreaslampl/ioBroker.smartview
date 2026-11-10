@@ -589,3 +589,16 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .entry .ebtns button { min-width: 52px; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .entry .ebtns button svg { width: 20px; height: 20px; }
 .trow.targets { flex-wrap: wrap; gap: 6px 14px; }
+
+/* single fire detectors / sounders (FC20) on floor plans: alarm red + pulsing, pre-alarm orange, fault yellow, off grey crossed */
+.marker.firedet .dot { color: var(--fg); }
+.marker.firedet.alert .dot { background: var(--bad); border-color: var(--bad); color: #fff; animation: fdpulse 1s ease-in-out infinite alternate; }
+.marker.firedet.warn .dot { background: var(--warn); border-color: var(--warn); color: #fff; }
+.marker.fault .dot { border-color: #d4a72c; color: #d4a72c; }
+.marker.detoff .dot { opacity: .55; position: relative; }
+.marker.detoff .dot::after { content: ''; position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; background: var(--muted); transform: rotate(-45deg); }
+@keyframes fdpulse { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 70%, transparent); } to { box-shadow: 0 0 0 10px color-mix(in srgb, var(--bad) 0%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .marker.firedet.alert .dot { animation: none; } }
+.tile.fault { border-color: #d4a72c; }
+.tile.fault .tic, .tile.fault .tval, .lrow.fault .lic, .lrow.fault .lval { color: #d4a72c; }
+.tile.detoff .tic, .tile.detoff .tval, .lrow.detoff .lic, .lrow.detoff .lval { color: var(--muted); }

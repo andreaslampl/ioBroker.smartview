@@ -548,6 +548,14 @@ switches/buttons on them.
   fitWidth/applyFit/plan fit; ⚙ menu `fitMenuItem()` cycles as-set/off/width/screen for the shown page (designW = page's or this
   screen's width); page dialog "Anpassen gilt für" all | device (device: localStorage + page.fit cleared). Playwright with two
   viewports (sv/devfit-ui.js, devfit-dlg.js).
+- 0.65.0: owner asked for fire detectors as floor plan symbols (incl. heat detectors and sounders) -> tile `firedet` {state, alarm, preAlarm,
+  fault, disabled (r), mode (w only with `control`: `fireDetWrites()`); options fireSrc (FC20 channel objects.melder|sounder.<id>), fdKind
+  ''|smoke|heat|manual|sounder, fdAuto}. main `fireDevices()` (channels of all FC20 instances, `/api/energy` fireDevs), `fillFireDet()` in
+  fillDetectors on save (only existing sub states, label if empty), static `SmartView.fireKind(objectName, folder)` (SOUNDER/MANUAL/HEAT
+  in the BACnet name, else smoke). Icons smokedet/heatdet/callpoint/sounder (layer brand). app.js `fdInfo()`, tileState alert/warn/
+  fault/detoff (new classes fault yellow, detoff grey crossed; firedet alert marker filled red + pulse), sheet with Abschalten /
+  Einschalten (`fireModes()`, action fdself, confirm). Editor `fireDevField()` (optgroups per panel), plan toolbar `fireAllButton()`
+  (missing ones in rows of 12 at the top left, layer brand). Adapter test + Playwright (sv/firedet-ui.js); not on the real FC20.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

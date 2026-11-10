@@ -1394,3 +1394,44 @@ test('adapter: SmartView Lite order - own field per page, app order and PIN unto
     await api('layout', { method: 'PUT', body: JSON.stringify(got) });
     assert.deepEqual(adapter.store.layout.pages[0].liteOrder, ['z', 'y', 'x']);
 });
+
+test('adapter: single fire detector / sounder tiles (FC20) - list, filled on saving, symbol kind, switching only with control', async t => {
+    const P = 'fc20-cerberus-bacnet.0.objects.';
+    const { adapter, api } = await startAdapter(t, {}, a => {
+        a.objects['system.adapter.fc20-cerberus-bacnet.0'] = { type: 'instance', common: { name: 'fc20-cerberus-bacnet' } };
+        const dev = (path, name, objectName, lifeSafety) => {
+            a.objects[P + path] = { type: 'channel', common: { name }, native: { objectName } };
+            for (const k of ['state', 'alarm', 'fault', 'disabled']) {
+                a.add(`${P}${path}.${k}`, { name: k, type: k === 'state' ? 'string' : 'boolean', role: 'indicator' }, k === 'state' ? 'Ruhe' : false);
+            }
+            if (lifeSafety) {
+                a.add(`${P}${path}.preAlarm`, { name: 'preAlarm', type: 'boolean', role: 'indicator' }, false);
+                a.add(`${P}${path}.mode`, { name: 'mode', type: 'number', role: 'level.mode', write: true, states: { 11: 'Eingeschaltet', 12: 'Abgeschaltet' } }, 11);
+            }
+        };
+        dev('melder.eg_wohnzimmer', 'EG Wohnzimmer', 'LP_SENSOR_AUTOMATIC_1/1_1/100', true);
+        dev('melder.hm_eingang', 'HM Eingang', 'LP_MANUAL_1/2_1/101', true);
+        dev('melder.kg_heizraum', 'KG Heizraum', 'LP_SENSOR_HEAT_1/3_1/102', true);
+        dev('sounder.sounder_eg', 'Sounder EG', 'LP_SOUNDER_1/4_1/103', false);
+    });
+    const devs = (await api('energy')).body.fireDevs;
+    assert.deepEqual(devs.map(d => `${d.label}:${d.kind}`), ['EG Wohnzimmer:smoke', 'HM Eingang:manual', 'KG Heizraum:heat', 'Sounder EG:sounder']);
+    const layout = { pages: [{ id: 'p', name: 'Plan', type: 'plan', tiles: [
+        { id: 'd1', type: 'firedet', fireSrc: P + 'melder.eg_wohnzimmer', x: 10, y: 10 },
+        { id: 'd2', type: 'firedet', fireSrc: P + 'sounder.sounder_eg', x: 20, y: 10, control: true },
+        { id: 'd3', type: 'firedet', fireSrc: P + 'melder.kg_heizraum', x: 30, y: 10, control: true, fdKind: 'smoke' },
+    ] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body.pages[0].tiles;
+    assert.equal(saved[0].label, 'EG Wohnzimmer');
+    assert.equal(saved[0].fdAuto, 'smoke');
+    assert.equal(saved[0].mode, P + 'melder.eg_wohnzimmer.mode');
+    assert.equal(saved[1].fdAuto, 'sounder');
+    assert.ok(!saved[1].mode, 'a sounder without mode gets no mode data point');
+    assert.equal(saved[2].fdKind, 'smoke');
+    const { stateIds } = require('../lib/layout');
+    const ids = stateIds(adapter.store.layout);
+    const w = new Set(ids.write);
+    assert.ok(!w.has(P + 'melder.eg_wohnzimmer.mode'), 'no control tick: display only');
+    assert.ok(w.has(P + 'melder.kg_heizraum.mode'), 'with control: the mode may be written');
+    assert.ok(new Set(ids.read).has(P + 'melder.eg_wohnzimmer.alarm'));
+});
