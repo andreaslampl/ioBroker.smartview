@@ -739,6 +739,13 @@ Monitor geht an, angeklickt wird nichts. Auch bei „Nicht stören“ geht der M
 
 Der Klingel-Datenpunkt ist der aus ⚙ Allgemein → Klingel (bzw. `livecam.N.intercom.ringing` der Sprechanlage).
 
+### Schwacher Touch-PC: Linux statt Windows
+
+Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schlanke Alternative: Debian-Linux, das
+direkt in SmartView im Vollbild startet – mit Touch, Lautsprecher, Mikrofon und Wecken des Monitors beim Klingeln
+(Linux-Version des Weckers). Schritt für Schritt: [`tools/linux-kiosk/ANLEITUNG.md`](tools/linux-kiosk/ANLEITUNG.md),
+Einrichtung mit `tools/linux-kiosk/kiosk-setup.sh`.
+
 ### Vollbild bleibt
 
 ⚙ → **„Vollbild (bleibt nach dem Sperren)“**: Wenn das Tablet sperrt, verlässt der Browser das Vollbild – das lässt

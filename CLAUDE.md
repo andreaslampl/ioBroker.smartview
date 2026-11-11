@@ -560,6 +560,13 @@ switches/buttons on them.
   Zusperren, default tile icon lock, timer editor words. Playwright (sv/lockbtn-ui.js).
 - 0.65.2: owner put the plan as a planview tile on the main page; a tap on an empty spot jumped to the plan page -> planview option `openPlan`
   (default off: tileTap does nothing, no .tap class). Playwright (sv/planview-tap.js).
+- 0.65.3: owner's touch PC (board NP93-2930, Celeron N2930, 2 GB soldered RAM - no slot on either side, mSATA SSD) is too slow
+  for Windows 11 -> `tools/linux-kiosk/`: `kiosk-setup.sh` (Debian 13 netinst without desktop; asks SV_URL, SV_LOCAL, key, DuckDNS IP
+  -> /etc/hosts; installs Xorg + Chromium + PipeWire, user kiosk with getty autologin -> startx `smartview-kiosk` (-nocursor; xset
+  DPMS from SCREEN_OFF_MIN; Chromium kiosk loop with autoplay + use-fake-ui-for-media-stream, insecure-origin flag for http URLs,
+  clears exit_type), `smartview-wecker` (curl /api/ring each second, rising edge -> xset dpms force on), masks sleep targets,
+  unattended-upgrades, Sunday 4:17 reboot) + `ANLEITUNG.md` (German). Checked: bash -n, shellcheck, wake loop against a fake
+  /api/ring. Not run on a real Debian / the owner's hardware.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

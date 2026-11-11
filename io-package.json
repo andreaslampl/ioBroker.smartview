@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.65.2",
+    "version": "0.65.3",
     "news": {
+      "0.65.3": {
+        "en": "Guide + setup script for a Linux kiosk on weak touch PCs (tools/linux-kiosk), with monitor wake-up on ring",
+        "de": "Anleitung + Einrichtungs-Skript für einen Linux-Kiosk auf schwachen Touch-PCs (tools/linux-kiosk), mit Monitor-Wecker beim Klingeln"
+      },
       "0.65.2": {
         "en": "Floor plan tile: a tap on an empty spot no longer opens the plan page (tick \"openPlan\" if wanted)",
         "de": "Grundriss-Kachel: Tippen auf eine freie Stelle wechselt nicht mehr zur Grundriss-Seite (Haken, falls gewünscht)"
