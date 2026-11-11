@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.65.3",
+    "version": "0.65.4",
     "news": {
+      "0.65.4": {
+        "en": "Linux kiosk: Ubuntu Server supported too (Google Chrome instead of the Chromium snap)",
+        "de": "Linux-Kiosk: auch Ubuntu Server (Google Chrome statt Chromium-Snap)"
+      },
       "0.65.3": {
         "en": "Guide + setup script for a Linux kiosk on weak touch PCs (tools/linux-kiosk), with monitor wake-up on ring",
         "de": "Anleitung + Einrichtungs-Skript für einen Linux-Kiosk auf schwachen Touch-PCs (tools/linux-kiosk), mit Monitor-Wecker beim Klingeln"

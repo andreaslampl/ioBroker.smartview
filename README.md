@@ -741,8 +741,8 @@ Der Klingel-Datenpunkt ist der aus ⚙ Allgemein → Klingel (bzw. `livecam.N.in
 
 ### Schwacher Touch-PC: Linux statt Windows
 
-Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schlanke Alternative: Debian-Linux, das
-direkt in SmartView im Vollbild startet – mit Touch, Lautsprecher, Mikrofon und Wecken des Monitors beim Klingeln
+Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schlanke Alternative: Ubuntu Server oder Debian
+(ohne Desktop), das direkt in SmartView im Vollbild startet – mit Touch, Lautsprecher, Mikrofon und Wecken des Monitors beim Klingeln
 (Linux-Version des Weckers). Schritt für Schritt: [`tools/linux-kiosk/ANLEITUNG.md`](tools/linux-kiosk/ANLEITUNG.md),
 Einrichtung mit `tools/linux-kiosk/kiosk-setup.sh`.
 

@@ -1,8 +1,10 @@
 #!/bin/bash
-# SmartView kiosk on a small PC with Debian 13 (no desktop): starts straight into SmartView in full screen
-# (Chromium, touch, speaker + microphone for the intercom) and wakes the monitor when the doorbell rings.
+# SmartView kiosk on a small PC with Debian 13 or Ubuntu Server LTS (no desktop): starts straight into SmartView in
+# full screen (Chromium / Google Chrome, touch, speaker + microphone for the intercom) and wakes the monitor when the
+# doorbell rings. Ubuntu ships Chromium only as a snap (slow, awkward in a kiosk) -> Google Chrome from Google's own
+# apt repository there.
 #
-# Run once as root on a fresh Debian install (only "SSH-Server" + "Standard-Systemwerkzeuge" selected):
+# Run once as root on a fresh install without desktop (Debian: only "SSH-Server" + "Standard-Systemwerkzeuge"):
 #   bash kiosk-setup.sh
 # The settings below are asked for when they are empty. Run it again any time to change them.
 set -euo pipefail
@@ -42,13 +44,28 @@ esac
 
 echo "== Pakete installieren (dauert ein paar Minuten) =="
 export DEBIAN_FRONTEND=noninteractive
+DISTRO="$(. /etc/os-release && echo "${ID:-debian}")"
 apt-get update
 apt-get install -y --no-install-recommends \
-    xserver-xorg xinit x11-xserver-utils \
-    chromium fonts-dejavu-core \
+    xserver-xorg xinit x11-xserver-utils fonts-dejavu-core \
     pipewire pipewire-pulse wireplumber pipewire-alsa alsa-utils \
-    curl ca-certificates dbus-user-session \
+    curl ca-certificates gnupg dbus-user-session \
     unattended-upgrades
+if [ "$DISTRO" = ubuntu ]; then
+    # Ubuntu: Chromium only as a snap -> Google Chrome (.deb, updated by apt like everything else)
+    install -d -m 755 /etc/apt/keyrings
+    curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /etc/apt/keyrings/google-chrome.gpg
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+        >/etc/apt/sources.list.d/google-chrome.list
+    apt-get update
+    apt-get install -y google-chrome-stable
+    BROWSER=google-chrome-stable
+    PROFILE=google-chrome
+else
+    apt-get install -y chromium
+    BROWSER=chromium
+    PROFILE=chromium
+fi
 
 echo "== Benutzer $KIOSK_USER =="
 if ! id "$KIOSK_USER" >/dev/null 2>&1; then
@@ -74,6 +91,8 @@ SV_LOCAL='$SV_LOCAL'
 SV_KEY='$SV_KEY'
 SCREEN_OFF_MIN='$SCREEN_OFF_MIN'
 WAKE_DURING_DND='$WAKE_DURING_DND'
+BROWSER='$BROWSER'
+PROFILE='$PROFILE'
 EOF
 chmod 644 /etc/smartview-kiosk.conf
 
@@ -125,11 +144,11 @@ extra=()
 case "$SV_URL" in
     http://*) extra+=("--unsafely-treat-insecure-origin-as-secure=$(printf '%s' "$SV_URL" | sed -E 's#^(http://[^/]+).*#\1#')") ;;
 esac
-prefs="$HOME/.config/chromium/Default/Preferences"
+prefs="$HOME/.config/${PROFILE:-chromium}/Default/Preferences"
 while true; do
     # no "restore pages?" bubble after a power cut
     [ -f "$prefs" ] && sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]*"/"exit_type":"Normal"/' "$prefs"
-    chromium --kiosk --no-first-run --noerrdialogs --disable-infobars --disable-session-crashed-bubble \
+    "${BROWSER:-chromium}" --kiosk --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars --disable-session-crashed-bubble \
         --disable-translate --disable-features=Translate --password-store=basic \
         --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream \
         --overscroll-history-navigation=0 --disable-pinch --check-for-update-interval=31536000 \

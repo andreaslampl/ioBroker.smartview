@@ -567,6 +567,9 @@ switches/buttons on them.
   clears exit_type), `smartview-wecker` (curl /api/ring each second, rising edge -> xset dpms force on), masks sleep targets,
   unattended-upgrades, Sunday 4:17 reboot) + `ANLEITUNG.md` (German). Checked: bash -n, shellcheck, wake loop against a fake
   /api/ring. Not run on a real Debian / the owner's hardware.
+- 0.65.4: owner prefers Ubuntu -> kiosk-setup.sh detects it (/etc/os-release ID): Google Chrome from Google's apt repo
+  (Ubuntu's chromium is a snap), BROWSER/PROFILE in the conf; ANLEITUNG.md = Ubuntu Server (not minimized, no LVM on
+  the 32 GB SSD, OpenSSH, no snaps, sudo -i), Debian as alternative. Checked: bash -n, shellcheck; not on real Ubuntu.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
