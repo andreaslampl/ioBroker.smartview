@@ -588,15 +588,16 @@
     };
   }
 
-  function loginForm(title) {
+  function loginForm(title, twofa) {
     $('pages').innerHTML = '';
     $('main').innerHTML = '<form class="login"><h2>' + esc(title || 'SmartView') + ' – Anmelden</h2>' +
       '<input name="name" placeholder="Name" autocapitalize="off" autocorrect="off"><input name="password" type="password" placeholder="Passwort">' +
+      (twofa ? '<input name="code" type="text" pattern="[0-9]*" placeholder="Code aus der Authenticator-App">' : '') +
       '<button type="submit">Anmelden</button></form>';
     var f = $('main').getElementsByTagName('form')[0];
     f.onsubmit = function (e) {
       e.preventDefault();
-      xhr('POST', '/api/login', { name: f.elements.name.value, password: f.elements.password.value }, function (status, data) {
+      xhr('POST', '/api/login', { name: f.elements.name.value, password: f.elements.password.value, code: twofa ? f.elements.code.value : undefined }, function (status, data) {
         if (status === 200) return start();
         toast((data && data.error) || 'Anmeldung fehlgeschlagen', true);
       });
@@ -605,7 +606,7 @@
 
   function loadLayout(cb) {
     xhr('GET', '/api/layout', null, function (status, data) {
-      if (status === 401) return loginForm(data && data.title);
+      if (status === 401) return loginForm(data && data.title, data && data.twofa);
       if (status !== 200 || !data) {
         $('main').innerHTML = '<p class="hint">SmartView nicht erreichbar (' + status + ').<br>Mit Zugangsschlüssel: /lite?key=…</p>';
         return;

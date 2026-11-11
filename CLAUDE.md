@@ -579,6 +579,14 @@ switches/buttons on them.
   last X-Forwarded-For for login limit / PinGuard / logs; `_access()` drops PIN ids (pin) or all writes + control (read),
   timers PUT refused, scenes with PIN tiles refused. Intercom audio from outside not possible (WebRTC, no TURN). Adapter
   test; scripts: bash -n + shellcheck, not run on a real VPS.
+- 0.67.0: owner (uses Microsoft Authenticator) wanted a second factor for access from outside -> `lib/totp.js` (RFC 6238 SHA1,
+  6 digits, 30 s, ±1 step, checked against the RFC vectors; a counter is accepted only once via `totpUsed`), users.json
+  `totp` secret per user + sessions `mfa`; instance option `external2fa` (default true): external login needs `code`
+  (no authenticator -> refused with a hint to set it up at home), external requests / ws accept only mfa sessions
+  (`session(token, needMfa)`), 401 carries `twofa` (login form shows the code field, also Lite). POST /api/2fa/start (secret
+  pending 10 min, otpauth URI, QR SVG via `qrcode` 1.5.4) / confirm {code} / off {code}; admin `totpReset` in the users
+  dialog. Menu item "Zwei-Faktor (Authenticator): ein/aus" (www/users.js `twofa()`). Adapter tests + Playwright
+  (sv/twofa-ui.js: setup via QR dialog at home, same browser then external -> code form -> app).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

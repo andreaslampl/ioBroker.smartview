@@ -11,7 +11,7 @@ const Users = (() => {
   }
 
   /** Full page login form instead of the app. */
-  function showLogin(title) {
+  function showLogin(title, twofa) {
     document.title = title || 'SmartView';
     $('title').textContent = title || 'SmartView';
     $('pageTitle').textContent = '';
@@ -23,7 +23,8 @@ const Users = (() => {
     box.innerHTML = '<h3>' + icon('lock') + '<span class="grow">Anmelden</span></h3>' +
       '<label for="lgName">Name</label><input id="lgName" type="text" autocomplete="username" autocapitalize="none" required>' +
       '<label for="lgPw">Passwort / PIN</label><input id="lgPw" type="password" autocomplete="current-password" required>' +
-      '<p class="hint">Dieses Gerät bleibt angemeldet, bis du dich abmeldest.</p>' +
+      (twofa ? '<label for="lgCode">Code aus der Authenticator-App</label><input id="lgCode" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required>' : '') +
+      '<p class="hint">' + (twofa ? 'Zugriff von außen: Passwort und der 6-stellige Code aus der Authenticator-App. ' : '') + 'Dieses Gerät bleibt angemeldet, bis du dich abmeldest.</p>' +
       '<div class="row"><button type="submit" class="primary">Anmelden</button></div>';
     main.appendChild(box);
     try {
@@ -37,7 +38,7 @@ const Users = (() => {
       e.preventDefault();
       const name = $('lgName').value.trim();
       try {
-        await api('login', { method: 'POST', body: JSON.stringify({ name, password: $('lgPw').value }) });
+        await api('login', { method: 'POST', body: JSON.stringify({ name, password: $('lgPw').value, code: twofa ? $('lgCode').value : undefined }) });
         try {
           localStorage.setItem('sv.user', name);
         } catch (err) {
@@ -46,6 +47,7 @@ const Users = (() => {
         location.reload();
       } catch (err) {
         $('lgPw').value = '';
+        if (twofa) $('lgCode').value = '';
         toast(err.message, true);
       }
     };
@@ -63,6 +65,7 @@ const Users = (() => {
     if (me.usersEnabled) {
       html += '<p class="hint">Angemeldet als <b>' + esc(me.name) + '</b>' + (me.admin ? ' (Administrator)' : '') + '</p>';
     }
+    if (me.usersEnabled && me.name) html += '<button type="button" class="item" data-twofa>' + icon('lock') + 'Zwei-Faktor (Authenticator): ' + (me.totp ? 'ein' : 'aus') + '</button>';
     if (me.manageUsers) html += '<button type="button" class="item" data-users>' + icon('shield') + 'Benutzer verwalten</button>';
     if (me.usersEnabled) html += '<button type="button" class="item" data-logout>' + icon('close') + 'Abmelden</button>';
     box.innerHTML = html;
@@ -71,8 +74,67 @@ const Users = (() => {
       box.closest('.overlay').remove();
       manage();
     };
+    const tf = box.querySelector('[data-twofa]');
+    if (tf) tf.onclick = () => {
+      box.closest('.overlay').remove();
+      twofa();
+    };
     const l = box.querySelector('[data-logout]');
     if (l) l.onclick = logout;
+  }
+
+  // ---------------- own authenticator ----------------
+
+  async function twofa() {
+    const me = SV.me || {};
+    const ov = el('div', 'overlay');
+    const sh = el('form', 'sheet form twofa');
+    ov.appendChild(sh);
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener('click', e => {
+      if (e.target === ov) close();
+    });
+    const head = '<h3>' + icon('lock') + '<span class="grow">Zwei-Faktor-Anmeldung</span><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></h3>';
+    const codeField = '<label for="tfCode">6-stelliger Code aus der App</label><input id="tfCode" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required>';
+    const wire = (url, done) => {
+      sh.querySelector('[data-x]').onclick = close;
+      sh.onsubmit = async e => {
+        e.preventDefault();
+        try {
+          await api(url, { method: 'POST', body: JSON.stringify({ code: $('tfCode').value }) });
+          toast(done);
+          close();
+          setTimeout(() => location.reload(), 600);
+        } catch (err) {
+          $('tfCode').value = '';
+          toast(err.message, true);
+        }
+      };
+    };
+    if (me.totp) {
+      sh.innerHTML = head + '<p class="hint ok">Eingerichtet: Für den Zugriff von außen braucht es Passwort und den Code aus der Authenticator-App.</p>' +
+        '<p class="hint">Ausschalten (z. B. neues Handy): aktuellen Code eingeben. Danach geht es von außen erst wieder nach neuem Einrichten.</p>' +
+        codeField + '<div class="row"><button type="submit" class="danger">Ausschalten</button></div>';
+      return wire('2fa/off', 'Zwei-Faktor ausgeschaltet');
+    }
+    sh.innerHTML = head + '<p class="hint">Wird geladen …</p>';
+    sh.querySelector('[data-x]').onclick = close;
+    let d;
+    try {
+      d = await api('2fa/start', { method: 'POST', body: '{}' });
+    } catch (err) {
+      close();
+      return toast(err.message, true);
+    }
+    sh.innerHTML = head +
+      '<p class="hint">1. In <b>Microsoft Authenticator</b> (oder Google Authenticator) auf <b>+</b> → „Anderes Konto“ und diesen QR-Code scannen:</p>' +
+      '<div class="qr">' + d.qr + '</div>' +
+      '<p class="hint">Kein Scannen möglich (QR-Code auf dem eigenen Handy)? ' + (/iPhone|iPad|Android/.test(navigator.userAgent) ? '<a href="' + esc(d.uri) + '">In der App öffnen</a> oder ' : '') + 'Schlüssel von Hand eingeben: <code class="secret">' + esc(d.secret) + '</code></p>' +
+      '<p class="hint">2. Den Code eingeben, den die App jetzt zeigt:</p>' + codeField +
+      '<div class="row"><button type="submit" class="primary">Einrichten</button></div>';
+    wire('2fa/confirm', 'Zwei-Faktor eingerichtet');
+    $('tfCode').focus();
   }
 
   // ---------------- user management ----------------
@@ -113,7 +175,7 @@ const Users = (() => {
     const userBox = (u, i) => {
       const b = el('div', 'ubox' + (u.open ? ' open' : ''));
       const summary = u.admin ? 'Administrator' : (u.pages === 'all' ? 'alle Seiten' : u.pages.length + ' Seite(n)') + (u.control ? ', schalten' : ', nur ansehen') + (u.intercom ? ', Klingel' : '');
-      const head = el('div', 'uhead', icon(u.admin ? 'shield' : 'home') + '<span class="grow"><b>' + esc(u.name || 'Neuer Benutzer') + '</b><small>' + esc(summary) + (u.sessions ? ' · ' + u.sessions + ' Gerät(e) angemeldet' : '') + '</small></span><span class="chev">' + (u.open ? '▲' : '▼') + '</span>');
+      const head = el('div', 'uhead', icon(u.admin ? 'shield' : 'home') + '<span class="grow"><b>' + esc(u.name || 'Neuer Benutzer') + '</b><small>' + esc(summary) + (u.totp ? ' · 🔐 Authenticator' : '') + (u.sessions ? ' · ' + u.sessions + ' Gerät(e) angemeldet' : '') + '</small></span><span class="chev">' + (u.open ? '▲' : '▼') + '</span>');
       head.onclick = () => {
         u.open = !u.open;
         draw();
@@ -131,6 +193,7 @@ const Users = (() => {
         '<label>Sichtbare Seiten</label><label class="check"><input type="checkbox" data-all> Alle Seiten (auch neue)</label>' +
         '<div class="pagelist"' + (u.pages === 'all' ? ' hidden' : '') + '>' +
         data.pages.map(p => '<label class="check"><input type="checkbox" data-page="' + esc(p.id) + '"> ' + esc(p.name) + '</label>').join('') + '</div></div>' +
+        (u.totp ? '<label class="check"><input type="checkbox" data-k="totpReset"> Authenticator zurücksetzen (z. B. Handy verloren – muss dann neu eingerichtet werden)</label>' : '') +
         '<div class="row"><button type="button" class="danger" data-del>Benutzer löschen</button></div>';
       b.appendChild(body);
       const q = s => body.querySelector(s);
@@ -138,7 +201,8 @@ const Users = (() => {
       q('[data-k=name]').oninput = e => (u.name = e.target.value);
       q('[data-k=password]').value = u.password;
       q('[data-k=password]').oninput = e => (u.password = e.target.value);
-      for (const k of ['admin', 'control', 'intercom']) {
+      for (const k of ['admin', 'control', 'intercom', 'totpReset']) {
+        if (!q('[data-k=' + k + ']')) continue;
         q('[data-k=' + k + ']').checked = Boolean(u[k]);
         q('[data-k=' + k + ']').onchange = e => {
           u[k] = e.target.checked;
@@ -167,7 +231,7 @@ const Users = (() => {
 
     const save = async () => {
       try {
-        await api('users', { method: 'PUT', body: JSON.stringify(users.map(u => ({ id: u.id, name: u.name, password: u.password, admin: u.admin, pages: u.pages, control: u.control, intercom: u.intercom }))) });
+        await api('users', { method: 'PUT', body: JSON.stringify(users.map(u => ({ id: u.id, name: u.name, password: u.password, admin: u.admin, pages: u.pages, control: u.control, intercom: u.intercom, totpReset: Boolean(u.totpReset) }))) });
         toast('Benutzer gespeichert');
         close();
         setTimeout(() => location.reload(), 600);
@@ -182,5 +246,5 @@ const Users = (() => {
     draw();
   }
 
-  return { showLogin, menuItems, manage, logout };
+  return { showLogin, menuItems, manage, logout, twofa };
 })();

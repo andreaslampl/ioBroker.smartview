@@ -109,6 +109,15 @@
       "xs": 12,
       "sm": 5
     },
+    "external2fa": {
+      "type": "checkbox",
+      "label": "From outside also the authenticator code (two-factor)",
+      "help": "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator).",
+      "default": true,
+      "hidden": "!data.proxyIps",
+      "xs": 12,
+      "sm": 5
+    },
     "externalUrl": {
       "type": "text",
       "label": "Address from outside (for links in messages)",

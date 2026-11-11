@@ -1448,14 +1448,26 @@ test('adapter: access from outside through a reverse proxy (login required, PIN 
     adapter.server.users.save([{ name: 'Andi', password: 'geheim1', admin: true }], []);
     assert.equal((await api('layout')).status, 401);
     assert.equal((await api('ring')).status, 403, 'doorbell check only at home');
+    assert.equal((await api('layout')).body.twofa, true, 'login form asks for the authenticator code');
     // wrong passwords are counted per browser address (X-Forwarded-For), not for the proxy as a whole
-    const login = (password, ip) => fetch(base + 'api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ name: 'Andi', password }) });
+    const login = (password, ip, code) => fetch(base + 'api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ name: 'Andi', password, code }) });
+    // without an authenticator set up: no way in from outside
+    const noTotp = await login('geheim1', '198.51.100.7', '123456');
+    assert.equal(noTotp.status, 403);
+    assert.match((await noTotp.json()).error, /Heimnetz einrichten/);
+    const totp = require('../lib/totp');
+    const secret = totp.newSecret();
+    adapter.server.users.setTotp(adapter.server.users.data.users[0].id, secret);
     for (let i = 0; i < 6; i++) {
-        await login('nein', '203.0.113.5');
+        await login('nein', '203.0.113.5', totp.code(secret, Math.floor(Date.now() / 30000)));
     }
-    assert.equal((await login('geheim1', '203.0.113.5')).status, 403);
-    const ok = await login('geheim1', '198.51.100.7');
+    assert.equal((await login('geheim1', '203.0.113.5', totp.code(secret, Math.floor(Date.now() / 30000)))).status, 403);
+    assert.equal((await login('geheim1', '198.51.100.7', '000000')).status, 403, 'wrong code');
+    assert.equal((await login('geheim1', '198.51.100.7')).status, 403, 'password alone is not enough');
+    const now = totp.code(secret, Math.floor(Date.now() / 30000));
+    const ok = await login('geheim1', '198.51.100.7', now);
     assert.equal(ok.status, 200);
+    assert.equal((await login('geheim1', '198.51.100.8', now)).status, 403, 'a code works only once');
     const cookie = ok.headers.get('set-cookie').split(';')[0];
     const admin = (p, opts = {}) => api(p, { ...opts, headers: { 'Content-Type': 'application/json', Cookie: cookie } });
     const layout = {
@@ -1482,4 +1494,29 @@ test('adapter: access from outside through a reverse proxy (login required, PIN 
     assert.equal(timer.status, 403);
     assert.match(timer.body.error, /außen/);
     assert.equal(adapter.appLink('start'), 'https://smartview.example.com/#start');
+});
+
+test('users: authenticator set up at home, sessions from home do not count outside', async t => {
+    const { adapter, base, api } = await startAdapter(t, { proxyIps: '10.77.0.1' });
+    const first = await fetch(base + 'api/users', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([{ name: 'Andi', password: 'geheim1', admin: true }]) });
+    const cookie = first.headers.get('set-cookie').split(';')[0];
+    const me = (p, opts = {}) => api(p, { ...opts, headers: { 'Content-Type': 'application/json', Cookie: cookie } });
+    assert.equal((await me('layout')).body.me.totp, false);
+    const start = await me('2fa/start', { method: 'POST', body: '{}' });
+    assert.match(start.body.uri, /^otpauth:\/\/totp\/Haus|^otpauth:\/\/totp\/SmartView/);
+    assert.match(start.body.qr, /<svg/);
+    const secret = start.body.secret.replace(/ /g, '');
+    const totp = require('../lib/totp');
+    assert.equal((await me('2fa/confirm', { method: 'POST', body: JSON.stringify({ code: '000000' }) })).status, 403);
+    assert.equal((await me('2fa/confirm', { method: 'POST', body: JSON.stringify({ code: totp.code(secret, Math.floor(Date.now() / 30000)) }) })).status, 200);
+    assert.equal((await me('layout')).body.me.totp, true);
+    const store = adapter.server.users;
+    const token = decodeURIComponent(cookie.split('=')[1]);
+    assert.ok(store.session(token), 'home session works at home');
+    assert.equal(store.session(token, true), null, 'but not from outside (no code was given)');
+    assert.ok(!JSON.stringify((await me('users')).body).includes(secret), 'secret never listed');
+    // admin resets it (lost phone)
+    const list = (await me('users')).body.users.map(u => ({ ...u, totpReset: true }));
+    assert.equal((await me('users', { method: 'PUT', body: JSON.stringify(list) })).status, 200);
+    assert.equal(store.data.users[0].totp, undefined);
 });

@@ -3658,6 +3658,7 @@ async function loadLayout() {
     const err = new Error(r.error || 'Bitte anmelden');
     err.login = true;
     err.title = r.title;
+    err.twofa = Boolean(r.twofa);
     throw err;
   }
   if (!res.ok) throw new Error(r.error || 'HTTP ' + res.status);
@@ -3741,7 +3742,7 @@ async function start() {
     render();
     connect();
   } catch (e) {
-    if (e.login) return Users.showLogin(e.title);
+    if (e.login) return Users.showLogin(e.title, e.twofa);
     $('main').innerHTML = '<p>Verbindung zum ioBroker fehlgeschlagen: ' + esc(e.message) + '</p>';
   }
 }

@@ -157,6 +157,7 @@ class SmartView extends utils.Adapter {
             usersOff: Boolean(this.config.usersOff),
             proxyIps: String(this.config.proxyIps || '').split(/[,;\s]+/),
             externalLock: this.config.externalLock || 'none',
+            external2fa: this.config.external2fa !== false,
             log: this.log,
             adapter: {
                 urls: () => this.urlList,

@@ -21,5 +21,7 @@
   "PIN-protected tiles not switchable": "PIN-protected tiles not switchable",
   "only viewing, no switching": "only viewing, no switching",
   "Address from outside (for links in messages)": "Address from outside (for links in messages)",
-  "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere": "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere"
+  "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere": "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere",
+  "From outside also the authenticator code (two-factor)": "From outside also the authenticator code (two-factor)",
+  "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator).": "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator)."
 }

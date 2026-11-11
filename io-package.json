@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.66.0",
+    "version": "0.67.0",
     "news": {
+      "0.67.0": {
+        "en": "Two-factor login (authenticator app, TOTP) for access from outside: set up per user in the menu, admin can reset",
+        "de": "Zwei-Faktor-Anmeldung (Authenticator-App) für den Zugriff von außen: pro Benutzer im Menü einrichten, Admin kann zurücksetzen"
+      },
       "0.66.0": {
         "en": "Access from outside through an own server (WireGuard + Caddy): login always required, optional lock of PIN tiles or view only; setup scripts in tools/remote",
         "de": "Zugriff von außen über einen eigenen Server (WireGuard + Caddy): Anmeldung immer nötig, optional PIN-Kacheln gesperrt oder nur ansehen; Skripte in tools/remote"
@@ -551,6 +555,7 @@
     "certCollection": "",
     "proxyIps": "",
     "externalLock": "none",
+    "external2fa": true,
     "externalUrl": ""
   },
   "protectedNative": [
