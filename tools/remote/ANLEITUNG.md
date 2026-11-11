@@ -58,10 +58,10 @@ Per SSH auf den ioBroker-Rechner, `sudo -i`, dann die zwei Zeilen vom VPS einfü
 1. **Benutzer anlegen**, falls noch nicht geschehen (im Heimnetz: Menü → Benutzer). Ohne Benutzer ist der Zugang von
    außen gesperrt.
 2. **Authenticator einrichten** – jeder Benutzer einmal, **im Heimnetz**: SmartView öffnen, anmelden, Menü →
-   **„Zwei-Faktor (Authenticator)“**. In Microsoft Authenticator auf **+** → „Anderes Konto (Google, Facebook usw.)“ und
+   **„Zwei-Faktor für VPS-Zugriff“**. In Microsoft Authenticator auf **+** → „Anderes Konto (Google, Facebook usw.)“ und
    den QR-Code scannen, dann den Code aus der App eingeben → „Einrichten“.
    Handy verloren? Ein Administrator setzt es unter Benutzer verwalten → „Authenticator zurücksetzen“ zurück.
-3. ioBroker-Admin → Instanzen → **SmartView** → Einstellungen, Abschnitt „Zugriff von außen“:
+3. ioBroker-Admin → Instanzen → **SmartView** → Einstellungen, Abschnitt „Zugriff von außen über einen eigenen VPS-Server“:
    - **Adresse(n) des Vermittlers:** `10.77.0.1`
    - **Von außen:** alles wie zu Hause / Kacheln mit PIN nicht schaltbar / nur ansehen
    - **Zusätzlich den Code aus der Authenticator-App:** angehakt lassen

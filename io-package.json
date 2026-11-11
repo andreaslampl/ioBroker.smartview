@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.67.0",
+    "version": "0.67.1",
     "news": {
+      "0.67.1": {
+        "en": "Texts: access from outside and two-factor are meant for an own VPS server",
+        "de": "Texte: Zugriff von außen und Zwei-Faktor sind für einen eigenen VPS-Server gedacht"
+      },
       "0.67.0": {
         "en": "Two-factor login (authenticator app, TOTP) for access from outside: set up per user in the menu, admin can reset",
         "de": "Zwei-Faktor-Anmeldung (Authenticator-App) für den Zugriff von außen: pro Benutzer im Menü einrichten, Admin kann zurücksetzen"

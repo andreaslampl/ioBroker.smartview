@@ -587,6 +587,8 @@ switches/buttons on them.
   pending 10 min, otpauth URI, QR SVG via `qrcode` 1.5.4) / confirm {code} / off {code}; admin `totpReset` in the users
   dialog. Menu item "Zwei-Faktor (Authenticator): ein/aus" (www/users.js `twofa()`). Adapter tests + Playwright
   (sv/twofa-ui.js: setup via QR dialog at home, same browser then external -> code form -> app).
+- 0.67.1: owner asked to say it is meant for a VPS -> admin header "… über einen eigenen VPS-Server (optional)" + info text
+  (empty = nothing changes), menu "Zwei-Faktor für VPS-Zugriff", hint in the 2FA dialog.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

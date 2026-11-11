@@ -74,8 +74,14 @@
     },
     "remoteHeader": {
       "type": "header",
-      "text": "Access from outside (own server as reverse proxy)",
+      "text": "Access from outside via an own VPS server (optional)",
       "size": 3,
+      "newLine": true,
+      "xs": 12
+    },
+    "remoteInfo": {
+      "type": "staticText",
+      "text": "Only for an own VPS server in the internet that forwards SmartView (guide: tools/remote/ANLEITUNG.md). Without a VPS leave these fields empty - then nothing changes.",
       "newLine": true,
       "xs": 12
     },

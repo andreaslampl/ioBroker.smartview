@@ -65,7 +65,7 @@ const Users = (() => {
     if (me.usersEnabled) {
       html += '<p class="hint">Angemeldet als <b>' + esc(me.name) + '</b>' + (me.admin ? ' (Administrator)' : '') + '</p>';
     }
-    if (me.usersEnabled && me.name) html += '<button type="button" class="item" data-twofa>' + icon('lock') + 'Zwei-Faktor (Authenticator): ' + (me.totp ? 'ein' : 'aus') + '</button>';
+    if (me.usersEnabled && me.name) html += '<button type="button" class="item" data-twofa>' + icon('lock') + 'Zwei-Faktor für VPS-Zugriff: ' + (me.totp ? 'ein' : 'aus') + '</button>';
     if (me.manageUsers) html += '<button type="button" class="item" data-users>' + icon('shield') + 'Benutzer verwalten</button>';
     if (me.usersEnabled) html += '<button type="button" class="item" data-logout>' + icon('close') + 'Abmelden</button>';
     box.innerHTML = html;
@@ -96,6 +96,7 @@ const Users = (() => {
       if (e.target === ov) close();
     });
     const head = '<h3>' + icon('lock') + '<span class="grow">Zwei-Faktor-Anmeldung</span><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></h3>';
+    const vpsHint = '<p class="hint">Nur für den Zugriff von außen über einen eigenen <b>VPS-Server</b> (Anleitung tools/remote). Im Heimnetz wird der Code nie verlangt. Ohne VPS ist das nicht nötig.</p>';
     const codeField = '<label for="tfCode">6-stelliger Code aus der App</label><input id="tfCode" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required>';
     const wire = (url, done) => {
       sh.querySelector('[data-x]').onclick = close;
@@ -113,7 +114,7 @@ const Users = (() => {
       };
     };
     if (me.totp) {
-      sh.innerHTML = head + '<p class="hint ok">Eingerichtet: Für den Zugriff von außen braucht es Passwort und den Code aus der Authenticator-App.</p>' +
+      sh.innerHTML = head + vpsHint + '<p class="hint ok">Eingerichtet: Für den Zugriff von außen braucht es Passwort und den Code aus der Authenticator-App.</p>' +
         '<p class="hint">Ausschalten (z. B. neues Handy): aktuellen Code eingeben. Danach geht es von außen erst wieder nach neuem Einrichten.</p>' +
         codeField + '<div class="row"><button type="submit" class="danger">Ausschalten</button></div>';
       return wire('2fa/off', 'Zwei-Faktor ausgeschaltet');
@@ -127,7 +128,7 @@ const Users = (() => {
       close();
       return toast(err.message, true);
     }
-    sh.innerHTML = head +
+    sh.innerHTML = head + vpsHint +
       '<p class="hint">1. In <b>Microsoft Authenticator</b> (oder Google Authenticator) auf <b>+</b> → „Anderes Konto“ und diesen QR-Code scannen:</p>' +
       '<div class="qr">' + d.qr + '</div>' +
       '<p class="hint">Kein Scannen möglich (QR-Code auf dem eigenen Handy)? ' + (/iPhone|iPad|Android/.test(navigator.userAgent) ? '<a href="' + esc(d.uri) + '">In der App öffnen</a> oder ' : '') + 'Schlüssel von Hand eingeben: <code class="secret">' + esc(d.secret) + '</code></p>' +

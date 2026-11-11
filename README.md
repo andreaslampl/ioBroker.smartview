@@ -746,12 +746,12 @@ Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schl
 (Linux-Version des Weckers). Schritt für Schritt: [`tools/linux-kiosk/ANLEITUNG.md`](tools/linux-kiosk/ANLEITUNG.md),
 Einrichtung mit `tools/linux-kiosk/kiosk-setup.sh`.
 
-### Von unterwegs ohne VPN (eigener Server)
+### Von unterwegs ohne VPN (eigener VPS-Server, optional)
 
 Mit einem eigenen Server im Internet (z. B. ein Debian-VPS) ist SmartView unter einer eigenen https-Adresse von
 überall erreichbar: der ioBroker baut einen WireGuard-Tunnel zum Server auf (am Router wird nichts geöffnet), dort
 leitet Caddy mit Let's-Encrypt-Zertifikat weiter. Von außen ist immer eine Anmeldung nötig – mit Passwort und Code aus der Authenticator-App
-(Microsoft/Google Authenticator, einzurichten im Menü → „Zwei-Faktor“); optional sind Kacheln mit
+(Microsoft/Google Authenticator, einzurichten im Menü → „Zwei-Faktor für VPS-Zugriff“); optional sind Kacheln mit
 PIN gesperrt oder es kann nur angesehen werden (Instanz-Einstellungen „Zugriff von außen“). Reden mit der
 Sprechanlage geht von außen nicht. Schritt für Schritt: [`tools/remote/ANLEITUNG.md`](tools/remote/ANLEITUNG.md).
 

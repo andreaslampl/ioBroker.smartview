@@ -13,7 +13,6 @@
   "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Benutzer werden in der App eingerichtet (Menü → Benutzer). Nur anhaken, um ohne Passwort wieder hineinzukommen, dann ein neues Passwort setzen und den Haken wieder entfernen.",
   "Certificate collection of the acme adapter (optional)": "Zertifikats-Sammlung des acme-Adapters (optional)",
   "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.": "Leer = eigenes SmartView-Zertifikat (einmal pro Gerät installieren). Mit einem Let's-Encrypt-Zertifikat des acme-Adapters (z. B. Sammlung „default“) muss auf den Geräten nichts installiert werden; dann unten die Domain als Adresse eintragen.",
-  "Access from outside (own server as reverse proxy)": "Zugriff von außen (eigener Server als Vermittler)",
   "Address(es) of the reverse proxy": "Adresse(n) des Vermittlers (Reverse Proxy)",
   "e.g. 10.77.0.1 (WireGuard address of the VPS). Requests from there count as 'from outside': a user login is always required (set up users first). Empty = off.": "z. B. 10.77.0.1 (WireGuard-Adresse des VPS). Zugriffe von dort gelten als „von außen“: Anmeldung mit Benutzer ist immer nötig (zuerst Benutzer anlegen). Leer = aus.",
   "From outside": "Von außen",
@@ -23,5 +22,7 @@
   "Address from outside (for links in messages)": "Adresse von außen (für Links in Mitteilungen)",
   "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere": "z. B. https://smartview.example.com – Links in Telegram/WhatsApp/Push funktionieren dann überall",
   "From outside also the authenticator code (two-factor)": "Von außen zusätzlich den Code aus der Authenticator-App (Zwei-Faktor)",
-  "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator).": "Empfohlen. Jeder Benutzer richtet es einmal zu Hause ein: Menü → Zwei-Faktor (Microsoft/Google Authenticator)."
+  "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator).": "Empfohlen. Jeder Benutzer richtet es einmal zu Hause ein: Menü → Zwei-Faktor (Microsoft/Google Authenticator).",
+  "Access from outside via an own VPS server (optional)": "Zugriff von außen über einen eigenen VPS-Server (optional)",
+  "Only for an own VPS server in the internet that forwards SmartView (guide: tools/remote/ANLEITUNG.md). Without a VPS leave these fields empty - then nothing changes.": "Nur für einen eigenen VPS-Server im Internet, der SmartView weiterleitet (Anleitung: tools/remote/ANLEITUNG.md). Ohne VPS diese Felder leer lassen – dann ändert sich nichts."
 }
