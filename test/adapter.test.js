@@ -1435,3 +1435,51 @@ test('adapter: single fire detector / sounder tiles (FC20) - list, filled on sav
     assert.ok(w.has(P + 'melder.kg_heizraum.mode'), 'with control: the mode may be written');
     assert.ok(new Set(ids.read).has(P + 'melder.eg_wohnzimmer.alarm'));
 });
+
+test('adapter: access from outside through a reverse proxy (login required, PIN tiles locked)', async t => {
+    const { adapter, port, base, api } = await startAdapter(t, { proxyIps: '10.77.0.1, 127.0.0.1', externalLock: 'pin', externalUrl: 'https://smartview.example.com' });
+    // without users nothing from outside
+    const page = await fetch(base);
+    assert.equal(page.status, 403);
+    assert.match(await page.text(), /Benutzer/);
+    assert.equal((await api('ring')).status, 403);
+    await assert.rejects(wsClient(`ws://127.0.0.1:${port}/ws`).open);
+
+    adapter.server.users.save([{ name: 'Andi', password: 'geheim1', admin: true }], []);
+    assert.equal((await api('layout')).status, 401);
+    assert.equal((await api('ring')).status, 403, 'doorbell check only at home');
+    // wrong passwords are counted per browser address (X-Forwarded-For), not for the proxy as a whole
+    const login = (password, ip) => fetch(base + 'api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ name: 'Andi', password }) });
+    for (let i = 0; i < 6; i++) {
+        await login('nein', '203.0.113.5');
+    }
+    assert.equal((await login('geheim1', '203.0.113.5')).status, 403);
+    const ok = await login('geheim1', '198.51.100.7');
+    assert.equal(ok.status, 200);
+    const cookie = ok.headers.get('set-cookie').split(';')[0];
+    const admin = (p, opts = {}) => api(p, { ...opts, headers: { 'Content-Type': 'application/json', Cookie: cookie } });
+    const layout = {
+        pages: [{ id: 'start', name: 'Start', tiles: [
+            { id: 'l1', type: 'switch', label: 'Licht', state: 'knx.0.EG.Licht.Wohnzimmer' },
+            { id: 'door', type: 'switch', label: 'Türöffner', state: 'knx.0.EG.Licht.Essen_Dimmer', pin: '4711' },
+        ] }],
+    };
+    assert.equal((await admin('layout', { method: 'PUT', body: JSON.stringify(layout) })).status, 200);
+
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`, { Cookie: cookie });
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    assert.deepEqual(c.msgs.find(m => m.type === 'init').writable, ['knx.0.EG.Licht.Wohnzimmer']);
+    const writes = adapter.writes.length;
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Essen_Dimmer', val: true, pin: '4711' }));
+    await until(() => c.msgs.some(m => m.type === 'error'));
+    assert.equal(adapter.writes.length, writes, 'PIN tile locked from outside even with the right PIN');
+    c.ws.send(JSON.stringify({ type: 'set', id: 'knx.0.EG.Licht.Wohnzimmer', val: true }));
+    await until(() => adapter.writes.length > writes);
+    c.ws.close();
+
+    const timer = await admin('timers/start/door', { method: 'PUT', body: JSON.stringify({ entries: [], pin: '4711' }) });
+    assert.equal(timer.status, 403);
+    assert.match(timer.body.error, /außen/);
+    assert.equal(adapter.appLink('start'), 'https://smartview.example.com/#start');
+});

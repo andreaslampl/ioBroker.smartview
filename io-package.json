@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.65.4",
+    "version": "0.66.0",
     "news": {
+      "0.66.0": {
+        "en": "Access from outside through an own server (WireGuard + Caddy): login always required, optional lock of PIN tiles or view only; setup scripts in tools/remote",
+        "de": "Zugriff von außen über einen eigenen Server (WireGuard + Caddy): Anmeldung immer nötig, optional PIN-Kacheln gesperrt oder nur ansehen; Skripte in tools/remote"
+      },
       "0.65.4": {
         "en": "Linux kiosk: Ubuntu Server supported too (Google Chrome instead of the Chromium snap)",
         "de": "Linux-Kiosk: auch Ubuntu Server (Google Chrome statt Chromium-Snap)"
@@ -544,7 +548,10 @@
     "accessKey": "",
     "allowEdit": true,
     "usersOff": false,
-    "certCollection": ""
+    "certCollection": "",
+    "proxyIps": "",
+    "externalLock": "none",
+    "externalUrl": ""
   },
   "protectedNative": [
     "accessKey"

@@ -746,6 +746,14 @@ Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schl
 (Linux-Version des Weckers). Schritt für Schritt: [`tools/linux-kiosk/ANLEITUNG.md`](tools/linux-kiosk/ANLEITUNG.md),
 Einrichtung mit `tools/linux-kiosk/kiosk-setup.sh`.
 
+### Von unterwegs ohne VPN (eigener Server)
+
+Mit einem eigenen Server im Internet (z. B. ein Debian-VPS) ist SmartView unter einer eigenen https-Adresse von
+überall erreichbar: der ioBroker baut einen WireGuard-Tunnel zum Server auf (am Router wird nichts geöffnet), dort
+leitet Caddy mit Let's-Encrypt-Zertifikat weiter. Von außen ist immer eine Anmeldung nötig; optional sind Kacheln mit
+PIN gesperrt oder es kann nur angesehen werden (Instanz-Einstellungen „Zugriff von außen“). Reden mit der
+Sprechanlage geht von außen nicht. Schritt für Schritt: [`tools/remote/ANLEITUNG.md`](tools/remote/ANLEITUNG.md).
+
 ### Vollbild bleibt
 
 ⚙ → **„Vollbild (bleibt nach dem Sperren)“**: Wenn das Tablet sperrt, verlässt der Browser das Vollbild – das lässt

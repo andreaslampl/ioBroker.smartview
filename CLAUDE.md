@@ -570,6 +570,15 @@ switches/buttons on them.
 - 0.65.4: owner prefers Ubuntu -> kiosk-setup.sh detects it (/etc/os-release ID): Google Chrome from Google's apt repo
   (Ubuntu's chromium is a snap), BROWSER/PROFILE in the conf; ANLEITUNG.md = Ubuntu Server (not minimized, no LVM on
   the 32 GB SSD, OpenSSH, no snaps, sudo -i), Debian as alternative. Checked: bash -n, shellcheck; not on real Ubuntu.
+- 0.66.0: owner wanted SmartView from outside without VPN; has an IONOS Debian VPS (RustDesk server) -> `tools/remote/`:
+  `vps-setup.sh` (WireGuard svtunnel 10.77.0.1, keys kept on re-run, Caddy block between `# smartview-begin/end` ->
+  reverse_proxy 10.77.0.2:8098, prints a base64 code), `iobroker-setup.sh <code>` (wg 10.77.0.2, PostUp nft table
+  `svtunnel`: from the tunnel only the SmartView port + ping; checked in a netns: 8098 reachable, 8081 blocked) +
+  ANLEITUNG.md. Server: instance options `proxyIps` (requests from there = external), `externalLock` none|pin|read,
+  `externalUrl` (appLink). External: without users everything 403 (also ws), always login, /api/ring refused, `_ip()` =
+  last X-Forwarded-For for login limit / PinGuard / logs; `_access()` drops PIN ids (pin) or all writes + control (read),
+  timers PUT refused, scenes with PIN tiles refused. Intercom audio from outside not possible (WebRTC, no TURN). Adapter
+  test; scripts: bash -n + shellcheck, not run on a real VPS.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

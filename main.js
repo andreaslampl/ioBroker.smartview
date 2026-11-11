@@ -155,6 +155,8 @@ class SmartView extends utils.Adapter {
             allowEdit: this.config.allowEdit !== false,
             users: this.users,
             usersOff: Boolean(this.config.usersOff),
+            proxyIps: String(this.config.proxyIps || '').split(/[,;\s]+/),
+            externalLock: this.config.externalLock || 'none',
             log: this.log,
             adapter: {
                 urls: () => this.urlList,
@@ -934,8 +936,10 @@ class SmartView extends utils.Adapter {
 
     /** Link to SmartView for messages: https when it has a public certificate, else http. */
     appLink(page = '') {
+        // access from outside (reverse proxy): links in messages work everywhere
+        const ext = String(this.config.externalUrl || '').trim().replace(/\/*$/, '/');
         const trusted = this.server && this.server.certs && this.server.certs.trusted && this.urlList.https;
-        const base = (trusted ? this.urlList.https : this.urlList.http).replace(/:443\/$/, '/');
+        const base = /^https?:\/\/[^/]/.test(ext) ? ext : (trusted ? this.urlList.https : this.urlList.http).replace(/:443\/$/, '/');
         const key = String(this.config.accessKey || '').trim();
         return `${base}${key ? `?key=${encodeURIComponent(key)}` : ''}${page ? `#${encodeURIComponent(page)}` : ''}`;
     }

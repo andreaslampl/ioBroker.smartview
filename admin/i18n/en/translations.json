@@ -12,5 +12,14 @@
   "Switch users off (emergency, e.g. forgotten password)": "Switch users off (emergency, e.g. forgotten password)",
   "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.": "Users are set up in the app (menu → Benutzer). Tick this only to get in again without a password, then set a new one and untick it.",
   "Certificate collection of the acme adapter (optional)": "Certificate collection of the acme adapter (optional)",
-  "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.": "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below."
+  "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.": "Empty = own SmartView certificate (install once per device). With a Let's Encrypt certificate from the acme adapter (e.g. collection 'default') nothing has to be installed on the devices; then enter the domain as address below.",
+  "Access from outside (own server as reverse proxy)": "Access from outside (own server as reverse proxy)",
+  "Address(es) of the reverse proxy": "Address(es) of the reverse proxy",
+  "e.g. 10.77.0.1 (WireGuard address of the VPS). Requests from there count as 'from outside': a user login is always required (set up users first). Empty = off.": "e.g. 10.77.0.1 (WireGuard address of the VPS). Requests from there count as 'from outside': a user login is always required (set up users first). Empty = off.",
+  "From outside": "From outside",
+  "everything as at home (PIN still asked)": "everything as at home (PIN still asked)",
+  "PIN-protected tiles not switchable": "PIN-protected tiles not switchable",
+  "only viewing, no switching": "only viewing, no switching",
+  "Address from outside (for links in messages)": "Address from outside (for links in messages)",
+  "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere": "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere"
 }

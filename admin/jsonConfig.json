@@ -71,6 +71,52 @@
       "newLine": true,
       "xs": 12,
       "sm": 8
+    },
+    "remoteHeader": {
+      "type": "header",
+      "text": "Access from outside (own server as reverse proxy)",
+      "size": 3,
+      "newLine": true,
+      "xs": 12
+    },
+    "proxyIps": {
+      "type": "text",
+      "label": "Address(es) of the reverse proxy",
+      "help": "e.g. 10.77.0.1 (WireGuard address of the VPS). Requests from there count as 'from outside': a user login is always required (set up users first). Empty = off.",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "externalLock": {
+      "type": "select",
+      "label": "From outside",
+      "options": [
+        {
+          "label": "everything as at home (PIN still asked)",
+          "value": "none"
+        },
+        {
+          "label": "PIN-protected tiles not switchable",
+          "value": "pin"
+        },
+        {
+          "label": "only viewing, no switching",
+          "value": "read"
+        }
+      ],
+      "default": "none",
+      "hidden": "!data.proxyIps",
+      "xs": 12,
+      "sm": 5
+    },
+    "externalUrl": {
+      "type": "text",
+      "label": "Address from outside (for links in messages)",
+      "help": "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere",
+      "hidden": "!data.proxyIps",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
     }
   }
 }
