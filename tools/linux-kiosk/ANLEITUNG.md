@@ -82,12 +82,23 @@ dafür erscheint eine **Bildschirmtastatur** (ab SmartView 0.67.2). Danach bleib
 - Lautstärke: `wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.8` (0.0 – 1.0), Mikrofon: `…@DEFAULT_AUDIO_SOURCE@…`.
 - Zurück zu Windows: einfach die alte SSD wieder einsetzen.
 
+## Skript aktualisieren
+
+Neue Version des Kiosk-Skripts übernehmen (die Antworten von vorher bleiben erhalten), als root:
+
+```
+wget -O kiosk-setup.sh https://raw.githubusercontent.com/andreaslampl/ioBroker.smartview/main/tools/linux-kiosk/kiosk-setup.sh
+bash kiosk-setup.sh
+reboot
+```
+
 ## Wenn etwas nicht geht
 
 - **Schwarzer Bildschirm statt SmartView:** Strg+Alt+F2, anmelden, `sudo -i`, `cat /home/kiosk/.local/share/xorg/Xorg.0.log | tail`
   – oder die Adresse in `/etc/smartview-kiosk.conf` prüfen.
 - **Kein Ton / kein Mikrofon:** als root `su - kiosk -c 'wpctl status'` (nur während SmartView läuft) – dort müssen Lautsprecher und Mikrofon
   auftauchen.
+- **SmartView füllt nicht den ganzen Bildschirm:** Skript aktualisieren (siehe oben).
 - **Touch reagiert nicht:** meist ein USB-Touch, der ohne Treiber geht; sonst Ausgabe von `lsusb` schicken.
 
 ## Mit Debian statt Ubuntu

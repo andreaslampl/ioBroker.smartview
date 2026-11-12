@@ -24,6 +24,21 @@ if [ "$(id -u)" != 0 ]; then
     exit 1
 fi
 
+# run again: keep the answers of the last run (/etc/smartview-kiosk.conf)
+if [ -f /etc/smartview-kiosk.conf ]; then
+    # shellcheck disable=SC1091
+    eval "$(grep -E '^(SV_URL|SV_LOCAL|SV_KEY|SCREEN_OFF_MIN|WAKE_DURING_DND|HOSTS_NAME|HOSTS_IP)=' /etc/smartview-kiosk.conf | sed 's/^/OLD_/')"
+    SV_URL="${SV_URL:-${OLD_SV_URL:-}}"
+    SV_LOCAL="${SV_LOCAL:-${OLD_SV_LOCAL:-}}"
+    SV_KEY="${SV_KEY:-${OLD_SV_KEY:-}}"
+    SCREEN_OFF_MIN="${OLD_SCREEN_OFF_MIN:-$SCREEN_OFF_MIN}"
+    WAKE_DURING_DND="${OLD_WAKE_DURING_DND:-$WAKE_DURING_DND}"
+    HOSTS_NAME="${HOSTS_NAME:-${OLD_HOSTS_NAME:-}}"
+    HOSTS_IP="${HOSTS_IP:-${OLD_HOSTS_IP:-}}"
+    KEEP_KEY=1
+    echo "Vorhandene Einstellungen werden übernommen (ändern: nano /etc/smartview-kiosk.conf)."
+fi
+
 ask() { # ask VAR "question" [default]
     local cur="${!1}"
     if [ -z "$cur" ]; then
@@ -34,10 +49,11 @@ ask() { # ask VAR "question" [default]
 }
 ask SV_URL "Adresse, die der Touch-PC zeigen soll (z. B. https://deinname.duckdns.org)"
 ask SV_LOCAL "SmartView im Heimnetz für die Klingel-Abfrage (z. B. http://192.168.1.10:8098)"
-ask SV_KEY "Zugangsschlüssel von SmartView (leer lassen, wenn keiner)" ""
+[ -n "${KEEP_KEY:-}" ] || ask SV_KEY "Zugangsschlüssel von SmartView (leer lassen, wenn keiner)" ""
 case "$SV_URL" in
     https://*.duckdns.org*)
         [ -n "$HOSTS_NAME" ] || HOSTS_NAME="$(printf '%s' "$SV_URL" | sed -E 's#^https://([^/:]+).*#\1#')"
+        [ -n "$HOSTS_IP" ] || HOSTS_IP="$(awk -v n="$HOSTS_NAME" '$2 == n {print $1; exit}' /etc/hosts)"
         ask HOSTS_IP "IP des ioBroker für $HOSTS_NAME (damit es auch ohne Internet geht)"
         ;;
 esac
@@ -93,6 +109,8 @@ SCREEN_OFF_MIN='$SCREEN_OFF_MIN'
 WAKE_DURING_DND='$WAKE_DURING_DND'
 BROWSER='$BROWSER'
 PROFILE='$PROFILE'
+HOSTS_NAME='$HOSTS_NAME'
+HOSTS_IP='$HOSTS_IP'
 EOF
 chmod 644 /etc/smartview-kiosk.conf
 
@@ -141,6 +159,11 @@ fi
   wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.8 2>/dev/null
   wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.9 2>/dev/null ) &
 extra=()
+# without a window manager Chromium does not size itself to the screen -> take the screen size from X
+size="$(xrandr 2>/dev/null | awk '/\*/ {print $1; exit}')"
+case "$size" in
+    [0-9]*x[0-9]*) extra+=("--window-position=0,0" "--window-size=${size%x*},${size#*x}") ;;
+esac
 case "$SV_URL" in
     http://*) extra+=("--unsafely-treat-insecure-origin-as-secure=$(printf '%s' "$SV_URL" | sed -E 's#^(http://[^/]+).*#\1#')") ;;
 esac

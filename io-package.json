@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.67.2",
+    "version": "0.67.3",
     "news": {
+      "0.67.3": {
+        "en": "Linux kiosk: Chromium fills the whole screen (size from xrandr), running the setup again keeps the answers",
+        "de": "Linux-Kiosk: Chromium füllt den ganzen Bildschirm (Größe über xrandr), erneutes Einrichten übernimmt die Antworten"
+      },
       "0.67.2": {
         "en": "On-screen keyboard in the login form on touch screens without their own keyboard (Linux kiosk)",
         "de": "Bildschirmtastatur im Anmeldefenster auf Touch-Bildschirmen ohne eigene Tastatur (Linux-Kiosk)"

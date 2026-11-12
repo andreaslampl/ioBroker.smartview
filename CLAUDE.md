@@ -593,6 +593,9 @@ switches/buttons on them.
   QWERTZ on-screen keyboard under the login form on touch devices (opens by itself unless iPhone/iPad/Android/Mac UA, there a
   ⌨ button), inputmode none while open, keys keep the focus (pointerdown prevented), ⏎ = next field / submit. Playwright
   (sv/osk-ui.js). Workaround before: xdotool via SSH (`su - kiosk -c "DISPLAY=:0 xdotool type …"`).
+- 0.67.3 field: kiosk runs on the owner's touch PC (Debian, static IP in the smart home VLAN), but Chromium covered only part of the
+  screen (no window manager) -> smartview-kiosk passes --window-position=0,0 --window-size from `xrandr` (current mode);
+  kiosk-setup.sh re-run takes the answers from /etc/smartview-kiosk.conf (HOSTS_NAME/IP now stored there too).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
