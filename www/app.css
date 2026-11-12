@@ -350,6 +350,13 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 /* users */
 .sheet.login { margin: 8vh auto 0; width: min(380px, 100%); }
 .sheet.login .row button { padding: 14px 0; }
+.sheet.login .osktoggle { margin-top: 10px; width: 100%; padding: 10px; }
+.osk { width: min(760px, 100%); margin: 10px auto 0; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.osk .oskrow { display: flex; gap: 6px; margin: 6px 0; }
+.osk button { flex: 1 1 0; min-width: 0; height: 52px; font-size: 1.25rem; padding: 0; border-radius: 10px; }
+.osk button.wide { flex: 1.5 1 0; }
+.osk button.space { flex: 4 1 0; font-size: 0.95rem; }
+.osk button.on, .osk button.enter { background: var(--accent); color: #fff; }
 .twofa .qr { background: #fff; padding: 10px; border-radius: 12px; width: min(240px, 70vw); margin: 6px auto; }
 .twofa .qr svg { display: block; width: 100%; height: auto; }
 .twofa code.secret { user-select: all; font-size: 0.95em; word-break: break-all; }

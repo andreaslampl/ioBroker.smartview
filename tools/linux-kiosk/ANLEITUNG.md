@@ -67,7 +67,8 @@ Das Skript fragt:
 
 Es installiert alles (ein paar Minuten), dann: `reboot`.
 
-Nach dem Neustart startet der Touch-PC von selbst in SmartView. Beim **ersten Klingeln** sollte der Klingelton kommen;
+Nach dem Neustart startet der Touch-PC von selbst in SmartView. Sind in SmartView Benutzer angelegt, kommt einmal die Anmeldung –
+dafür erscheint eine **Bildschirmtastatur** (ab SmartView 0.67.2). Danach bleibt der Touch-PC angemeldet. Beim **ersten Klingeln** sollte der Klingelton kommen;
 **Abheben** und Sprechen testen.
 
 ## Einstellungen und Wartung

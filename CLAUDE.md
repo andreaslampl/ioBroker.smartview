@@ -589,6 +589,10 @@ switches/buttons on them.
   (sv/twofa-ui.js: setup via QR dialog at home, same browser then external -> code form -> app).
 - 0.67.1: owner asked to say it is meant for a VPS -> admin header "… über einen eigenen VPS-Server (optional)" + info text
   (empty = nothing changes), menu "Zwei-Faktor für VPS-Zugriff", hint in the 2FA dialog.
+- 0.67.2: owner's touch PC is built into the wall (no USB keyboard) and the kiosk showed the login -> www/users.js `keyboard()`:
+  QWERTZ on-screen keyboard under the login form on touch devices (opens by itself unless iPhone/iPad/Android/Mac UA, there a
+  ⌨ button), inputmode none while open, keys keep the focus (pointerdown prevented), ⏎ = next field / submit. Playwright
+  (sv/osk-ui.js). Workaround before: xdotool via SSH (`su - kiosk -c "DISPLAY=:0 xdotool type …"`).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

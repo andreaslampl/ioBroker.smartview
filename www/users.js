@@ -27,6 +27,7 @@ const Users = (() => {
       '<p class="hint">' + (twofa ? 'Zugriff von außen: Passwort und der 6-stellige Code aus der Authenticator-App. ' : '') + 'Dieses Gerät bleibt angemeldet, bis du dich abmeldest.</p>' +
       '<div class="row"><button type="submit" class="primary">Anmelden</button></div>';
     main.appendChild(box);
+    keyboard(box);
     try {
       const last = localStorage.getItem('sv.user');
       if (last) $('lgName').value = last;
@@ -51,6 +52,107 @@ const Users = (() => {
         toast(err.message, true);
       }
     };
+  }
+
+  // ---------------- on-screen keyboard (touch PC in kiosk mode has none) ----------------
+
+  const OSK = {
+    abc: ['1234567890ß', 'qwertzuiopü', 'asdfghjklöä', 'yxcvbnm-.'],
+    sym: ['1234567890', '!@#$%&*()=', '+/\\:;\'"?,_', '<>[]{}€§~^|'],
+  };
+
+  /** Keyboard below the login form on touch screens: opens by itself on touch devices without their own keyboard. */
+  function keyboard(form) {
+    const touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
+    if (!touch) return;
+    const ownKeyboard = /iPhone|iPad|iPod|Android|Macintosh/.test(navigator.userAgent); // phones/tablets bring their own
+    const inputs = [...form.querySelectorAll('input')];
+    let target = inputs.find(i => i === document.activeElement) || inputs[0];
+    let layer = 'abc';
+    let shift = false;
+    const toggle = el('button', 'osktoggle', '⌨ Bildschirmtastatur');
+    toggle.type = 'button';
+    form.appendChild(toggle);
+    const kb = el('div', 'osk');
+    kb.hidden = true;
+    form.after(kb);
+    for (const i of inputs) i.addEventListener('focus', () => (target = i));
+    const draw = () => {
+      const rows = OSK[layer].map(r => [...r].map(ch => {
+        const c = shift && layer === 'abc' ? ch.toUpperCase() : ch;
+        return '<button type="button" data-ch="' + esc(c) + '">' + esc(c) + '</button>';
+      }).join(''));
+      rows[3] = '<button type="button" class="wide' + (shift ? ' on' : '') + '" data-k="shift">⇧</button>' + rows[3] + '<button type="button" class="wide" data-k="back">⌫</button>';
+      rows.push('<button type="button" class="wide" data-k="layer">' + (layer === 'abc' ? '?123' : 'abc') + '</button>' +
+        '<button type="button" class="space" data-ch=" ">Leerzeichen</button>' +
+        '<button type="button" class="wide" data-k="hide">▾</button>' +
+        '<button type="button" class="wide enter" data-k="enter">⏎</button>');
+      kb.innerHTML = rows.map(r => '<div class="oskrow">' + r + '</div>').join('');
+    };
+    const show = on => {
+      kb.hidden = !on;
+      toggle.hidden = on;
+      // no native keyboard on top of ours (phones)
+      for (const i of inputs) {
+        if (on) i.setAttribute('inputmode', 'none');
+        else if (i.id === 'lgCode') i.setAttribute('inputmode', 'numeric');
+        else i.removeAttribute('inputmode');
+      }
+      if (on) draw();
+    };
+    // keep the focus (and caret) in the input while keys are pressed
+    kb.addEventListener('pointerdown', e => e.preventDefault());
+    kb.addEventListener('mousedown', e => e.preventDefault());
+    kb.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b || !target) return;
+      target.focus();
+      const ch = b.dataset.ch;
+      if (ch !== undefined) {
+        const a = target.selectionStart ?? target.value.length;
+        const z = target.selectionEnd ?? target.value.length;
+        if (target.maxLength > 0 && target.value.length - (z - a) >= target.maxLength) return;
+        try {
+          target.setRangeText(ch, a, z, 'end');
+        } catch (err) {
+          target.value += ch; // inputs without selection API
+        }
+        if (shift) {
+          shift = false;
+          draw();
+        }
+        return;
+      }
+      const k = b.dataset.k;
+      if (k === 'back') {
+        const a = target.selectionStart ?? target.value.length;
+        const z = target.selectionEnd ?? target.value.length;
+        try {
+          if (a === z && a > 0) target.setRangeText('', a - 1, z, 'end');
+          else target.setRangeText('', a, z, 'end');
+        } catch (err) {
+          target.value = target.value.slice(0, -1);
+        }
+      } else if (k === 'shift') {
+        shift = !shift;
+        draw();
+      } else if (k === 'layer') {
+        layer = layer === 'abc' ? 'sym' : 'abc';
+        shift = false;
+        draw();
+      } else if (k === 'hide') {
+        show(false);
+      } else if (k === 'enter') {
+        const next = inputs[inputs.indexOf(target) + 1];
+        if (next) next.focus();
+        else form.requestSubmit();
+      }
+    });
+    toggle.onclick = () => {
+      show(true);
+      target.focus();
+    };
+    if (!ownKeyboard) show(true);
   }
 
   async function logout() {

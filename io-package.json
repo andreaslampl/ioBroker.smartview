@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.67.1",
+    "version": "0.67.2",
     "news": {
+      "0.67.2": {
+        "en": "On-screen keyboard in the login form on touch screens without their own keyboard (Linux kiosk)",
+        "de": "Bildschirmtastatur im Anmeldefenster auf Touch-Bildschirmen ohne eigene Tastatur (Linux-Kiosk)"
+      },
       "0.67.1": {
         "en": "Texts: access from outside and two-factor are meant for an own VPS server",
         "de": "Texte: Zugriff von außen und Zwei-Faktor sind für einen eigenen VPS-Server gedacht"
