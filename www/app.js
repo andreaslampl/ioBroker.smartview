@@ -3757,8 +3757,21 @@ function renderHeader() {
     const isNum = typeof s.val === 'number';
     const text = isNum && h.decimals === undefined ? Number(s.val).toLocaleString('de-DE', { maximumFractionDigits: 1 }) : f.text;
     return '<span class="hv">' + (h.label ? '<small>' + esc(h.label) + '</small>' : '') + esc(text) + (f.unit ? ' ' + esc(f.unit) : '') + '</span>';
-  }).join('');
+  }).join('');  fitHeader();
 }
+
+/** values next to the clock: the title always stays whole; what does not fit is left out from the end (not cut in half) */
+function fitHeader() {
+  const box = $('hvals');
+  const title = $('title');
+  if (!box || !box.children.length) return;
+  const items = [...box.children];
+  for (const i of items) i.hidden = false;
+  // the title needs its full width inside the title box (else the values slide over it)
+  const room = () => box.scrollWidth <= box.clientWidth + 1 && (!title || title.getBoundingClientRect().right <= box.getBoundingClientRect().left + 1);
+  for (let i = items.length - 1; i >= 0 && !room(); i--) items[i].hidden = true;
+}
+window.addEventListener('resize', () => fitHeader());
 
 function tickClock() {
   const d = new Date();

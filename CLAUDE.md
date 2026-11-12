@@ -606,6 +606,10 @@ switches/buttons on them.
   sheet 60 days + reload button; icon `trash`. Unit + adapter tests, Playwright (sv/waste-ui.js). Not yet with the real Müll App.
 - 0.68.1: owner asked to put the setup guide into the tile settings -> `wasteSourcesField()` starts with a `<details class="guide">`
   (open while no link is set): steps with a link to the Müll App calendar page, other iCal sources, two houses, reload/⚠.
+- 0.68.2 field (touch PC photo): header values overlapped "SmartView" and the last value was cut. #top is a grid item spanning
+  the 1fr track, its min-content (nowrap values) widened the grid past the screen -> `#top { min-width: 0 }`, #title flex none,
+  #hvals flex 0 1 auto + min-width 0; app.js `fitHeader()` (after renderHeader + on resize) hides values from the end until
+  nothing is cut and the title is clear. Playwright (sv/header-ui.js: 1024/1280/1920).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

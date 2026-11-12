@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.68.1",
+    "version": "0.68.2",
     "news": {
+      "0.68.2": {
+        "en": "Header: values next to the clock no longer slide over the title; values that do not fit are left out",
+        "de": "Kopfzeile: Werte neben der Uhr schieben sich nicht mehr über den Titel; was nicht passt, wird weggelassen"
+      },
       "0.68.1": {
         "en": "Waste tile: step by step guide for the calendar link in the tile settings",
         "de": "Müll-Kachel: Schritt-für-Schritt-Anleitung für den Kalender-Link in den Kachel-Einstellungen"
