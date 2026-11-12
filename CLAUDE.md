@@ -596,6 +596,14 @@ switches/buttons on them.
 - 0.67.3 field: kiosk runs on the owner's touch PC (Debian, static IP in the smart home VLAN), but Chromium covered only part of the
   screen (no window manager) -> smartview-kiosk passes --window-position=0,0 --window-size from `xrandr` (current mode);
   kiosk-setup.sh re-run takes the answers from /etc/smartview-kiosk.conf (HOSTS_NAME/IP now stored there too).
+- 0.68.0: owner asked for a waste calendar from the Müll App (Klagenfurt + Ferlach both use Symvaro's Müll App, which offers an iCal
+  subscription per address: app.muellapp.com/web-reminder?channel=calendar -> app.muellapp.com/ical/<id>?area_filter=…; host not
+  reachable from the build environment, format = standard iCal) -> tile `waste` {sources [{label, url}] (webcal -> https),
+  wasteDays, hide, notify, notifyTime, channels}. `www/wastelogic.js` (UMD: parse with folding/escapes/UTC/simple RRULE+EXDATE,
+  `kindOf()` colours, `days()`, `dayText()`), main `refreshWaste()` (fetch per tile on link change or every `wasteEvery` 6 h,
+  keeps old dates on errors, waste.json), `checkWaste(now)` (once per day between notifyTime and +2 h: "Morgen: … (Klagenfurt) ·
+  … (Ferlach)"), server init `waste` + {type:'waste'}, ws `wasteRefresh` (control). app.js `wasteHtml()` (tile span 2, AUTO_H),
+  sheet 60 days + reload button; icon `trash`. Unit + adapter tests, Playwright (sv/waste-ui.js). Not yet with the real Müll App.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

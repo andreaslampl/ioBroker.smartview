@@ -19,6 +19,7 @@ const TYPE_LABELS = {
   html: 'HTML-Anzeige (Text mit HTML aus einem Datenpunkt)',
   windows: 'Fensterübersicht (offen / gekippt / zu)',
   appliances: 'Haushaltsgeräte (Waschmaschine, Trockner … – Aus / Läuft / Fertig)',
+  waste: 'Müllabfuhr (Kalender aus der Müll App / iCal)',
   heading: 'Überschrift',
   energy: 'Energiefluss (PV, Netz, Batterie – Adapter energie)',
   gate: 'Tor / Garagentor',
@@ -200,6 +201,14 @@ const TYPE_FIELDS = {
     ['channels', 'Mitteilung senden an', 'channels'],
     ['onlyActive', 'Nur laufende / fertige Geräte anzeigen', 'check', 'Platz sparen: Geräte, die aus sind, werden ausgeblendet.'],
     ['doneHours', '„Fertig“ verschwindet nach (Stunden, optional)', 'number', 'Leer oder 0 = bis man auf die Zeile tippt (oder das Gerät wieder startet). Bei Home Connect auch, wenn die Tür geöffnet wird.'],
+  ],
+  waste: [
+    ['sources', 'Kalender', 'wastesrc'],
+    ['wasteDays', 'Tage auf der Kachel', 'number', 'Standard 14 – im Bedienfenster stehen immer die nächsten 60 Tage.'],
+    ['hide', 'Ausblenden (optional)', 'text', 'Wörter, durch ; getrennt, z. B. „Sperrmüll; Problemstoffe“ – Termine mit diesen Wörtern werden nicht gezeigt und nicht gemeldet.'],
+    ['notify', 'Erinnerung am Vorabend (Push / Telegram / WhatsApp)', 'check', 'z. B. „Morgen: Restmüll, Bio“ – nur wenn am nächsten Tag etwas abgeholt wird.'],
+    ['notifyTime', 'Uhrzeit der Erinnerung', 'text', 'Standard 19:00'],
+    ['channels', 'Mitteilung senden an', 'channels'],
   ],
   windows: [
     ['windows', 'Fenster', 'windows'],
@@ -1540,6 +1549,59 @@ const Editor = (() => {
     return { type: 'custom', get: () => read().filter(r => r.humidity || r.temp) };
   }
 
+  /** Calendars of a waste tile: name + iCal link (e.g. Müll App → „Kalender Abo/Download“ → „Adresse zum Abonnieren“). */
+  function wasteSourcesField(box, rows) {
+    const wrap = document.createElement('div');
+    wrap.className = 'rules';
+    field(box, 'Kalender', wrap, 'Müll App: am PC app.muellapp.com/web-reminder?channel=calendar öffnen, Gemeinde, Adresse und Müllarten wählen, im Reiter „Kalender Abo/Download“ die „Adresse zum Abonnieren“ kopieren und hier einfügen. Geht auch mit anderen iCal-Links (auch webcal://). Mehrere Kalender = z. B. zwei Häuser in einer Kachel.');
+    const list = rows.map(r => ({ ...r }));
+    let rowInputs = [];
+    const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), url: x.url.value.trim() }));
+    function draw() {
+      wrap.textContent = '';
+      rowInputs = [];
+      list.forEach((r, i) => {
+        const b = document.createElement('div');
+        b.className = 'rule';
+        const x = {};
+        x.label = field(b, 'Name (optional)', textInput(r.label));
+        x.label.placeholder = 'z. B. Klagenfurt';
+        x.url = field(b, 'Kalender-Adresse (iCal)', textInput(r.url));
+        x.url.placeholder = 'https://app.muellapp.com/ical/…';
+        const tools = document.createElement('div');
+        tools.className = 'buttons';
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'danger';
+        del.textContent = 'Kalender entfernen';
+        del.onclick = () => {
+          const cur = read();
+          cur.splice(i, 1);
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        tools.appendChild(del);
+        b.appendChild(tools);
+        rowInputs.push(x);
+        wrap.appendChild(b);
+      });
+      if (list.length < 6) {
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.textContent = '+ Kalender';
+        add.onclick = () => {
+          const cur = read();
+          cur.push({ label: '', url: '' });
+          list.splice(0, list.length, ...cur);
+          draw();
+        };
+        wrap.appendChild(add);
+      }
+    }
+    draw();
+    return { type: 'custom', get: () => read().filter(r => r.url) };
+  }
+
   /** More rooms of a radio tile: name + station data point, switched with ‹ › on the tile. */
   function radioRoomsField(box, rows) {
     const wrap = document.createElement('div');
@@ -1795,6 +1857,7 @@ const Editor = (() => {
         else if (kind === 'areas') inputs[key] = alarmAreasField(body, t[key] || []);
         else if (kind === 'rooms') inputs[key] = radioRoomsField(body, t[key] || []);
         else if (kind === 'sensors') inputs[key] = sensorsField(body, t[key] || []);
+        else if (kind === 'wastesrc') inputs[key] = wasteSourcesField(body, t[key] && t[key].length ? t[key] : [{ label: '', url: '' }]);
         else if (kind === 'statelist') inputs[key] = stateListField(body, label, help, t[key] || []);
         else if (kind === 'robotmap') {
           const r = robotMapField(body, t);

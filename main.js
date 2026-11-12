@@ -18,6 +18,7 @@ const WinLogic = require('./www/winlogic');
 const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
 const AppLogic = require('./www/applogic');
+const WasteLogic = require('./www/wastelogic');
 const { ColorLights } = require('./lib/colorlight');
 const { SwitchCtl } = require('./lib/switchctl');
 const RobotLogic = require('./www/robotlogic');
@@ -94,6 +95,15 @@ class SmartView extends utils.Adapter {
             for (const [k, v] of Object.entries(JSON.parse(fs.readFileSync(this.appFile, 'utf8')))) {
                 this.appMem.set(k, v);
             }
+        } catch {
+            // first start
+        }
+        // waste collection calendars (iCal) per tile: last fetched dates + reminder sent today
+        this.wasteFile = path.join(dir, 'waste.json');
+        this.wasteMem = {};
+        this.wasteEvery = 6 * 3600000; // fetch again after 6 h
+        try {
+            this.wasteMem = JSON.parse(fs.readFileSync(this.wasteFile, 'utf8')) || {};
         } catch {
             // first start
         }
@@ -190,6 +200,8 @@ class SmartView extends utils.Adapter {
                 scenePlan: tile => this.scenePlan(tile),
                 dnd: () => this.dndInfo(),
                 appliances: () => this.appStatus(),
+                waste: () => this.wasteInfo(),
+                wasteRefresh: () => this.refreshWaste(true),
                 appAck: key => this.appAck(key),
                 colors: () => this.colorLights().status(),
                 pending: () => this.switchCtl().status(),
@@ -248,6 +260,9 @@ class SmartView extends utils.Adapter {
             this.checkWindows();
             // appliances: "below the threshold for x minutes" / "Fertig" timeout are matters of time too
             this.checkAppliances();
+            // waste calendars: fetch again every few hours, reminder the evening before
+            this.refreshWaste().catch(err => this.log.warn(`Müllkalender: ${err.message}`));
+            this.checkWaste();
         }, 30000);
     }
 
@@ -332,6 +347,7 @@ class SmartView extends utils.Adapter {
         this.checkClimate();
         this.checkGates();
         this.checkAppliances(true);
+        this.refreshWaste().catch(err => this.log.warn(`Müllkalender: ${err.message}`));
         this.checkAlarmPush(true);
         this.colorLights().update(this.colorTiles());
         this.switchCtl().update(this.ctlTiles());
@@ -1679,6 +1695,153 @@ class SmartView extends utils.Adapter {
         }
         if (this.server) {
             this.server.appsChanged(this.appStatus());
+        }
+    }
+
+    // ---------------- waste collection (iCal) ----------------
+
+    wasteTiles() {
+        const out = [];
+        for (const page of this.store.layout.pages) {
+            for (const tile of page.tiles) {
+                if (tile.type === 'waste') {
+                    out.push({ key: `${page.id}/${tile.id}`, page: page.id, tile });
+                }
+            }
+        }
+        return out;
+    }
+
+    async fetchCalendar(url) {
+        const res = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'ioBroker.smartview', Accept: 'text/calendar, */*' } });
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+        const text = await res.text();
+        if (!/BEGIN:VCALENDAR/i.test(text)) {
+            throw new Error('Die Adresse liefert keinen Kalender (iCal)');
+        }
+        return text.slice(0, 5e6);
+    }
+
+    /** fetch the calendars of the waste tiles: new / changed links at once, the others every `wasteEvery` */
+    async refreshWaste(force = false) {
+        if (this.wasteBusy) {
+            return;
+        }
+        this.wasteBusy = true;
+        try {
+            const now = Date.now();
+            const today = WasteLogic.dayKey(new Date());
+            const keys = new Set();
+            const cache = new Map();
+            let changed = false;
+            for (const { key, tile } of this.wasteTiles()) {
+                keys.add(key);
+                const sig = JSON.stringify(tile.sources || []);
+                const m = this.wasteMem[key] || (this.wasteMem[key] = { entries: [], updated: 0 });
+                if (!force && m.sig === sig && now - (m.tried || 0) < this.wasteEvery) {
+                    continue;
+                }
+                const fresh = m.sig !== sig;
+                Object.assign(m, { sig, tried: now });
+                changed = true;
+                const all = [];
+                const errors = [];
+                for (const src of tile.sources || []) {
+                    try {
+                        if (!cache.has(src.url)) {
+                            cache.set(src.url, WasteLogic.parse(await this.fetchCalendar(src.url)));
+                        }
+                        for (const e of cache.get(src.url)) {
+                            all.push({ ...e, source: src.label || '' });
+                        }
+                    } catch (err) {
+                        errors.push(`${src.label || 'Kalender'}: ${err.name === 'TimeoutError' ? 'keine Antwort' : err.message}`);
+                    }
+                }
+                m.error = errors.join('; ');
+                if (errors.length && !fresh && m.entries.length) {
+                    // keep the dates we have (network gone for a while)
+                    this.log.warn(`Müllkalender ${tile.label || key}: ${m.error} - alte Termine bleiben`);
+                    continue;
+                }
+                m.entries = all.filter(e => e.date >= today).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).slice(0, 600);
+                m.updated = now;
+                if (errors.length) {
+                    this.log.warn(`Müllkalender ${tile.label || key}: ${m.error}`);
+                } else {
+                    this.log.info(`Müllkalender ${tile.label || key}: ${m.entries.length} Termine geladen`);
+                }
+            }
+            for (const k of Object.keys(this.wasteMem)) {
+                if (!keys.has(k)) {
+                    delete this.wasteMem[k];
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.saveWaste();
+            }
+        } finally {
+            this.wasteBusy = false;
+        }
+    }
+
+    /** reminder the evening before (once a day, up to 2 h after the set time) */
+    checkWaste(now = new Date()) {
+        for (const { key, page, tile } of this.wasteTiles()) {
+            const m = this.wasteMem[key];
+            if (!tile.notify || !m) {
+                continue;
+            }
+            const [h, mi] = (tile.notifyTime || '19:00').split(':').map(Number);
+            const at = new Date(now);
+            at.setHours(h, mi, 0, 0);
+            const today = WasteLogic.dayKey(now);
+            if (now < at || now - at > 2 * 3600000 || m.sent === today) {
+                continue;
+            }
+            m.sent = today;
+            this.saveWaste();
+            const tomorrow = WasteLogic.days(m.entries, WasteLogic.addDays(today, 1), 1, tile.hide)[0];
+            if (!tomorrow) {
+                continue;
+            }
+            // several calendars (e.g. two houses): "Restmüll, Bio (Klagenfurt) · Gelber Sack (Ferlach)"
+            const bySource = new Map();
+            for (const it of tomorrow.items) {
+                if (!bySource.has(it.source)) {
+                    bySource.set(it.source, []);
+                }
+                bySource.get(it.source).push(it.title);
+            }
+            const text = [...bySource].map(([src, titles]) => titles.join(', ') + (bySource.size > 1 && src ? ` (${src})` : '')).join(' · ');
+            this.notify(`🗑 ${tile.label || 'Müllabfuhr'}`, `Morgen: ${text}`, page, `waste-${key}`, tile.channels);
+        }
+    }
+
+    /** for the page: {'page/tile': {entries (next 60 days), updated, error}} */
+    wasteInfo() {
+        const today = WasteLogic.dayKey(new Date());
+        const last = WasteLogic.addDays(today, 60);
+        const out = {};
+        for (const [k, m] of Object.entries(this.wasteMem)) {
+            out[k] = { entries: (m.entries || []).filter(e => e.date >= today && e.date <= last), updated: m.updated || 0, error: m.error || '' };
+        }
+        return out;
+    }
+
+    saveWaste() {
+        try {
+            const tmp = `${this.wasteFile}.tmp`;
+            fs.writeFileSync(tmp, JSON.stringify(this.wasteMem));
+            fs.renameSync(tmp, this.wasteFile);
+        } catch (err) {
+            this.log.warn(`waste.json: ${err.message}`);
+        }
+        if (this.server && this.server.wasteChanged) {
+            this.server.wasteChanged(this.wasteInfo());
         }
     }
 

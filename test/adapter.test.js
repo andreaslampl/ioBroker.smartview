@@ -1520,3 +1520,69 @@ test('users: authenticator set up at home, sessions from home do not count outsi
     assert.equal((await me('users', { method: 'PUT', body: JSON.stringify(list) })).status, 200);
     assert.equal(store.data.users[0].totp, undefined);
 });
+
+test('adapter: waste calendar tile (fetch iCal, reminder once the evening before, errors)', async t => {
+    const W = require('../www/wastelogic');
+    const today = W.dayKey(new Date());
+    const ymd = k => k.replace(/-/g, '');
+    const cal = (events) => 'BEGIN:VCALENDAR\r\n' + events.map(([d, s]) => `BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:${ymd(d)}\r\nSUMMARY:${s}\r\nEND:VEVENT\r\n`).join('') + 'END:VCALENDAR\r\n';
+    const ics = http.createServer((req, res) => {
+        if (req.url === '/a.ics') {
+            res.end(cal([[W.addDays(today, 1), 'Restmüll'], [W.addDays(today, 1), 'Bio'], [W.addDays(today, 5), 'Altpapier']]));
+        } else if (req.url === '/b.ics') {
+            res.end(cal([[W.addDays(today, 1), 'Gelber Sack'], [W.addDays(today, -3), 'Restmüll']]));
+        } else {
+            res.writeHead(404);
+            res.end();
+        }
+    });
+    await new Promise(r => ics.listen(0, '127.0.0.1', r));
+    t.after(() => ics.close());
+    const base = `http://127.0.0.1:${ics.address().port}`;
+    const { adapter, api, port } = await startAdapter(t);
+    const layout = {
+        pages: [{ id: 'start', name: 'Start', tiles: [{ id: 'm', type: 'waste', label: 'Müll', notify: true, notifyTime: '19:00', sources: [
+            { label: 'Klagenfurt', url: `${base}/a.ics` },
+            { label: 'Ferlach', url: `webcal://127.0.0.1:${ics.address().port}/b.ics` }, // webcal -> https: fails here
+        ] }] }],
+    };
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout) });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.pages[0].tiles[0].sources[1].url.startsWith('https://'), true, 'webcal:// becomes https://');
+    await until(() => adapter.wasteInfo()['start/m'] && adapter.wasteInfo()['start/m'].updated);
+    let info = adapter.wasteInfo()['start/m'];
+    assert.deepEqual(info.entries.map(e => [e.title, e.source]), [['Bio', 'Klagenfurt'], ['Restmüll', 'Klagenfurt'], ['Altpapier', 'Klagenfurt']]);
+    assert.match(info.error, /Ferlach/);
+
+    // the second calendar over http works -> both houses
+    layout.pages[0].tiles[0].sources[1].url = `${base}/b.ics`;
+    assert.equal((await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).status, 200);
+    await until(() => adapter.wasteInfo()['start/m'].entries.length === 4);
+    info = adapter.wasteInfo()['start/m'];
+    assert.equal(info.error, '');
+    assert.ok(!info.entries.some(e => e.date < today), 'past dates dropped');
+
+    // the page gets the dates with the init
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    assert.equal(c.msgs.find(m => m.type === 'init').waste['start/m'].entries.length, 4);
+    c.ws.close();
+
+    // reminder: not before 19:00, once at 19:05, not again
+    const sent = [];
+    adapter.notify = (...a) => sent.push(a);
+    const at = (h, m) => {
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        return d;
+    };
+    adapter.checkWaste(at(18, 50));
+    assert.equal(sent.length, 0);
+    adapter.checkWaste(at(19, 5));
+    adapter.checkWaste(at(19, 20));
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0][0], '🗑 Müll');
+    assert.equal(sent[0][1], 'Morgen: Bio, Restmüll (Klagenfurt) · Gelber Sack (Ferlach)');
+    assert.equal(sent[0][3], 'waste-start/m');
+});

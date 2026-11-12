@@ -120,7 +120,7 @@ function boolTexts(role) {
   return null;
 }
 
-const DEFAULT_ICON = { firedet: 'smokedet', car: 'car', robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
+const DEFAULT_ICON = { waste: 'trash', firedet: 'smokedet', car: 'car', robot: 'vacuum', color: 'bulb', appliances: 'washer', fire: 'fire', arrive: 'arrive', leave: 'leave', contact: 'contact', climate: 'dehum', radio: 'music', alarm: 'shield', wallbox: 'charger', planview: 'map', gate: 'gate', energy: 'energy', windows: 'window', html: 'grid', page: 'home', multi: 'gauge', switch: 'bulb', dimmer: 'bulb', blind: 'blind', value: 'gauge', button: 'scene', thermostat: 'thermometer', camera: 'cctv', link: 'link', heading: 'info' };
 
 function tileIcon(t) {
   // a link in edit mode (raw layout) shows the symbol of its original
@@ -1016,6 +1016,57 @@ function refreshColors() {
   }
 }
 
+// ---------------- waste collection (iCal, fetched by the adapter) ----------------
+
+function wasteData(t, pageId) {
+  const key = t._ref || ((tilePage(t) || pageId) + '/' + t.id);
+  return (SV.waste || {})[key] || null;
+}
+
+/** tile / sheet content: next collection days with coloured dots; `full` = all of the next 60 days + status */
+function wasteHtml(t, pageId, full) {
+  const d = wasteData(t, pageId);
+  const today = WasteLogic.dayKey(new Date());
+  const tomorrow = WasteLogic.addDays(today, 1);
+  const days = WasteLogic.days(d ? d.entries : [], today, full ? 60 : t.wasteDays || 14, t.hide);
+  const multi = new Set((t.sources || []).map(x => x.label)).size > 1;
+  const first = days[0];
+  const sum = !d ? 'wird geladen …' : first ? WasteLogic.dayText(first.date, today) : d.error ? 'Fehler' : 'keine Termine';
+  const soon = first && (first.date === today || first.date === tomorrow);
+  const row = day => '<div class="wday' + (day.date === today ? ' today' : day.date === tomorrow ? ' tomorrow' : '') + '">' +
+    '<span class="wdate">' + esc(WasteLogic.dayText(day.date, today)) + '</span><span class="witems">' +
+    day.items.map(it => '<span class="wbin"><i style="background:' + it.kind.color + '"></i>' + esc(it.title) +
+      (multi && it.source ? ' <small>' + esc(it.source) + '</small>' : '') + '</span>').join('') + '</span></div>';
+  const list = full ? days : days.slice(0, 6);
+  return '<div class="whead">' + tileIc(t) + '<span class="grow">' + esc(t.label || 'Müllabfuhr') + '</span>' +
+    '<span class="wsum' + (soon ? ' onc' : d && d.error && !first ? ' bad' : '') + '">' + esc(sum) + '</span></div>' +
+    (list.length ? '<div class="wastelist">' + list.map(row).join('') + '</div>' : '') +
+    (d && d.error ? '<div class="wasteerr">⚠ ' + esc(d.error) + '</div>' : '') +
+    (full ? '<p class="hint">' + (d && d.updated ? 'Kalender geladen ' + (since(d.updated) === 'gerade eben' ? 'gerade eben' : 'vor ' + since(d.updated)) : 'Noch nicht geladen') + '</p>' : '');
+}
+
+function wasteState(t, pageId) {
+  const d = wasteData(t, pageId);
+  const today = WasteLogic.dayKey(new Date());
+  const first = WasteLogic.days(d ? d.entries : [], today, 2, t.hide)[0];
+  return first ? 'on' : '';
+}
+
+/** adapter loaded the calendars again (or the day changed): redraw */
+function refreshWaste() {
+  for (const el of document.querySelectorAll('.tile.waste, .lrow.waste, .marker.waste')) {
+    const t = findTile(el.dataset.page, el.dataset.tile);
+    if (!t) continue;
+    if (el.classList.contains('lrow')) fillRow(el, t);
+    else if (el.classList.contains('marker')) fillMarker(el, t);
+    else fillTile(el, t);
+  }
+  if (SV.sheet && SV.sheet.tile && SV.sheet.tile.type === 'waste') {
+    const box = document.querySelector('.sheet .winsheet');
+    if (box) box.innerHTML = wasteHtml(SV.sheet.tile, tilePage(SV.sheet.tile), true);
+  }
+}
+
 // ---------------- household appliances ----------------
 
 /** status of each device: from the adapter (it remembers "Fertig"), else what the data point says right now */
@@ -1163,6 +1214,7 @@ function tileState(t, pageId) {
     return f.alarm ? 'alert' : f.pre ? 'warn' : f.fault ? 'fault' : f.off ? 'detoff' : '';
   }
   if (t.type === 'appliances') return appliancesState(t, pageId);
+  if (t.type === 'waste') return wasteState(t, pageId);
   if (t.type === 'windows') {
     if (windowsWarn(t)) return 'alert';
     if (!windowStates(t).some(w => w.status === 'open')) return '';
@@ -1754,7 +1806,7 @@ function freeSpan(t, cols) {
 }
 
 /** tile types whose height follows their content (unless a height is set) */
-const AUTO_H = ['html', 'windows', 'appliances', 'energy', 'planview'];
+const AUTO_H = ['html', 'windows', 'appliances', 'waste', 'energy', 'planview'];
 
 /** Columns/rows of a tile element; fixed height for normal tiles, minimum height for content tiles. */
 function sizeTile(el, t, w, h, withRow) {
@@ -2141,6 +2193,10 @@ function fillRow(el, t) {
       el.classList.add('htmlrow');
       el.innerHTML = appliancesHtml(t, el.dataset.page);
       return;
+    case 'waste':
+      el.classList.add('htmlrow');
+      el.innerHTML = wasteHtml(t, el.dataset.page);
+      return;
     case 'html':
       el.classList.add('htmlrow');
       el.innerHTML = (t.label ? '<div class="hlabel">' + esc(t.label) + '</div>' : '') + '<div class="htmlhost"></div>' + warnMark(t);
@@ -2294,7 +2350,7 @@ function tileTap(t) {
     if (t.target) location.hash = encodeURIComponent(t.target);
     return;
   }
-  if (t.type === 'multi' || t.type === 'energy') return openSheet(t);
+  if (t.type === 'multi' || t.type === 'energy' || t.type === 'waste') return openSheet(t);
   // plan tile: a tap beside the symbols opens the plan page only with the tick "openPlan"
   if (t.type === 'planview') {
     if (t.target && t.openPlan) location.hash = encodeURIComponent(t.target);
@@ -2473,6 +2529,9 @@ function fillTile(el, t) {
     case 'appliances':
       html = appliancesHtml(t, el.dataset.page);
       break;
+    case 'waste':
+      html = wasteHtml(t, el.dataset.page);
+      break;
     case 'multi': {
       const rows = t.rows || [];
       if (rows.length === 1) {
@@ -2570,6 +2629,10 @@ function bindControls(el, t) {
       else if (a === 'on') t.type === 'switch' ? send(t.state, !t.invert) : t.switchState ? send(t.switchState, true) : send(t.state, lastLevel(t));
       else if (a === 'off') t.type === 'switch' ? send(t.state, Boolean(t.invert)) : t.switchState ? send(t.switchState, false) : (rememberLevel(t, dimLevel(t)), send(t.state, 0));
       else if (a === 'press') press(t);
+      else if (a === 'wasteref') {
+        if (SV.ws && SV.ws.readyState === 1) SV.ws.send(JSON.stringify({ type: 'wasteRefresh' }));
+        toast('Kalender wird geladen …');
+      }
       else if (a === 'scene') sceneRun(t);
       else if (a === 'fsilence') send(t.silence, true);
       else if (a === 'freset') {
@@ -2975,6 +3038,11 @@ function fillMarker(el, t) {
   else if (t.type === 'windows') {
     const n = windowStates(t).filter(w => w.status !== 'closed' && w.status !== 'unknown').length;
     v = n ? n + ' ' + WinLogic.words(t).open : '';
+  } else if (t.type === 'waste') {
+    const d = wasteData(t);
+    const today = WasteLogic.dayKey(new Date());
+    const first = WasteLogic.days(d ? d.entries : [], today, t.wasteDays || 14, t.hide)[0];
+    v = first ? WasteLogic.dayText(first.date, today) + ': ' + first.items.map(i => i.title).join(', ') : '';
   } else if (t.type === 'appliances') {
     const l = appEntries(t, tilePage(t));
     const n = l.filter(e => e.status === 'done').length;
@@ -3287,6 +3355,9 @@ function fillSheet(sh, t) {
     body = '<div class="winsheet">' + windowsHtml(t) + '</div>';
   } else if (t.type === 'appliances') {
     body = '<div class="winsheet">' + appliancesHtml(t, tilePage(t)) + '</div>';
+  } else if (t.type === 'waste') {
+    body = '<div class="winsheet">' + wasteHtml(t, tilePage(t), true) + '</div>' +
+      (SV.me && SV.me.control === false ? '' : '<div class="row"><button type="button" data-a="wasteref">Kalender jetzt neu laden</button></div>');
   } else if (t.type === 'html') {
     body = '<div class="htmlhost sheethtml"></div>';
   } else if (t.type === 'multi') {
@@ -3597,6 +3668,9 @@ function connect() {
     if (msg.type === 'apps') {
       SV.apps = msg.apps || {};
       refreshApps();
+    } else if (msg.type === 'waste') {
+      SV.waste = msg.waste || {};
+      refreshWaste();
     } else if (msg.type === 'pending') {
       SV.pending = msg.pending || {};
       refreshPending();
@@ -3611,6 +3685,7 @@ function connect() {
     } else if (msg.type === 'init') {
       setDnd(msg.dnd);
       SV.apps = msg.apps || {};
+      SV.waste = msg.waste || {};
       SV.colors = msg.colors || {};
       SV.web = msg.web || null;
       SV.pending = msg.pending || {};
@@ -3736,6 +3811,8 @@ async function start() {
       if (t) (el.classList.contains('lrow') ? fillRow : fillTile)(el, t);
     }
   }, 30000);
+  // waste tiles: "Morgen" becomes "Heute" at midnight
+  setInterval(refreshWaste, 600000);
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
   try {
     await loadLayout();

@@ -746,6 +746,15 @@ Ist Windows auf dem Touch-PC zu langsam (z. B. 2 GB Speicher), gibt es eine schl
 (Linux-Version des Weckers). Schritt für Schritt: [`tools/linux-kiosk/ANLEITUNG.md`](tools/linux-kiosk/ANLEITUNG.md),
 Einrichtung mit `tools/linux-kiosk/kiosk-setup.sh`.
 
+### Müllabfuhr-Kachel
+
+Kachel „Müllabfuhr“ zeigt die nächsten Abholtermine mit Farbe je Müllart (Restmüll grau, Bio braun, Altpapier rot,
+Gelber Sack gelb, Glas grün …) und erinnert auf Wunsch am Vorabend (Push / Telegram / WhatsApp, z. B. 19:00).
+Die Termine kommen aus einem **Kalender-Link (iCal)** – bei der **Müll App** (z. B. Klagenfurt, Ferlach und viele andere
+Gemeinden): am PC <https://app.muellapp.com/web-reminder?channel=calendar> öffnen, Gemeinde, Adresse und Müllarten wählen,
+im Reiter „Kalender Abo/Download“ die „Adresse zum Abonnieren“ kopieren und in der Kachel einfügen. Mehrere Kalender
+(z. B. zwei Häuser) gehen in einer Kachel. Der Adapter lädt die Kalender alle 6 Stunden neu.
+
 ### Von unterwegs ohne VPN (eigener VPS-Server, optional)
 
 Mit einem eigenen Server im Internet (z. B. ein Debian-VPS) ist SmartView unter einer eigenen https-Adresse von
