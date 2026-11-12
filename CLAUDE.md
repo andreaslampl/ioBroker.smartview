@@ -604,6 +604,8 @@ switches/buttons on them.
   keeps old dates on errors, waste.json), `checkWaste(now)` (once per day between notifyTime and +2 h: "Morgen: … (Klagenfurt) ·
   … (Ferlach)"), server init `waste` + {type:'waste'}, ws `wasteRefresh` (control). app.js `wasteHtml()` (tile span 2, AUTO_H),
   sheet 60 days + reload button; icon `trash`. Unit + adapter tests, Playwright (sv/waste-ui.js). Not yet with the real Müll App.
+- 0.68.1: owner asked to put the setup guide into the tile settings -> `wasteSourcesField()` starts with a `<details class="guide">`
+  (open while no link is set): steps with a link to the Müll App calendar page, other iCal sources, two houses, reload/⚠.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

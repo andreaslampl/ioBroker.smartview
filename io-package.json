@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.68.0",
+    "version": "0.68.1",
     "news": {
+      "0.68.1": {
+        "en": "Waste tile: step by step guide for the calendar link in the tile settings",
+        "de": "Müll-Kachel: Schritt-für-Schritt-Anleitung für den Kalender-Link in den Kachel-Einstellungen"
+      },
       "0.68.0": {
         "en": "Waste collection tile: dates from iCal links (e.g. Müll App), colours per kind, several calendars, reminder the evening before",
         "de": "Müllabfuhr-Kachel: Termine aus iCal-Links (z. B. Müll App), Farben je Müllart, mehrere Kalender, Erinnerung am Vorabend"

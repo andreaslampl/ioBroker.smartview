@@ -1553,7 +1553,22 @@ const Editor = (() => {
   function wasteSourcesField(box, rows) {
     const wrap = document.createElement('div');
     wrap.className = 'rules';
-    field(box, 'Kalender', wrap, 'Müll App: am PC app.muellapp.com/web-reminder?channel=calendar öffnen, Gemeinde, Adresse und Müllarten wählen, im Reiter „Kalender Abo/Download“ die „Adresse zum Abonnieren“ kopieren und hier einfügen. Geht auch mit anderen iCal-Links (auch webcal://). Mehrere Kalender = z. B. zwei Häuser in einer Kachel.');
+    // step by step guide (owner asked that everyone finds their way without a manual)
+    const guide = document.createElement('details');
+    guide.className = 'guide';
+    guide.open = !rows.some(r => r.url);
+    guide.innerHTML = '<summary>So bekommst du den Kalender-Link</summary>' +
+      '<p><b>Müll App</b> (z. B. Klagenfurt, Ferlach und viele andere Gemeinden in Österreich):</p><ol>' +
+      '<li>Am PC oder Handy diese Seite öffnen: <a href="https://app.muellapp.com/web-reminder?channel=calendar" target="_blank" rel="noopener">app.muellapp.com – Kalender abonnieren</a></li>' +
+      '<li><b>Gemeinde</b> wählen, dann <b>Straße / Hausnummer</b> und die <b>Müllarten</b>, die angezeigt werden sollen.</li>' +
+      '<li>Reiter <b>„Kalender Abo/Download“</b> öffnen.</li>' +
+      '<li>Die Adresse unter <b>„Adresse zum Abonnieren“</b> kopieren (beginnt mit <code>https://app.muellapp.com/ical/…</code>).</li>' +
+      '<li>Hier unten bei <b>„Kalender-Adresse“</b> einfügen und einen Namen geben, z. B. den Ort.</li></ol>' +
+      '<p><b>Andere Gemeinden / Apps:</b> Jeder Link zu einem Kalender (iCal, .ics, auch <code>webcal://</code>) geht – meist heißt es „Kalender abonnieren“, „iCal“ oder „In Kalender exportieren“. Ein PDF-Abfuhrplan geht nicht.</p>' +
+      '<p><b>Zwei Häuser / Orte:</b> mit „+ Kalender“ einen zweiten Link dazu – die Termine stehen dann gemeinsam in der Kachel, mit dem Namen dahinter.</p>' +
+      '<p>Nach dem Speichern lädt SmartView den Kalender in ein paar Sekunden und dann alle 6 Stunden neu. Zeigt die Kachel ⚠, stimmt der Link nicht oder die Seite ist nicht erreichbar.</p>';
+    box.appendChild(guide);
+    field(box, 'Kalender', wrap);
     const list = rows.map(r => ({ ...r }));
     let rowInputs = [];
     const read = () => rowInputs.map(x => ({ label: x.label.value.trim(), url: x.url.value.trim() }));
