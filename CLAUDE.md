@@ -610,6 +610,8 @@ switches/buttons on them.
   the 1fr track, its min-content (nowrap values) widened the grid past the screen -> `#top { min-width: 0 }`, #title flex none,
   #hvals flex 0 1 auto + min-width 0; app.js `fitHeader()` (after renderHeader + on resize) hides values from the end until
   nothing is cut and the title is clear. Playwright (sv/header-ui.js: 1024/1280/1920).
+- Field (0.48.4/0.48.5 dishwasher): real cause found later - the owner's firewall blocked api.home-connect.com for the ioBroker
+  host (implicit deny), so the Home Connect adapter never got data. Allowed -> works (same for vw-connect's EU Data Act portal).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
