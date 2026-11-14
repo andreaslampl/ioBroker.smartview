@@ -13,6 +13,7 @@ const SV = {
   states: {}, // id -> {val, ack, ts, unit, type, states, missing}
   writable: new Set(),
   pinIds: new Set(), // data points of PIN protected tiles
+  pinFree: {}, // data point -> values sent without PIN (alarm tile: arming, detector on)
   prevStates: {}, // id -> state before the last command (back after a wrong PIN)
   page: null,
   ws: null,
@@ -1285,7 +1286,7 @@ function send(id, value) {
   if (!id) return;
   if (SV.me && SV.me.control === false) return toast('Nur ansehen – du darfst hier nicht schalten', true);
   if (!SV.ws || SV.ws.readyState !== 1) return toast('Keine Verbindung zum ioBroker', true);
-  withPin(id, pin => sendNow(id, value, pin));
+  withPin(id, pin => sendNow(id, value, pin), value);
 }
 
 function sendNow(id, value, pin) {
@@ -1302,8 +1303,9 @@ function sendNow(id, value, pin) {
 // ---------------- PIN (checked by the server; the page only asks for it) ----------------
 
 /** a protected data point: ask for the PIN before every command (the owner wants no remembered PIN) */
-function withPin(id, fn) {
+function withPin(id, fn, value) {
   if (!SV.pinIds || !SV.pinIds.has(id)) return fn(undefined);
+  if (value !== undefined && (SV.pinFree[id] || []).includes(String(value))) return fn(undefined);
   // while the control window of one tile stays open (max. 1 min) its PIN is asked once, e.g. Unscharf + Quittieren;
   // closing the window forgets it
   const sp = SV.sheetPin;
@@ -3693,6 +3695,7 @@ function connect() {
       SV.states = msg.states || {};
       SV.writable = new Set(msg.writable || []);
       SV.pinIds = new Set(msg.pinIds || []);
+      SV.pinFree = msg.pinFree || {};
       render();
       Timers.load();
       checkRing();

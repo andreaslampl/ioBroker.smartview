@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.68.3",
+    "version": "0.69.0",
     "news": {
+      "0.69.0": {
+        "en": "Alarm tile: option to arm (and switch detectors back on) without PIN; disarming, switching off and acknowledging still ask",
+        "de": "Alarm-Kachel: Option „Scharfschalten ohne PIN“ (auch Melder wieder einschalten); Unscharf, Abschalten und Quittieren fragen weiter die PIN"
+      },
       "0.68.3": {
         "en": "Call list: tap a photo to see it full screen, ‹ › or swipe for the other calls",
         "de": "Anrufliste: Foto antippen = groß, mit ‹ › oder Wischen zu den anderen Anrufen"

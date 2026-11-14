@@ -1408,7 +1408,7 @@ class SmartView extends utils.Adapter {
             const obj = await this.getForeignObjectAsync(base).catch(() => null);
             const name = obj && obj.common && obj.common.name;
             out.push({
-                label: (typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
+                label: (name && typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
                 open: `${base}.open`,
                 deact: spc ? '' : `${base}.deactivated`,
                 nr: Number(base.split('.').pop()) || 0,
@@ -1494,7 +1494,7 @@ class SmartView extends utils.Adapter {
             const name = obj && obj.common && obj.common.name;
             const modeObj = await this.getForeignObjectAsync(`${base}.mode`).catch(() => null);
             out.push({
-                label: (typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
+                label: (name && typeof name === 'object' ? name.de || name.en : name) || base.split('.').pop(),
                 state: `${base}.state`,
                 alarm: `${base}.alarm`,
                 fault: `${base}.fault`,

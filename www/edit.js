@@ -241,6 +241,7 @@ const TYPE_FIELDS = {
     ['alarmText', 'Ausgelöste Melder (optional)', 'state-r', 'NOX: areas.N.alarmInputs'],
     ['ack', 'Quittieren (optional)', 'state-w', 'Taste „Alarm quittieren“ im Bedienfenster (nur mit „Schalten erlauben“, PIN wird abgefragt). NOX: control.ackAll – wird mit dem Bereich automatisch eingetragen.'],
     ['control', 'Schalten erlauben (scharf / unscharf, Melder ab- und einschalten)', 'check', 'Ohne Haken ist die Kachel nur Anzeige – auch der ioBroker nimmt dann keine Befehle von ihr an. Mit Haken am besten zusätzlich eine PIN setzen.'],
+    ['pinArmFree', 'Scharfschalten ohne PIN', 'check', 'Nur wenn eine PIN gesetzt ist: scharf / intern scharf und Melder wieder einschalten gehen ohne PIN (auch mit „Haus verlassen“). Unscharf, Melder abschalten und Quittieren fragen weiter die PIN.'],
     ['showDetectors', 'Melder anzeigen (NOX / SPC)', 'check', 'Beim Speichern werden die Melder jedes Bereichs aus dem NOX- bzw. SPC-Adapter geholt (NOX braucht dort die Exportliste). Im Bedienfenster: offen / zu / abgeschaltet, mit „Schalten erlauben“ auch Abschalten / Einschalten (nur NOX). Neue Melder: Kachel nochmal speichern.'],
     ['notify', 'Mitteilung bei Alarm (Push / Telegram / WhatsApp)', 'check', '„🚨 ALARM Wohnhaus“ mit den ausgelösten Meldern, für jeden Bereich – über die Wege aus den Einstellungen.'],
     ['notifyMode', 'Mitteilung auch bei scharf / unscharf', 'check', 'z. B. „Garage: scharf“, wenn ein Bereich umschaltet – egal ob von SmartView, Bedienteil oder Schlüsselschalter.'],

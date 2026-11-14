@@ -616,6 +616,11 @@ switches/buttons on them.
   full screen `.photoview` (z 900, object-fit contain, caption result · time · caller, ‹ › / swipe > 60 px / arrow keys, tap or ✕ /
   Esc closes; img draggable false - a native image drag swallowed the mouse swipe). `showCalls` exported for tests. Playwright
   (sv/callphoto-ui.js, history API mocked).
+- 0.69.0: owner: no PIN needed for arming (leaving the house), only for disarming / switching detectors off, as an option ->
+  alarm option `pinArmFree` (only with control): layout `pinFreeValues(t)` (command -> valueArm/valueHome unless = valueOff,
+  detectors' deact -> false), pin.js `pinFree()` (value free only if EVERY PIN tile writing the id allows it); server
+  `_access().free`, `_pinOk` lets `set` with such a value pass (logged), `_scene` skips them; init `pinFree` -> client
+  `withPin(id, fn, value)`. Ack keeps the PIN. Adapter test.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

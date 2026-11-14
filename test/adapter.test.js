@@ -998,6 +998,56 @@ test('adapter: "Haus verlassen" / "Ankommen" run in the adapter - one PIN, delay
     assert.ok(adapter.writes.some(w => w[0] === 'knx.0.EG.Licht.Kueche' && w[1] === true), 'arrive switches the chosen light on');
 });
 
+test('adapter: alarm tile "Scharfschalten ohne PIN" - arming and detector on without PIN, disarming / detector off with PIN', async t => {
+    const A = 'nox_alarmzentrale.0.areas.1';
+    const { adapter, api, port } = await startAdapter(t, {}, a => {
+        a.add(`${A}.state`, { name: 'Zustand', type: 'number', role: 'value', states: { 1: 'Unscharf', 5: 'Scharf' } }, 1);
+        a.add(`${A}.setState`, { name: 'setzen', type: 'number', role: 'level', write: true }, 1);
+        a.add('nox_alarmzentrale.0.inputs.1.area', { name: 'Bereich', type: 'number', role: 'value' }, 1);
+        a.add('nox_alarmzentrale.0.inputs.1.open', { name: 'offen', type: 'boolean', role: 'sensor' }, false);
+        a.add('nox_alarmzentrale.0.inputs.1.deactivated', { name: 'abgeschaltet', type: 'boolean', role: 'switch', write: true }, false);
+    });
+    adapter.log = { ...adapter.log, info() {}, warn() {} };
+    const layout = { pages: [{ id: 'u', name: 'Übersicht', tiles: [
+        { id: 'al', type: 'alarm', label: 'Alarm', area: A, control: true, pin: '2580', pinArmFree: true, showDetectors: true },
+        { id: 'go', type: 'leave', label: 'Weg', alarmArm: 'al' },
+    ] }] };
+    const saved = (await api('layout', { method: 'PUT', body: JSON.stringify(layout) })).body.pages[0].tiles[0];
+    assert.equal(saved.pinArmFree, true);
+    const c = wsClient(`ws://127.0.0.1:${port}/ws`);
+    t.after(() => c.ws.close());
+    await c.open;
+    await until(() => c.msgs.some(m => m.type === 'init'));
+    const init = c.msgs.find(m => m.type === 'init');
+    assert.deepEqual(init.pinFree[`${A}.setState`], ['5']);
+    adapter.writes.length = 0;
+    // arming: no PIN
+    c.ws.send(JSON.stringify({ type: 'set', id: `${A}.setState`, val: 5 }));
+    await until(() => adapter.writes.some(w => w[0] === `${A}.setState` && w[1] === 5));
+    // disarming: PIN needed
+    c.ws.send(JSON.stringify({ type: 'set', id: `${A}.setState`, val: 1 }));
+    await until(() => c.msgs.some(m => m.type === 'pin' && m.id === `${A}.setState` && m.result === 'need'));
+    assert.ok(!adapter.writes.some(w => w[1] === 1));
+    // detector: off needs the PIN, on does not
+    const D = 'nox_alarmzentrale.0.inputs.1.deactivated';
+    c.ws.send(JSON.stringify({ type: 'set', id: D, val: true }));
+    await until(() => c.msgs.some(m => m.type === 'pin' && m.id === D));
+    c.ws.send(JSON.stringify({ type: 'set', id: D, val: false }));
+    await until(() => adapter.writes.some(w => w[0] === D && w[1] === false));
+    assert.ok(!adapter.writes.some(w => w[0] === D && w[1] === true));
+    // "Haus verlassen" arms without PIN
+    adapter.writes.length = 0;
+    c.ws.send(JSON.stringify({ type: 'scene', page: 'u', tile: 'go' }));
+    await until(() => c.msgs.some(m => m.type === 'scene' && m.key === 'u/go'));
+    assert.ok(!c.msgs.some(m => m.type === 'pin' && m.scene));
+    await until(() => adapter.writes.some(w => w[0] === `${A}.setState` && w[1] === 5));
+    // without the tick everything asks again
+    await api('layout', { method: 'PUT', body: JSON.stringify({ pages: [{ ...layout.pages[0], tiles: [{ ...layout.pages[0].tiles[0], pin: true, pinArmFree: false }] }] }) });
+    c.msgs.length = 0;
+    c.ws.send(JSON.stringify({ type: 'set', id: `${A}.setState`, val: 5 }));
+    await until(() => c.msgs.some(m => m.type === 'pin' && m.result === 'need'));
+});
+
 test('adapter: fire alarm tile (FC20) - filled from the instance, detectors with mode, commands only with "Schalten erlauben"', async t => {
     const F = 'fc20-cerberus-bacnet.0';
     const { adapter, api, port } = await startAdapter(t, {}, a => {
