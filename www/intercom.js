@@ -285,6 +285,7 @@ const Intercom = (() => {
       const entries = await api('intercom/history');
       list.className = 'calllist';
       list.textContent = entries.length ? '' : 'Noch keine Anrufe.';
+      const photos = entries.filter(x => x.image);
       for (const e of entries) {
         const item = document.createElement('div');
         item.className = 'callitem ' + e.result + (e.seen ? '' : ' new');
@@ -293,6 +294,12 @@ const Intercom = (() => {
           img.loading = 'lazy';
           img.src = 'api/intercom/history/' + e.id + '.jpg';
           img.alt = '';
+          img.title = 'Antippen = groß';
+          // tap = the photo full screen (small touch screens), ‹ › through the other calls' photos
+          img.onclick = ev => {
+            ev.stopPropagation();
+            showPhoto(photos, photos.indexOf(e));
+          };
           item.appendChild(img);
         }
         const text = document.createElement('div');
@@ -304,6 +311,70 @@ const Intercom = (() => {
     } catch (err) {
       list.textContent = 'Anrufliste nicht verfügbar: ' + err.message;
     }
+  }
+
+  function callCaption(e) {
+    const when = new Date(e.time).toLocaleString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return (RESULT[e.result] || e.result) + ' · ' + when + (e.caller ? ' · ' + e.caller : '');
+  }
+
+  /** photo of a call full screen: tap / ✕ / Esc closes, ‹ › or swipe for the previous / next call */
+  function showPhoto(photos, index) {
+    if (!photos.length || index < 0) return;
+    let i = index;
+    const ov = document.createElement('div');
+    ov.className = 'photoview';
+    ov.innerHTML = '<img alt=""><div class="pvbar"><button type="button" class="iconbtn" data-prev aria-label="Neuer">‹</button><span class="pvcap grow"></span>' +
+      '<button type="button" class="iconbtn" data-next aria-label="Älter">›</button><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></div>';
+    const img = ov.querySelector('img');
+    // no native picture drag (it would swallow the swipe)
+    img.draggable = false;
+    img.addEventListener('dragstart', ev => ev.preventDefault());
+    const show = () => {
+      img.src = 'api/intercom/history/' + photos[i].id + '.jpg';
+      ov.querySelector('.pvcap').textContent = callCaption(photos[i]) + (photos.length > 1 ? '  (' + (i + 1) + '/' + photos.length + ')' : '');
+      ov.querySelector('[data-prev]').disabled = i === 0;
+      ov.querySelector('[data-next]').disabled = i === photos.length - 1;
+    };
+    const close = () => {
+      ov.remove();
+      document.removeEventListener('keydown', key);
+    };
+    const step = d => {
+      const n = i + d;
+      if (n >= 0 && n < photos.length) {
+        i = n;
+        show();
+      }
+    };
+    const key = ev => {
+      if (ev.key === 'Escape') close();
+      else if (ev.key === 'ArrowLeft') step(-1);
+      else if (ev.key === 'ArrowRight') step(1);
+    };
+    ov.querySelector('[data-prev]').onclick = ev => {
+      ev.stopPropagation();
+      step(-1);
+    };
+    ov.querySelector('[data-next]').onclick = ev => {
+      ev.stopPropagation();
+      step(1);
+    };
+    ov.querySelector('[data-x]').onclick = ev => {
+      ev.stopPropagation();
+      close();
+    };
+    let x0 = null;
+    ov.addEventListener('pointerdown', ev => (x0 = ev.clientX));
+    ov.addEventListener('pointerup', ev => {
+      const dx = x0 === null ? 0 : ev.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 60) step(dx < 0 ? 1 : -1);
+      else if (ev.target === img || ev.target === ov) close();
+    });
+    document.addEventListener('keydown', key);
+    document.body.appendChild(ov);
+    show();
   }
 
   /** Entries for the ⚙ menu. */
@@ -352,5 +423,5 @@ const Intercom = (() => {
     }
   }
 
-  return { sync, menuItems, active: () => Boolean(inst), dndChanged };
+  return { sync, menuItems, active: () => Boolean(inst), dndChanged, showCalls };
 })();

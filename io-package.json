@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.68.2",
+    "version": "0.68.3",
     "news": {
+      "0.68.3": {
+        "en": "Call list: tap a photo to see it full screen, ‹ › or swipe for the other calls",
+        "de": "Anrufliste: Foto antippen = groß, mit ‹ › oder Wischen zu den anderen Anrufen"
+      },
       "0.68.2": {
         "en": "Header: values next to the clock no longer slide over the title; values that do not fit are left out",
         "de": "Kopfzeile: Werte neben der Uhr schieben sich nicht mehr über den Titel; was nicht passt, wird weggelassen"

@@ -612,6 +612,10 @@ switches/buttons on them.
   nothing is cut and the title is clear. Playwright (sv/header-ui.js: 1024/1280/1920).
 - Field (0.48.4/0.48.5 dishwasher): real cause found later - the owner's firewall blocked api.home-connect.com for the ioBroker
   host (implicit deny), so the Home Connect adapter never got data. Allowed -> works (same for vw-connect's EU Data Act portal).
+- 0.68.3: owner could hardly see the call photos on the touch PC -> www/intercom.js `showPhoto(photos, i)`: tap a call list photo ->
+  full screen `.photoview` (z 900, object-fit contain, caption result · time · caller, ‹ › / swipe > 60 px / arrow keys, tap or ✕ /
+  Esc closes; img draggable false - a native image drag swallowed the mouse swipe). `showCalls` exported for tests. Playwright
+  (sv/callphoto-ui.js, history API mocked).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
