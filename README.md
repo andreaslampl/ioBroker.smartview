@@ -400,6 +400,9 @@ Unter ⚙ **Allgemein & Mitteilungen → Klingel**:
   läutenden Station groß; abgehoben wird an dem Gerät, an dem man zuerst „Abheben“ tippt.
   Während des Gesprächs gibt es zwei Schieberegler: **🔊 Lautstärke** und **🎤 Mikrofon** (0–300 %, jedes Gerät
   merkt sich seine Einstellung).
+  **Von innen anrufen:** im Menü ⚙ **„📞 Haustür anrufen“** (eine Zeile je Sprechstelle mit IP) – zum Sprechen mit
+  jemandem draußen oder um Lautstärke und Mikrofon einzustellen. Braucht livecam 0.4.0; die Sprechstelle muss
+  eingehende Anrufe automatisch annehmen (siehe livecam-Anleitung).
 - Ohne Sprechstelle: Datenpunkt „läutet“, Kamera und optional „Tür öffnen“ – dann zeigt SmartView beim
   Läuten nur das Kamerabild mit „Tür öffnen“.
 

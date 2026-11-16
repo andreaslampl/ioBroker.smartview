@@ -640,6 +640,11 @@ switches/buttons on them.
   shutdown, no OOM, 29 °C). Celeron N2930 = Bay Trail (known random freezes; intel_idle.max_cstate=1 is the usual cure, offered
   to the owner, not set by the script). Script: systemd `RuntimeWatchdogSec=60` (iTCO_wdt) so a freeze restarts by itself;
   /etc/cron.d/smartview-kiosk-reboot chmod 644 (was 664 -> cron "INSECURE MODE", the weekly reboot never ran).
+- 0.71.0: owner could reach the volume sliders only while it rang and asked to call the door station from inside ->
+  livecam 0.4.0 `dial` (outgoing SIP, see its CLAUDE.md); intercom.js `startAudio(deliver, outgoing)` shared by
+  `answer()` and `dial(station)` (ws {type:'dial', sdp, station}), menu items "📞 <name> anrufen" from livecam's
+  `state.stations`, overlay text "Rufe … an" (state `calling`), an error while idle frees the mic (cleanup).
+  Playwright e2e with real livecam + fake answering station (sv/dial-e2e.js). Real 2N must auto-answer: not tried yet.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

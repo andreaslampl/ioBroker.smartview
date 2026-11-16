@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.70.2",
+    "version": "0.71.0",
     "news": {
+      "0.71.0": {
+        "en": "Intercom: call the door station from inside (menu ⚙, needs livecam 0.4.0), e.g. to talk or to set the volume",
+        "de": "Sprechanlage: Sprechstelle von innen anrufen (Menü ⚙, braucht livecam 0.4.0), z. B. zum Sprechen oder um die Lautstärke einzustellen"
+      },
       "0.70.2": {
         "en": "Linux kiosk: hardware watchdog restarts a frozen touch PC by itself; weekly restart file was ignored by cron (permissions)",
         "de": "Linux-Kiosk: Hardware-Watchdog startet einen hängenden Touch-PC selbst neu; der wöchentliche Neustart wurde wegen der Dateirechte nie ausgeführt"

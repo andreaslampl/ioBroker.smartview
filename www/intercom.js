@@ -103,6 +103,8 @@ const Intercom = (() => {
         await pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
       } else if (msg.type === 'error') {
         toast(msg.message, true);
+        // a call from inside that never started (busy, no IP): free the microphone again
+        if (state.state === 'idle') cleanup();
       }
     };
     sock.onclose = () => {
@@ -184,6 +186,7 @@ const Intercom = (() => {
     const mine = state.mine;
     overlay.classList.toggle('ring', ringing);
     overlay.querySelector('.name').textContent = ringing ? 'Es läutet' + (state.caller ? ' – ' + state.caller : '')
+      : s === 'calling' ? (mine ? 'Rufe ' + (state.caller || 'Sprechstelle') + ' an …' : 'Gespräch an einem anderen Gerät')
       : s === 'connecting' ? 'Verbinde …'
       : s === 'active' ? (mine ? 'Gespräch läuft' : 'Gespräch an einem anderen Gerät') : '';
     const box = overlay.querySelector('.callbtns');
@@ -237,14 +240,26 @@ const Intercom = (() => {
     }
   }
 
-  async function answer() {
+  /** Pick up a ringing call. */
+  function answer() {
+    return startAudio(sdp => sendMsg({ type: 'answer', sdp }));
+  }
+
+  /** Call a door station from inside (talk / test speaker and microphone). */
+  function dial(station) {
+    if (state.state !== 'idle') return toast('Die Sprechstelle ist gerade belegt', true);
+    dismissed = false;
+    return startAudio(sdp => sendMsg({ type: 'dial', sdp, station }), true).catch(e => toast(e.message, true));
+  }
+
+  async function startAudio(deliver, outgoing) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast('Mikrofon nicht verfügbar: ' + (window.isSecureContext ? 'der Browser bietet kein Mikrofon an.'
         : 'diese Adresse ist nicht sicher – SmartView über https öffnen oder die Adresse im Browser freigeben (siehe Anleitung).'), true);
       return;
     }
     if (!ws || ws.readyState !== 1) return toast('Keine Verbindung zur Sprechstelle', true);
-    ring(false);
+    if (!outgoing) ring(false);
     try {
       mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     } catch (e) {
@@ -308,7 +323,7 @@ const Intercom = (() => {
         }
       });
     });
-    sendMsg({ type: 'answer', sdp: pc.localDescription.sdp });
+    deliver(pc.localDescription.sdp);
   }
 
   // ---------------- volume (per device, 0-300 %) ----------------
@@ -491,6 +506,18 @@ const Intercom = (() => {
   /** Entries for the ⚙ menu. */
   function menuItems(box) {
     if (!inst) return;
+    // call a station from inside (needs the right to answer; livecam lists the stations with an IP)
+    for (const st of state.stations || []) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'item';
+      b.innerHTML = '<span class="emo">📞</span>' + esc(st.name) + ' anrufen';
+      b.onclick = () => {
+        box.closest('.overlay').remove();
+        dial(st.index);
+      };
+      box.appendChild(b);
+    }
     const calls = document.createElement('button');
     calls.type = 'button';
     calls.className = 'item';
@@ -534,5 +561,5 @@ const Intercom = (() => {
     }
   }
 
-  return { sync, menuItems, active: () => Boolean(inst), dndChanged, showCalls };
+  return { sync, menuItems, active: () => Boolean(inst), dndChanged, showCalls, dial };
 })();
