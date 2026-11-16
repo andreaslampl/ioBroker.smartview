@@ -627,6 +627,11 @@ switches/buttons on them.
   true if any (a SIP call only set livecam's state when ring.state pointed elsewhere); kiosk Chromium
   `--disable-features=Translate,WebRtcHideLocalIpsWithMdns` (one flag - Chromium keeps only the last; mDNS .local host
   candidates cannot be resolved by livecam across VLANs). Audio cause not proven yet (asked for wpctl status / mic).
+- 0.70.0: owner asked for volume sliders on the display -> call overlay `.callvol` (only while this device has the call):
+  🔊 / 🎤 0-300 % in localStorage `sv.call.vol` / `sv.call.mic`; Web Audio: mic -> GainNode -> MediaStreamDestination
+  track for the peer connection, remote stream -> GainNode -> destination with the <audio> element muted (Chromium only
+  feeds a remote WebRTC stream to Web Audio while an element plays it); without Web Audio audio.volume (max 100 %).
+  Playwright e2e with real livecam + fake 2N (sv/vol-e2e.js): double tap = one 200 OK, mic 0 % = silent RTP, 300 % louder.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

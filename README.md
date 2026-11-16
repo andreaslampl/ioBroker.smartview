@@ -398,6 +398,8 @@ Unter ⚙ **Allgemein & Mitteilungen → Klingel**:
   **Abheben und Sprechen**, **Ablehnen / Auflegen**, **Tür öffnen**, rotes **🔔 n** oben bei verpassten
   Anrufen und die **Anrufliste mit Fotos** (auch im Menü ⚙). Läutet es, erscheint die Kamera der
   läutenden Station groß; abgehoben wird an dem Gerät, an dem man zuerst „Abheben“ tippt.
+  Während des Gesprächs gibt es zwei Schieberegler: **🔊 Lautstärke** und **🎤 Mikrofon** (0–300 %, jedes Gerät
+  merkt sich seine Einstellung).
 - Ohne Sprechstelle: Datenpunkt „läutet“, Kamera und optional „Tür öffnen“ – dann zeigt SmartView beim
   Läuten nur das Kamerabild mit „Tür öffnen“.
 

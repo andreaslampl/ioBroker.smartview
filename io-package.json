@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.69.1",
+    "version": "0.70.0",
     "news": {
+      "0.70.0": {
+        "en": "Intercom: volume sliders for speaker and microphone during a call (0-300 %, remembered per device)",
+        "de": "Sprechanlage: Schieberegler für Lautstärke und Mikrofon während des Gesprächs (0–300 %, je Gerät gemerkt)"
+      },
       "0.69.1": {
         "en": "Intercom: answer reacts at once and only once; monitor wake-up also on livecam calls; Linux kiosk: WebRTC without mDNS addresses",
         "de": "Sprechanlage: Abheben reagiert sofort und nur einmal; Monitor-Wecker auch bei Anrufen über livecam; Linux-Kiosk: WebRTC ohne mDNS-Adressen"

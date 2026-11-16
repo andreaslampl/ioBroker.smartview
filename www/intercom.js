@@ -15,6 +15,9 @@ const Intercom = (() => {
   let pc = null;
   let mic = null;
   let answering = false; // "Abheben" tapped, call is being set up
+  let actx = null; // Web Audio for the volume sliders (speaker and microphone gain up to 300 %)
+  let outGain = null;
+  let micGain = null;
   let overlay = null;
   let dismissed = false;
   let ringOn = false;
@@ -152,7 +155,17 @@ const Intercom = (() => {
     closeCam();
     overlay = document.createElement('div');
     overlay.className = 'camfull call ring';
-    overlay.innerHTML = '<img alt=""><div class="bar"><span class="name"></span><span class="callbtns"></span></div><audio autoplay></audio>';
+    overlay.innerHTML = '<img alt=""><div class="bar"><span class="name"></span><span class="callbtns"></span></div>' +
+      '<div class="callvol" hidden><label><span>🔊</span><input type="range" min="0" max="300" step="10" data-lv="vol"><b></b></label>' +
+      '<label><span>🎤</span><input type="range" min="0" max="300" step="10" data-lv="mic"><b></b></label></div><audio autoplay></audio>';
+    for (const r of overlay.querySelectorAll('input[data-lv]')) {
+      r.value = level(r.dataset.lv);
+      r.nextElementSibling.textContent = r.value + ' %';
+      r.addEventListener('input', () => {
+        r.nextElementSibling.textContent = r.value + ' %';
+        setLevel(r.dataset.lv, Number(r.value));
+      });
+    }
     const cam = cameraId();
     if (cam) overlay.querySelector('img').src = 'cam/' + encodeURIComponent(cam) + '.mjpeg';
     document.body.appendChild(overlay);
@@ -180,6 +193,8 @@ const Intercom = (() => {
     else if (mine) buttons.push(['hangup', 'Auflegen', 'hangup']);
     if (state.doorAvailable || (s === 'active' && mine)) buttons.push(['door', 'Tür öffnen', 'door']);
     buttons.push(['close', ringing ? 'Ausblenden' : 'Schließen', '']);
+    // volume sliders only while this device has the call
+    overlay.querySelector('.callvol').hidden = !(mine && !ringing && s !== 'idle');
     const sig = buttons.map(b => b[0]).join();
     if (box.dataset.sig === sig) return;
     box.dataset.sig = sig;
@@ -243,12 +258,43 @@ const Intercom = (() => {
       toast(e.name === 'NotFoundError' ? 'Kein Mikrofon gefunden: nur Zuhören möglich' : 'Mikrofon von einem anderen Programm belegt: nur Zuhören möglich', true);
     }
     pc = new RTCPeerConnection();
-    if (mic) for (const t of mic.getTracks()) pc.addTrack(t, mic);
-    else pc.addTransceiver('audio', { direction: 'recvonly' });
+    if (mic) {
+      // microphone through a gain (slider 🎤); without Web Audio the plain track
+      let send = mic;
+      const ctx = audioCtx();
+      if (ctx) {
+        try {
+          micGain = ctx.createGain();
+          micGain.gain.value = level('mic') / 100;
+          const dest = ctx.createMediaStreamDestination();
+          ctx.createMediaStreamSource(mic).connect(micGain).connect(dest);
+          send = dest.stream;
+        } catch {
+          micGain = null;
+          send = mic;
+        }
+      }
+      for (const t of send.getTracks()) pc.addTrack(t, send);
+    } else pc.addTransceiver('audio', { direction: 'recvonly' });
     pc.ontrack = ev => {
       const a = overlay && overlay.querySelector('audio');
       if (!a) return;
-      a.srcObject = ev.streams[0] || new MediaStream([ev.track]);
+      const stream = ev.streams[0] || new MediaStream([ev.track]);
+      // Chromium only passes a remote WebRTC stream to Web Audio while a (muted) element plays it
+      a.srcObject = stream;
+      const ctx = audioCtx();
+      outGain = null;
+      if (ctx) {
+        try {
+          outGain = ctx.createGain();
+          outGain.gain.value = level('vol') / 100;
+          ctx.createMediaStreamSource(stream).connect(outGain).connect(ctx.destination);
+          a.muted = true;
+        } catch {
+          outGain = null;
+        }
+      }
+      if (!outGain) a.volume = Math.min(1, level('vol') / 100);
       a.play().catch(() => {});
     };
     await pc.setLocalDescription(await pc.createOffer());
@@ -265,7 +311,58 @@ const Intercom = (() => {
     sendMsg({ type: 'answer', sdp: pc.localDescription.sdp });
   }
 
+  // ---------------- volume (per device, 0-300 %) ----------------
+
+  function audioCtx() {
+    try {
+      if (!actx) {
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (C) actx = new C();
+      }
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+    } catch {
+      actx = null;
+    }
+    return actx;
+  }
+
+  function level(key) {
+    try {
+      const v = localStorage.getItem('sv.call.' + key);
+      const n = Number(v);
+      if (v !== null && v !== '' && n >= 0 && n <= 300) return n;
+    } catch {
+      // no storage: default
+    }
+    return 100;
+  }
+
+  function setLevel(key, v) {
+    try {
+      localStorage.setItem('sv.call.' + key, String(v));
+    } catch {
+      // only for this call
+    }
+    if (key === 'mic' && micGain) micGain.gain.value = v / 100;
+    if (key === 'vol') {
+      if (outGain) outGain.gain.value = v / 100;
+      else {
+        const a = overlay && overlay.querySelector('audio');
+        if (a) a.volume = Math.min(1, v / 100);
+      }
+    }
+  }
+
   function cleanup() {
+    for (const g of [outGain, micGain]) {
+      try {
+        if (g) g.disconnect();
+      } catch {
+        // already gone
+      }
+    }
+    outGain = null;
+    micGain = null;
     if (pc) {
       pc.close();
       pc = null;
