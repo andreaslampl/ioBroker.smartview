@@ -17,6 +17,9 @@ HOSTS_NAME="${HOSTS_NAME:-}"    # DuckDNS name to resolve locally (works without
 HOSTS_IP="${HOSTS_IP:-}"        # LAN IP of the ioBroker for that name
 SCREEN_OFF_MIN="${SCREEN_OFF_MIN:-0}"   # monitor off after this many minutes without touching (0 = never)
 WAKE_DURING_DND="${WAKE_DURING_DND:-1}" # 1 = wake the monitor also during "Nicht stören"
+SPK_VOL="${SPK_VOL:-1.0}"       # speaker volume at start (0.0-1.5)
+MIC_VOL="${MIC_VOL:-0.8}"       # microphone volume at start (0.0-1.0)
+MIC_BOOST="${MIC_BOOST:-1}"     # ALSA "Mic Boost" step (0-3, each +10 dB; empty = leave as it is) - 3 rauscht stark
 KIOSK_USER=kiosk
 
 if [ "$(id -u)" != 0 ]; then
@@ -27,7 +30,7 @@ fi
 # run again: keep the answers of the last run (/etc/smartview-kiosk.conf)
 if [ -f /etc/smartview-kiosk.conf ]; then
     # shellcheck disable=SC1091
-    eval "$(grep -E '^(SV_URL|SV_LOCAL|SV_KEY|SCREEN_OFF_MIN|WAKE_DURING_DND|HOSTS_NAME|HOSTS_IP)=' /etc/smartview-kiosk.conf | sed 's/^/OLD_/')"
+    eval "$(grep -E '^(SV_URL|SV_LOCAL|SV_KEY|SCREEN_OFF_MIN|WAKE_DURING_DND|HOSTS_NAME|HOSTS_IP|SPK_VOL|MIC_VOL|MIC_BOOST)=' /etc/smartview-kiosk.conf | sed 's/^/OLD_/')"
     SV_URL="${SV_URL:-${OLD_SV_URL:-}}"
     SV_LOCAL="${SV_LOCAL:-${OLD_SV_LOCAL:-}}"
     SV_KEY="${SV_KEY:-${OLD_SV_KEY:-}}"
@@ -35,6 +38,9 @@ if [ -f /etc/smartview-kiosk.conf ]; then
     WAKE_DURING_DND="${OLD_WAKE_DURING_DND:-$WAKE_DURING_DND}"
     HOSTS_NAME="${HOSTS_NAME:-${OLD_HOSTS_NAME:-}}"
     HOSTS_IP="${HOSTS_IP:-${OLD_HOSTS_IP:-}}"
+    SPK_VOL="${OLD_SPK_VOL:-$SPK_VOL}"
+    MIC_VOL="${OLD_MIC_VOL:-$MIC_VOL}"
+    [ -n "${OLD_MIC_BOOST+x}" ] && MIC_BOOST="$OLD_MIC_BOOST"
     KEEP_KEY=1
     echo "Vorhandene Einstellungen werden übernommen (ändern: nano /etc/smartview-kiosk.conf)."
 fi
@@ -64,7 +70,7 @@ DISTRO="$(. /etc/os-release && echo "${ID:-debian}")"
 apt-get update
 apt-get install -y --no-install-recommends \
     xserver-xorg xinit x11-xserver-utils fonts-dejavu-core \
-    pipewire pipewire-pulse wireplumber pipewire-alsa alsa-utils \
+    pipewire pipewire-pulse wireplumber pipewire-alsa alsa-utils rtkit \
     curl ca-certificates gnupg dbus-user-session \
     unattended-upgrades
 if [ "$DISTRO" = ubuntu ]; then
@@ -111,6 +117,10 @@ BROWSER='$BROWSER'
 PROFILE='$PROFILE'
 HOSTS_NAME='$HOSTS_NAME'
 HOSTS_IP='$HOSTS_IP'
+# sound at every start: speaker / microphone volume (wpctl), Mic Boost 0-3 (empty = leave as it is)
+SPK_VOL='$SPK_VOL'
+MIC_VOL='$MIC_VOL'
+MIC_BOOST='$MIC_BOOST'
 EOF
 chmod 644 /etc/smartview-kiosk.conf
 
@@ -156,8 +166,10 @@ fi
 /usr/local/bin/smartview-wecker &
 # speaker and microphone: on and loud enough (PipeWire starts with the login)
 ( sleep 5
-  wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.8 2>/dev/null
-  wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.9 2>/dev/null ) &
+  wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SINK@ "${SPK_VOL:-1.0}" 2>/dev/null
+  wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 2>/dev/null; wpctl set-volume @DEFAULT_AUDIO_SOURCE@ "${MIC_VOL:-0.8}" 2>/dev/null
+  # after wpctl: PipeWire may move the boost together with the volume; a high boost is what makes the hiss
+  [ -n "${MIC_BOOST:-}" ] && amixer -q -c 0 sset 'Mic Boost' "$MIC_BOOST" 2>/dev/null ) &
 extra=()
 # without a window manager Chromium does not size itself to the screen -> take the screen size from X
 size="$(xrandr 2>/dev/null | awk '/\*/ {print $1; exit}')"

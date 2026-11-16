@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.70.0",
+    "version": "0.70.1",
     "news": {
+      "0.70.1": {
+        "en": "Linux kiosk: speaker / microphone volume and Mic Boost as settings (default boost 1 instead of the hissing maximum), rtkit",
+        "de": "Linux-Kiosk: Lautsprecher, Mikrofon und Mic Boost als Einstellung (Boost 1 statt des rauschenden Maximums), rtkit"
+      },
       "0.70.0": {
         "en": "Intercom: volume sliders for speaker and microphone during a call (0-300 %, remembered per device)",
         "de": "Sprechanlage: Schieberegler für Lautstärke und Mikrofon während des Gesprächs (0–300 %, je Gerät gemerkt)"

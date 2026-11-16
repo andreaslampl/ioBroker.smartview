@@ -77,9 +77,18 @@ dafür erscheint eine **Bildschirmtastatur** (ab SmartView 0.67.2). Danach bleib
   `reboot`. Zurück zu SmartView: **Strg+Alt+F1**.
   - `SCREEN_OFF_MIN` – Monitor aus nach so vielen Minuten ohne Berühren (`0` = nie). Antippen oder Klingeln weckt ihn.
   - `WAKE_DURING_DND` – `1` = auch bei „Nicht stören“ wecken (Bild ohne Klingelton)
-- Aus der Ferne (z. B. Windows-Eingabeaufforderung): `ssh admin@smartview-touch` (bzw. die IP), dann `sudo -i`.
+  - `SPK_VOL` – Lautsprecher beim Start (`1.0` = 100 %)
+  - `MIC_VOL` – Mikrofon beim Start (`0.8` = 80 %)
+  - `MIC_BOOST` – Mikrofon-Vorverstärkung `0`–`3` (je +10 dB). Rauscht es stark, kleiner stellen; zu leise: größer.
+    Leer lassen = nicht verändern.
+- Aus der Ferne (z. B. Windows-Eingabeaufforderung): `ssh admin@smartview-touch` (bzw. die IP), dann `sudo -i`
+  (unter Debian ohne sudo: `su -`).
 - Sicherheits-Updates kommen automatisch; jeden **Sonntag um 4:17** startet der Touch-PC neu.
-- Lautstärke: `wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.8` (0.0 – 1.0), Mikrofon: `…@DEFAULT_AUDIO_SOURCE@…`.
+- Lautstärke sofort ausprobieren (als root):
+  `R="runuser -u kiosk -- env XDG_RUNTIME_DIR=/run/user/$(id -u kiosk)"`, dann `$R wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0`,
+  Mikrofon `$R wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.8`, Vorverstärkung `amixer -c 0 sset 'Mic Boost' 1`.
+  Test: `$R pw-record /tmp/test.wav & sleep 5; kill $!` und `$R pw-play /tmp/test.wav`. Passende Werte dann in die
+  Einstellungen (oben) eintragen, sonst gelten nach dem Neustart wieder die alten.
 - Zurück zu Windows: einfach die alte SSD wieder einsetzen.
 
 ## Skript aktualisieren

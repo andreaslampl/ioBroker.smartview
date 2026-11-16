@@ -632,6 +632,10 @@ switches/buttons on them.
   track for the peer connection, remote stream -> GainNode -> destination with the <audio> element muted (Chromium only
   feeds a remote WebRTC stream to Web Audio while an element plays it); without Web Audio audio.volume (max 100 %).
   Playwright e2e with real livecam + fake 2N (sv/vol-e2e.js): double tap = one 200 OK, mic 0 % = silent RTP, 300 % louder.
+- 0.70.1 field (touch PC, Realtek-like "Internes Audio"): mic works but hissed - Mic Boost 3 (+30 dB) + Capture 100 % (+30 dB);
+  "Mic" playback is off (no loopback). Kiosk conf `SPK_VOL` (1.0), `MIC_VOL` (0.8), `MIC_BOOST` (1, empty = untouched), set at
+  every X start after wpctl (PipeWire may move the boost with the volume); package rtkit. Debian has no sudo: `su -`,
+  `runuser -u kiosk -- env XDG_RUNTIME_DIR=/run/user/<uid> wpctl …`.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
