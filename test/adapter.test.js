@@ -1223,6 +1223,11 @@ test('adapter: /api/ring for the monitor wake-up helper (ringing, do not disturb
     await until(async () => (await ring()).dnd === true);
     adapter.emit('stateChange', '0_userdata.0.Klingel', { val: false, ack: true, ts: Date.now(), lc: Date.now() });
     await until(async () => (await ring()).ringing === false);
+    // with an own ring state AND livecam's intercom: a SIP call (intercom.ringing) wakes the monitor too
+    await fetch(base + 'api/layout?key=geheim', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pages: [{ id: 's', name: 'S', tiles: [] }], ring: { state: '0_userdata.0.Klingel', intercom: 'livecam.0' } }) });
+    await until(() => adapter.subscribed.has('livecam.0.intercom.ringing'));
+    adapter.emit('stateChange', 'livecam.0.intercom.ringing', { val: true, ack: true, ts: Date.now(), lc: Date.now() });
+    await until(async () => (await ring()).ringing === true);
     void api;
 });
 

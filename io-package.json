@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.69.0",
+    "version": "0.69.1",
     "news": {
+      "0.69.1": {
+        "en": "Intercom: answer reacts at once and only once; monitor wake-up also on livecam calls; Linux kiosk: WebRTC without mDNS addresses",
+        "de": "Sprechanlage: Abheben reagiert sofort und nur einmal; Monitor-Wecker auch bei Anrufen über livecam; Linux-Kiosk: WebRTC ohne mDNS-Adressen"
+      },
       "0.69.0": {
         "en": "Alarm tile: option to arm (and switch detectors back on) without PIN; disarming, switching off and acknowledging still ask",
         "de": "Alarm-Kachel: Option „Scharfschalten ohne PIN“ (auch Melder wieder einschalten); Unscharf, Abschalten und Quittieren fragen weiter die PIN"

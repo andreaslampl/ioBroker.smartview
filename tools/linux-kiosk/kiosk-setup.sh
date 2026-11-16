@@ -172,7 +172,7 @@ while true; do
     # no "restore pages?" bubble after a power cut
     [ -f "$prefs" ] && sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]*"/"exit_type":"Normal"/' "$prefs"
     "${BROWSER:-chromium}" --kiosk --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars --disable-session-crashed-bubble \
-        --disable-translate --disable-features=Translate --password-store=basic \
+        --disable-translate --disable-features=Translate,WebRtcHideLocalIpsWithMdns --password-store=basic \
         --autoplay-policy=no-user-gesture-required --use-fake-ui-for-media-stream \
         --overscroll-history-navigation=0 --disable-pinch --check-for-update-interval=31536000 \
         --renderer-process-limit=2 --disk-cache-size=52428800 \

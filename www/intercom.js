@@ -14,6 +14,7 @@ const Intercom = (() => {
   let view = {};
   let pc = null;
   let mic = null;
+  let answering = false; // "Abheben" tapped, call is being set up
   let overlay = null;
   let dismissed = false;
   let ringOn = false;
@@ -194,7 +195,20 @@ const Intercom = (() => {
   }
 
   function act(action, btn) {
-    if (action === 'answer') answer().catch(e => toast(e.message, true));
+    if (action === 'answer') {
+      // a slow start (microphone, connection) must not answer twice: the second tap is ignored
+      if (answering) return;
+      answering = true;
+      btn.disabled = true;
+      btn.textContent = 'Verbinde …';
+      answer().catch(e => toast(e.message, true)).finally(() => {
+        answering = false;
+        if (overlay && state.state === 'ringing' && !pc) {
+          btn.disabled = false;
+          btn.textContent = 'Abheben';
+        }
+      });
+    }
     else if (action === 'hangup') sendMsg({ type: 'hangup' });
     else if (action === 'door') {
       sendMsg({ type: 'door' });

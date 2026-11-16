@@ -621,6 +621,12 @@ switches/buttons on them.
   detectors' deact -> false), pin.js `pinFree()` (value free only if EVERY PIN tile writing the id allows it); server
   `_access().free`, `_pinOk` lets `set` with such a value pass (logged), `_scene` skips them; init `pinFree` -> client
   `withPin(id, fn, value)`. Ack keeps the PIN. Adapter test.
+- 0.69.1 field (Debian kiosk, first real calls): display did not wake on the first ring, no audio either way, answering slow
+  (owner tapped twice). Fixes: intercom.js `answering` guard (button "Verbinde …", disabled; a second answer() made a second
+  RTCPeerConnection + answer); main `ringIds()` = layout ring.state AND `<livecam>.intercom.ringing`, both subscribed, /api/ring
+  true if any (a SIP call only set livecam's state when ring.state pointed elsewhere); kiosk Chromium
+  `--disable-features=Translate,WebRtcHideLocalIpsWithMdns` (one flag - Chromium keeps only the last; mDNS .local host
+  candidates cannot be resolved by livecam across VLANs). Audio cause not proven yet (asked for wpctl status / mic).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

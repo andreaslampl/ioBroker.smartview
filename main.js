@@ -207,10 +207,11 @@ class SmartView extends utils.Adapter {
                 pending: () => this.switchCtl().status(),
                 webInfo: () => this.webInfo(),
                 colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
-                ringing: () => {
-                    const st = this.liveStates.get(this.ringStateId());
+                // any doorbell source: the layout's ring state or livecam's intercom (SIP call)
+                ringing: () => this.ringIds().some(id => {
+                    const st = this.liveStates.get(id);
                     return Boolean(st && SceneLogic.truthy(st.val));
-                },
+                }),
                 setDnd: on => this.setDnd(on),
                 runScene: (tile, page, opts) => this.runScene(tile, page, opts),
                 fillDetectors: layout => this.fillDetectors(layout),
@@ -318,8 +319,8 @@ class SmartView extends utils.Adapter {
         const { read } = stateIds(RefLogic.resolveAll(layout));
         const ids = new Set([...read, ...layout.push.filter(r => r.enabled && r.state).flatMap(r => [r.state, r.and && r.and.state].filter(Boolean))]);
         // the doorbell state: for Telegram / WhatsApp and /api/ring (monitor wake-up script)
-        if (this.ringStateId()) {
-            ids.add(this.ringStateId());
+        for (const id of this.ringIds()) {
+            ids.add(id);
         }
         for (const id of this.subscribed) {
             if (!ids.has(id)) {
@@ -928,6 +929,12 @@ class SmartView extends utils.Adapter {
             }
         }
         return list;
+    }
+
+    /** Every data point that says "it rings" (monitor wake-up): the layout's ring state and livecam's intercom.ringing. */
+    ringIds() {
+        const r = this.store.layout.ring;
+        return [...new Set([r.state, r.intercom ? `${r.intercom}.intercom.ringing` : ''].filter(Boolean))];
     }
 
     /** Data point that says "it rings": from the layout, or the intercom's livecam instance. */
