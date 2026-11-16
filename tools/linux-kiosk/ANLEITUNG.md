@@ -84,6 +84,8 @@ dafür erscheint eine **Bildschirmtastatur** (ab SmartView 0.67.2). Danach bleib
 - Aus der Ferne (z. B. Windows-Eingabeaufforderung): `ssh admin@smartview-touch` (bzw. die IP), dann `sudo -i`
   (unter Debian ohne sudo: `su -`).
 - Sicherheits-Updates kommen automatisch; jeden **Sonntag um 4:17** startet der Touch-PC neu.
+- Hängt der Touch-PC (schwarz, nichts reagiert), startet ihn der **Hardware-Watchdog** nach etwa einer Minute selbst neu.
+  Nach einem Stromausfall startet er nur von selbst, wenn im BIOS „Restore on AC Power Loss“ auf „Power On“ steht.
 - Lautstärke sofort ausprobieren (als root):
   `R="runuser -u kiosk -- env XDG_RUNTIME_DIR=/run/user/$(id -u kiosk)"`, dann `$R wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0`,
   Mikrofon `$R wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 0.8`, Vorverstärkung `amixer -c 0 sset 'Mic Boost' 1`.

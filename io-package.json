@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.70.1",
+    "version": "0.70.2",
     "news": {
+      "0.70.2": {
+        "en": "Linux kiosk: hardware watchdog restarts a frozen touch PC by itself; weekly restart file was ignored by cron (permissions)",
+        "de": "Linux-Kiosk: Hardware-Watchdog startet einen hängenden Touch-PC selbst neu; der wöchentliche Neustart wurde wegen der Dateirechte nie ausgeführt"
+      },
       "0.70.1": {
         "en": "Linux kiosk: speaker / microphone volume and Mic Boost as settings (default boost 1 instead of the hissing maximum), rtkit",
         "de": "Linux-Kiosk: Lautsprecher, Mikrofon und Mic Boost als Einstellung (Boost 1 statt des rauschenden Maximums), rtkit"

@@ -636,6 +636,10 @@ switches/buttons on them.
   "Mic" playback is off (no loopback). Kiosk conf `SPK_VOL` (1.0), `MIC_VOL` (0.8), `MIC_BOOST` (1, empty = untouched), set at
   every X start after wpctl (PipeWire may move the boost with the volume); package rtkit. Debian has no sudo: `su -`,
   `runuser -u kiosk -- env XDG_RUNTIME_DIR=/run/user/<uid> wpctl …`.
+- 0.70.2 field: touch PC was black twice until the power button was pressed (Sat 11:58, Mon 13:43; journal just stops, no
+  shutdown, no OOM, 29 °C). Celeron N2930 = Bay Trail (known random freezes; intel_idle.max_cstate=1 is the usual cure, offered
+  to the owner, not set by the script). Script: systemd `RuntimeWatchdogSec=60` (iTCO_wdt) so a freeze restarts by itself;
+  /etc/cron.d/smartview-kiosk-reboot chmod 644 (was 664 -> cron "INSECURE MODE", the weekly reboot never ran).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

@@ -105,6 +105,9 @@ EOF
 
 # the kiosk never sleeps
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target >/dev/null
+# hardware watchdog: if the system freezes (screen black, nothing reacts) the board restarts it by itself after 1 min
+install -d /etc/systemd/system.conf.d
+printf '[Manager]\nRuntimeWatchdogSec=60\n' >/etc/systemd/system.conf.d/smartview-watchdog.conf
 
 echo "== Einstellungen speichern =="
 cat >/etc/smartview-kiosk.conf <<EOF
@@ -205,6 +208,8 @@ chown "$KIOSK_USER:$KIOSK_USER" "$KHOME/.bash_profile"
 echo "== Sicherheits-Updates automatisch, jeden Sonntag 4:17 Neustart =="
 dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null 2>&1 || true
 echo '17 4 * * 0 root /sbin/reboot' >/etc/cron.d/smartview-kiosk-reboot
+# cron ignores files that group/others may write ("INSECURE MODE") - the umask of "su" can leave them 664
+chmod 644 /etc/cron.d/smartview-kiosk-reboot
 
 echo
 echo "Fertig. Jetzt neu starten:  reboot"
