@@ -1719,8 +1719,45 @@ class SmartView extends utils.Adapter {
         return out;
     }
 
+    /** "fetch failed" says nothing: name the host and the reason (DNS, firewall, certificate). */
+    static netError(err, url) {
+        let host = '';
+        try {
+            host = new URL(url).hostname;
+        } catch {
+            // keep empty
+        }
+        if (err && err.name === 'TimeoutError') {
+            return `${host} antwortet nicht (keine Antwort in 20 s - Firewall?)`;
+        }
+        const cause = (err && err.cause) || {};
+        const code = cause.code || '';
+        if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+            return `Name ${cause.hostname || host} nicht gefunden (DNS)`;
+        }
+        if (code === 'ECONNREFUSED') {
+            return `Verbindung zu ${host} abgelehnt`;
+        }
+        if (code === 'ETIMEDOUT' || code === 'UND_ERR_CONNECT_TIMEOUT' || code === 'EHOSTUNREACH' || code === 'ENETUNREACH') {
+            return `${host} nicht erreichbar (${code}) - Firewall?`;
+        }
+        if (code === 'ECONNRESET' || code === 'UND_ERR_SOCKET') {
+            return `Verbindung zu ${host} abgebrochen (${code}) - Firewall?`;
+        }
+        if (/CERT|SELF_SIGNED|UNABLE_TO_VERIFY/.test(code)) {
+            return `Zertifikat von ${host} wird nicht akzeptiert (${code})`;
+        }
+        const detail = code || cause.message || '';
+        return `${(err && err.message) || 'Fehler'}${detail ? ` (${detail})` : ''}${host ? ` - ${host}` : ''}`;
+    }
+
     async fetchCalendar(url) {
-        const res = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'ioBroker.smartview', Accept: 'text/calendar, */*' } });
+        let res;
+        try {
+            res = await fetch(url, { signal: AbortSignal.timeout(20000), headers: { 'User-Agent': 'ioBroker.smartview', Accept: 'text/calendar, */*' } });
+        } catch (err) {
+            throw new Error(SmartView.netError(err, url));
+        }
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}`);
         }

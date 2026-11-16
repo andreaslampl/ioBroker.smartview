@@ -1577,6 +1577,16 @@ test('users: authenticator set up at home, sessions from home do not count outsi
 });
 
 test('adapter: waste calendar tile (fetch iCal, reminder once the evening before, errors)', async t => {
+    // network errors name host and reason instead of "fetch failed"
+    {
+        const { adapter } = await startAdapter(t);
+        const closed = http.createServer();
+        await new Promise(r => closed.listen(0, '127.0.0.1', r));
+        const freePort = closed.address().port;
+        await new Promise(r => closed.close(r));
+        await assert.rejects(adapter.fetchCalendar(`http://127.0.0.1:${freePort}/x.ics`), /Verbindung zu 127\.0\.0\.1 abgelehnt/);
+        await assert.rejects(adapter.fetchCalendar('http://kalender.invalid/x.ics'), /kalender\.invalid/);
+    }
     const W = require('../www/wastelogic');
     const today = W.dayKey(new Date());
     const ymd = k => k.replace(/-/g, '');

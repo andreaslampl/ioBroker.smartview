@@ -645,6 +645,8 @@ switches/buttons on them.
   `answer()` and `dial(station)` (ws {type:'dial', sdp, station}), menu items "📞 <name> anrufen" from livecam's
   `state.stations`, overlay text "Rufe … an" (state `calling`), an error while idle frees the mic (cleanup).
   Playwright e2e with real livecam + fake answering station (sv/dial-e2e.js). Real 2N must auto-answer: not tried yet.
+- 0.71.1 field: waste tile showed "Viktring: fetch failed" (Node fetch hides the reason in err.cause) -> static
+  `SmartView.netError(err, url)` names host + DNS / refused / unreachable / reset / certificate; used in `fetchCalendar()`.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

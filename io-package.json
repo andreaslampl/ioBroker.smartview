@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.71.0",
+    "version": "0.71.1",
     "news": {
+      "0.71.1": {
+        "en": "Waste calendar: network errors name the host and the reason (DNS, firewall, certificate) instead of 'fetch failed'",
+        "de": "Müllkalender: Netzwerkfehler nennen Adresse und Grund (DNS, Firewall, Zertifikat) statt „fetch failed“"
+      },
       "0.71.0": {
         "en": "Intercom: call the door station from inside (menu ⚙, needs livecam 0.4.0), e.g. to talk or to set the volume",
         "de": "Sprechanlage: Sprechstelle von innen anrufen (Menü ⚙, braucht livecam 0.4.0), z. B. zum Sprechen oder um die Lautstärke einzustellen"
