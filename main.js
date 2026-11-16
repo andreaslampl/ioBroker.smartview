@@ -9,6 +9,7 @@ const utils = require('@iobroker/adapter-core');
 const { LayoutStore, stateIds, tileWriteIds } = require('./lib/layout');
 const { pinHashesFor, pinSig } = require('./lib/pin');
 const { Push, matches, triggers, fill } = require('./lib/push');
+const { PushLog } = require('./lib/pushlog');
 const { ensureCertificates } = require('./lib/certs');
 const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
@@ -87,6 +88,7 @@ class SmartView extends utils.Adapter {
         const dir = this.dataDir || utils.getAbsoluteInstanceDataDir(this);
         this.store = new LayoutStore(dir);
         this.push = new Push(dir, { log: this.log, sender: this.pushSender });
+        this.pushLog = new PushLog(dir, { log: this.log });
         this.users = new UserStore(dir);
         // household appliances: Aus / Läuft / Fertig survives restarts (laundry still in the drum)
         this.appFile = path.join(dir, 'appliances.json');
@@ -208,6 +210,7 @@ class SmartView extends utils.Adapter {
                 webInfo: () => this.webInfo(),
                 colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
                 // any doorbell source: the layout's ring state or livecam's intercom (SIP call)
+                pushLog: () => this.pushLog.list(this.store.layout.pushKeep),
                 ringing: () => this.ringIds().some(id => {
                     const st = this.liveStates.get(id);
                     return Boolean(st && SceneLogic.truthy(st.val));
@@ -1198,13 +1201,13 @@ class SmartView extends utils.Adapter {
 
     fireRule(rule) {
         const val = this.pushPrev.get(rule.state);
-        const page = rule.page ? `./#${encodeURIComponent(rule.page)}` : './';
         const role = (this.meta.get(rule.state) || {}).role;
         const title = fill(rule.title, val, role) || this.store.layout.title || 'SmartView';
         const body = fill(rule.text, val, role) || `${rule.state}: ${fill('{value}', val, role)}`;
         this.log.info(`Push: ${title} - ${body}`);
+        const entry = this.recordMessage(title, body, rule.page, rule.channels);
         if (rule.channels.app) {
-            this.push.send({ title, body, url: page, tag: rule.id }).catch(err => this.log.warn(`Push: ${err.message}`));
+            this.push.send(this.pushPayload(entry, rule.id)).catch(err => this.log.warn(`Push: ${err.message}`));
         }
         if (rule.channels.telegram) {
             this.telegram({ title, body, page: rule.page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
@@ -1889,13 +1892,29 @@ class SmartView extends utils.Adapter {
         }
     }
 
+    /** into the list "Meldungen" (app menu, tap on a push); tells the open pages */
+    recordMessage(title, body, page, ways) {
+        const entry = this.pushLog.add({ title, body, page, ways }, this.store.layout.pushKeep);
+        if (this.server && this.server.pushLogChanged) {
+            this.server.pushLogChanged();
+        }
+        return entry;
+    }
+
+    /** push payload: a tap opens the list with this message (and its page); id/ts/keep for the offline list in sw.js */
+    pushPayload(entry, tag = '') {
+        const url = `./?log=${entry.id}${entry.page ? `#${encodeURIComponent(entry.page)}` : ''}`;
+        return { title: entry.title, body: entry.body, url, tag: tag || undefined, id: entry.id, ts: entry.ts, keep: this.store.layout.pushKeep || 7 };
+    }
+
     /** message on all configured ways (app push, Telegram, WhatsApp) */
     notify(title, body, page = '', tag = '', ch = null) {
         // ch: the tile's choice {app, telegram, whatsapp}; not set = every way that is set up
         const via = ch && typeof ch === 'object' ? ch : { app: true, telegram: true, whatsapp: true };
         this.log.info(`Mitteilung: ${title} - ${body}`);
+        const entry = this.recordMessage(title, body, page, via);
         if (via.app) {
-            this.push.send({ title, body, url: page ? `./#${encodeURIComponent(page)}` : './', tag: tag || `win-${page}` }).catch(err => this.log.warn(`Push: ${err.message}`));
+            this.push.send(this.pushPayload(entry, tag || `win-${page}`)).catch(err => this.log.warn(`Push: ${err.message}`));
         }
         if (via.telegram) {
             this.telegram({ title, body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
@@ -1906,23 +1925,20 @@ class SmartView extends utils.Adapter {
     }
 
     async sendMessage(val) {
-        let msg = { title: this.store.layout.title || 'SmartView', body: String(val), url: './' };
+        let msg = { title: this.store.layout.title || 'SmartView', body: String(val) };
+        let page = '';
         try {
             const j = JSON.parse(String(val));
             if (j && typeof j === 'object') {
-                msg = { title: String(j.title || msg.title), body: String(j.text || j.body || ''), url: j.page ? `./#${encodeURIComponent(j.page)}` : './' };
+                msg = { title: String(j.title || msg.title), body: String(j.text || j.body || '') };
+                page = String(j.page || '');
             }
         } catch {
             // plain text
         }
-        const r = await this.push.send(msg);
+        const entry = this.recordMessage(msg.title, msg.body, page, { app: true, telegram: true, whatsapp: true });
+        const r = await this.push.send(this.pushPayload(entry));
         this.log.info(`Push sent to ${r.sent} device(s)${r.failed ? `, ${r.failed} failed` : ''}`);
-        let page = '';
-        try {
-            page = String(JSON.parse(String(val)).page || '');
-        } catch {
-            // plain text
-        }
         await this.telegram({ title: msg.title, body: msg.body, page }).catch(err => this.log.warn(`Telegram: ${err.message}`));
         await this.whatsapp({ title: msg.title, body: msg.body, page }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
     }

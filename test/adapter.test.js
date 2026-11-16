@@ -161,13 +161,24 @@ test('adapter: layout, live values, commands only for layout data points, push r
     await new Promise(r => setTimeout(r, 50));
     adapter.change('knx.0.EG.Fenster.Kueche', true);
     await until(() => pushed.length === 1);
-    assert.deepEqual(pushed[0], { title: 'Fenster', body: 'Küchenfenster offen', url: './', tag: 'r1' });
+    const id0 = pushed[0].id;
+    assert.match(id0, /^[a-z0-9]+$/);
+    assert.deepEqual(pushed[0], { title: 'Fenster', body: 'Küchenfenster offen', url: `./?log=${id0}`, tag: 'r1', id: id0, ts: pushed[0].ts, keep: 7 });
     adapter.change('knx.0.EG.Fenster.Kueche', true);
     await new Promise(r => setTimeout(r, 100));
     assert.equal(pushed.length, 1);
     // push.message state
     await adapter.onStateChange('smartview.0.push.message', { val: '{"title":"Hallo","text":"Test","page":"eg"}', ack: false });
-    assert.deepEqual(pushed[1], { title: 'Hallo', body: 'Test', url: './#eg' });
+    const id1 = pushed[1].id;
+    assert.deepEqual(pushed[1], { title: 'Hallo', body: 'Test', url: `./?log=${id1}#eg`, id: id1, ts: pushed[1].ts, keep: 7 });
+    // list "Meldungen": newest first, kept per layout.pushKeep
+    const log = (await api('pushlog')).body;
+    assert.equal(log.keep, 7);
+    assert.deepEqual(log.entries.map(e => [e.id, e.title, e.page]), [[id1, 'Hallo', 'eg'], [id0, 'Fenster', '']]);
+    assert.deepEqual(log.entries[1].ways, { app: true, telegram: true, whatsapp: true });
+    // older than pushKeep: gone
+    adapter.pushLog.entries[1].ts = Date.now() - 8 * 86400000;
+    assert.deepEqual((await api('pushlog')).body.entries.map(e => e.id), [id1]);
 
     // cameras: list and image through the proxy
     const cams = await api('cameras');

@@ -649,6 +649,16 @@ switches/buttons on them.
   `SmartView.netError(err, url)` names host + DNS / refused / unreachable / reset / certificate; used in `fetchCalendar()`.
 - Field (0.71.x), confirmed: waste tile works with the real Müll App iCal link (app.muellapp.com/ical/<id>?area_filter=…&reminder)
   once the owner's firewall allowed app.muellapp.com for the ioBroker host (owner had allowed it for the touch PC).
+- 0.72.0: owner wanted a tap on a push to open a list of the sent messages (removed after some time) and "offline" outside
+  the WLAN -> `lib/pushlog.js` `PushLog` (pushlog.json, newest first, max 300, pruned by layout `pushKeep` 1-90 days,
+  default 7); main `recordMessage()` in fireRule / notify / sendMessage (every way: app, Telegram, WhatsApp; ways stored),
+  `pushPayload(entry, tag)` = {title, body, url `./?log=<id>#<page>`, tag, id, ts, keep}; server GET `/api/pushlog`
+  (r.pages filter: entries of hidden pages dropped, no page = everybody), broadcast {type:'pushlog'}. `www/meldungen.js`
+  (`Meldungen`: sheet grouped by day, highlight + scroll for ?log=<id> (param removed with replaceState), page button,
+  unseen count per device localStorage `sv.logSeen` as badge `#menuBtn[data-count]`, menu item). `www/sw.js`: push also
+  stored in Cache Storage `sv-meldungen` (keep, max 200); fetch handler only for navigations: network, after 10 s or on
+  error an inline offline page with the device's received messages. Editor field "Meldungen aufbewahren (Tage)".
+  Adapter test + Playwright (sv/log-ui.js: badge, ?log highlight, offline page via context.setOffline). Not yet on the iPhone.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

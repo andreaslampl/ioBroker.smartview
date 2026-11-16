@@ -648,3 +648,17 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .tile.fault { border-color: #d4a72c; }
 .tile.fault .tic, .tile.fault .tval, .lrow.fault .lic, .lrow.fault .lval { color: #d4a72c; }
 .tile.detoff .tic, .tile.detoff .tval, .lrow.detoff .lic, .lrow.detoff .lval { color: var(--muted); }
+
+/* Meldungen (sent messages) */
+#menuBtn { position: relative; }
+#menuBtn[data-count]::after { content: attr(data-count); position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; box-sizing: border-box; }
+.meldungen .loglist { display: flex; flex-direction: column; gap: 6px; max-height: 65vh; overflow-y: auto; }
+.meldungen .logday { margin: 10px 0 2px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.logitem { display: flex; gap: 12px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
+.logitem.new { border-color: var(--accent, var(--ok)); }
+.logitem.hl { border-color: var(--bad); box-shadow: 0 0 0 2px var(--bad) inset; }
+.logitem .logtime { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
+.logitem .logtext { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.logitem button { flex: none; }
+.lognew { color: var(--bad); margin-left: 6px; }
+.muted.small { font-size: 12px; margin-top: 2px; }

@@ -645,6 +645,19 @@ einmal, wenn die Bedingung eintritt.
 Aus Skripten/Blockly/Logik: Datenpunkt `smartview.0.push.message` mit Text beschreiben oder mit
 JSON `{"title": "Alarm", "text": "Garage offen", "page": "garage"}`.
 
+### Meldungen (Liste der gesendeten Mitteilungen)
+
+Jede gesendete Mitteilung (App-Push, Telegram, WhatsApp – aus Push-Regeln, Kacheln wie Fenster, Müll, Alarm,
+Geräte oder `push.message`) steht im Menü ⚙ unter **„Meldungen“**, nach Tagen geordnet. Ein **Tipp auf eine
+Push-Mitteilung** öffnet diese Liste, die angetippte Meldung ist markiert; gehört sie zu einer Seite, führt ein Knopf
+dorthin. Neue Meldungen zeigt eine Zahl am ⚙-Knopf. Aufbewahrt werden sie so viele Tage wie beim Bearbeiten unter
+⚙ → Mitteilungen eingestellt (Standard 7, 1–90), ältere verschwinden von selbst. Mit Benutzern sieht jeder nur
+die Meldungen seiner Seiten.
+
+**Außerhalb des WLANs:** Ist der ioBroker nicht erreichbar (z. B. am Handy unterwegs), zeigt SmartView nach
+spätestens 10 Sekunden statt einer Fehlerseite **„Offline“** mit den Meldungen, die dieses Gerät per Push
+empfangen hat.
+
 ### Länger als … / und zusätzlich …
 
 Jede Mitteilung kann zusätzlich **„länger als … Minuten“** (erst senden, wenn die Bedingung so lange

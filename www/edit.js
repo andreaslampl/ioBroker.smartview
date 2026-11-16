@@ -2728,6 +2728,9 @@ const Editor = (() => {
     help2.className = 'help';
     help2.textContent = 'Eine Mitteilung wird gesendet, wenn die Bedingung eintritt (nicht wiederholt, solange sie erfüllt bleibt). {value} im Text = aktueller Wert. Empfangen: am Gerät im Menü ⚙ „Mitteilungen aktivieren“.';
     body.appendChild(help2);
+    const keepIn = field(body, 'Meldungen aufbewahren (Tage)', textInput(String(l.pushKeep || 7), 'number'), 'Alle gesendeten Mitteilungen stehen im Menü ⚙ unter „Meldungen“; ein Tipp auf eine Push-Mitteilung öffnet diese Liste. Ältere werden automatisch entfernt (1–90 Tage).');
+    keepIn.min = '1';
+    keepIn.max = '90';
     // messengers (telegram / whatsapp-cmb adapter): for phones where no certificate may be installed
     function messenger(o) {
       const cfg = o.cfg;
@@ -2936,6 +2939,7 @@ const Editor = (() => {
         dndQuiet: dndQuiet.input.checked,
       };
       l.push = rules;
+      l.pushKeep = Math.min(90, Math.max(1, Math.round(Number(keepIn.value)) || 7));
       l.telegram = tgGet();
       l.whatsapp = waGet();
       d.close();

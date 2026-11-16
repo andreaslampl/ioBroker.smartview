@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.71.1",
+    "version": "0.72.0",
     "news": {
+      "0.72.0": {
+        "en": "List of sent messages (menu ⚙ Meldungen, opened by tapping a push, kept 1-90 days); offline page with the received messages outside the home network",
+        "de": "Liste der gesendeten Mitteilungen (Menü ⚙ Meldungen, öffnet sich beim Antippen eines Push, 1–90 Tage aufbewahrt); außerhalb des WLANs Offline-Seite mit den empfangenen Meldungen"
+      },
       "0.71.1": {
         "en": "Waste calendar: network errors name the host and the reason (DNS, firewall, certificate) instead of 'fetch failed'",
         "de": "Müllkalender: Netzwerkfehler nennen Adresse und Grund (DNS, Firewall, Zertifikat) statt „fetch failed“"

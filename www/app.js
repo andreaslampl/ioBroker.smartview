@@ -3545,7 +3545,7 @@ async function openMenu() {
   closeSheet();
   const ov = document.createElement('div');
   ov.className = 'overlay bottom';
-  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-dnd></div><div data-ic></div><div data-screen></div><div data-fit></div><div data-users></div>' +
+  ov.innerHTML = '<div class="sheet menu"><h3>' + icon('menu') + '<span class="grow">Einstellungen</span><button type="button" class="iconbtn" data-close>' + icon('close') + '</button></h3><div data-log></div><div data-push class="muted">Mitteilungen werden geprüft …</div><div data-dnd></div><div data-ic></div><div data-screen></div><div data-fit></div><div data-users></div>' +
     '<button type="button" class="item" data-cert>' + icon('lock') + 'Zertifikat installieren / HTTPS</button>' +
     (document.fullscreenEnabled ? '<button type="button" class="item" data-full>' + icon('fullscreen') + (document.fullscreenElement ? 'Vollbild beenden' : 'Vollbild (bleibt nach dem Sperren)') + '</button>' : '') +
     '<button type="button" class="item" data-theme>' + icon('moon') + 'Hell / Dunkel</button>' +
@@ -3568,6 +3568,7 @@ async function openMenu() {
   };
   const full = ov.querySelector('[data-full]');
   if (full) full.onclick = () => Screen.fullscreen();
+  if (typeof Meldungen !== 'undefined') Meldungen.menuItem(ov.querySelector('[data-log]'));
   renderPushMenu(ov.querySelector('[data-push]'));
   if (layout().ring.intercom || layout().ring.state) dndMenuItem(ov.querySelector('[data-dnd]'));
   if (typeof Intercom !== 'undefined') Intercom.menuItems(ov.querySelector('[data-ic]'));
@@ -3673,6 +3674,8 @@ function connect() {
     } else if (msg.type === 'waste') {
       SV.waste = msg.waste || {};
       refreshWaste();
+    } else if (msg.type === 'pushlog') {
+      if (typeof Meldungen !== 'undefined') Meldungen.load();
     } else if (msg.type === 'pending') {
       SV.pending = msg.pending || {};
       refreshPending();
@@ -3815,6 +3818,7 @@ async function start() {
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && SV.ws && SV.ws.readyState > 1) connect();
+    if (document.visibilityState === 'visible' && typeof Meldungen !== 'undefined') Meldungen.load();
   });
   tickClock();
   setInterval(tickClock, 10000);
@@ -3834,6 +3838,7 @@ async function start() {
     await loadLayout();
     render();
     connect();
+    if (typeof Meldungen !== 'undefined') Meldungen.start();
   } catch (e) {
     if (e.login) return Users.showLogin(e.title, e.twofa);
     $('main').innerHTML = '<p>Verbindung zum ioBroker fehlgeschlagen: ' + esc(e.message) + '</p>';
