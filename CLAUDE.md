@@ -647,6 +647,8 @@ switches/buttons on them.
   Playwright e2e with real livecam + fake answering station (sv/dial-e2e.js). Real 2N must auto-answer: not tried yet.
 - 0.71.1 field: waste tile showed "Viktring: fetch failed" (Node fetch hides the reason in err.cause) -> static
   `SmartView.netError(err, url)` names host + DNS / refused / unreachable / reset / certificate; used in `fetchCalendar()`.
+- Field (0.71.x), confirmed: waste tile works with the real Müll App iCal link (app.muellapp.com/ical/<id>?area_filter=…&reminder)
+  once the owner's firewall allowed app.muellapp.com for the ioBroker host (owner had allowed it for the touch PC).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
