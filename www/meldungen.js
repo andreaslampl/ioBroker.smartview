@@ -92,7 +92,7 @@ const Meldungen = (() => {
         '<div class="logtime">' + esc(time) + '</div><div class="logtext"><b>' + esc(e.title) + '</b>' +
         (e.body ? '<div>' + esc(e.body) + '</div>' : '') +
         '<div class="muted small">' + esc(ways) + '</div></div>' +
-        (page ? '<button type="button" data-page="' + esc(e.page) + '">' + esc(page) + '</button>' : '') + '</div>';
+        (page ? '<button type="button" class="logpage" data-page="' + esc(e.page) + '" title="Seite öffnen, zu der diese Meldung gehört"><small>zur Seite</small>' + esc(page) + ' ›</button>' : '') + '</div>';
     }
     box.innerHTML = html;
     for (const b of box.querySelectorAll('[data-page]')) {

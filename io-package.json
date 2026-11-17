@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.72.0",
+    "version": "0.72.1",
     "news": {
+      "0.72.1": {
+        "en": "Messages list: the page button says 'zur Seite' (it opens the page the message belongs to)",
+        "de": "Meldungen: der Seiten-Knopf heißt jetzt „zur Seite …“ (öffnet die Seite, zu der die Meldung gehört)"
+      },
       "0.72.0": {
         "en": "List of sent messages (menu ⚙ Meldungen, opened by tapping a push, kept 1-90 days); offline page with the received messages outside the home network",
         "de": "Liste der gesendeten Mitteilungen (Menü ⚙ Meldungen, öffnet sich beim Antippen eines Push, 1–90 Tage aufbewahrt); außerhalb des WLANs Offline-Seite mit den empfangenen Meldungen"

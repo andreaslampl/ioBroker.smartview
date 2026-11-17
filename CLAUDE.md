@@ -659,6 +659,7 @@ switches/buttons on them.
   stored in Cache Storage `sv-meldungen` (keep, max 200); fetch handler only for navigations: network, after 10 s or on
   error an inline offline page with the device's received messages. Editor field "Meldungen aufbewahren (Tage)".
   Adapter test + Playwright (sv/log-ui.js: badge, ?log highlight, offline page via context.setOffline). Not yet on the iPhone.
+- 0.72.1 field: owner's iPhone showed the list; the page button ("Start" = page name) was unclear -> `.logpage` "zur Seite" + name ›.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
