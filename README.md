@@ -388,6 +388,9 @@ Ist bei der Kamera im livecam-Adapter die **KI-Erkennung** eingeschaltet, kann d
   „Meldungen“ (⚙ → Meldungen, Foto antippen = groß); *in die Liste und als Mitteilung* = zusätzlich Push/Telegram
   (mit Foto)/WhatsApp, je nach „Senden über“. Dieselbe Art (z. B. Person) bei derselben Kamera höchstens einmal pro
   Minute.
+- **„Erkennungen melden“:** *immer*, *nur wenn die Alarmanlage scharf ist* oder *wenn scharf oder intern scharf*.
+  Darunter die Alarm-Kachel wählen, deren Zustand gilt (bei mehreren Bereichen reicht einer). Die Rahmen im Bild
+  sieht man trotzdem immer.
 
 ### Lageplan: Ebenen und Kameras
 

@@ -1706,3 +1706,39 @@ test('adapter: livecam detection -> list "Meldungen" with photo, push only when 
     assert.match(await (await fetch(`${base}api/pushlog/${e.id}.jpg`)).text(), /^JPEG \/detect\/einfahrt\.jpg/);
     assert.equal((await fetch(`${base}api/pushlog/zzz.jpg`)).status, 404);
 });
+
+test('adapter: detections reported only while the alarm system is armed (option)', async t => {
+    const { adapter, api } = await startAdapter(t, {}, a => {
+        a.detPhotoWait = 10;
+        a.detCooldown = 0;
+        a.add('livecam.0.cameras.einfahrt.detect.boxes', { name: 'Boxen', type: 'string', role: 'json', write: false }, '[]');
+        a.add('nox.0.areas.1.state', { name: 'Zustand', type: 'number', role: 'value', write: false }, 0);
+        a.add('nox.0.areas.1.command', { name: 'Befehl', type: 'number', role: 'level', write: true }, 0);
+    });
+    const res = await api('layout', {
+        method: 'PUT',
+        body: JSON.stringify({
+            pages: [{ id: 'p', name: 'P', tiles: [
+                { id: 'al', type: 'alarm', label: 'EMA', status: 'nox.0.areas.1.state', command: 'nox.0.areas.1.command', valueOff: '0', valueArm: '2', valueHome: '1' },
+                { id: 'c1', type: 'camera', label: 'Einfahrt', camera: 'livecam.0.cameras.einfahrt', detect: true, detectLog: 'list', detectWhen: 'armed', detectAlarm: 'al' },
+            ] }],
+        }),
+    });
+    assert.equal(res.body.pages[0].tiles[1].detectWhen, 'armed');
+    const person = JSON.stringify([{ g: 'person', l: 'Person', s: 90, x: 0.1, y: 0.1, w: 0.1, h: 0.3 }]);
+    const detect = async () => {
+        await new Promise(r => setTimeout(r, 100));
+        adapter.change('livecam.0.cameras.einfahrt.detect.boxes', '[]');
+        await new Promise(r => setTimeout(r, 50));
+        adapter.change('livecam.0.cameras.einfahrt.detect.boxes', person);
+        await new Promise(r => setTimeout(r, 300));
+    };
+    await detect(); // unscharf
+    assert.equal(adapter.pushLog.entries.length, 0);
+    adapter.change('nox.0.areas.1.state', 1); // intern scharf: not enough for 'armed'
+    await detect();
+    assert.equal(adapter.pushLog.entries.length, 0);
+    adapter.change('nox.0.areas.1.state', 2); // scharf
+    await detect();
+    assert.equal(adapter.pushLog.entries.length, 1);
+});

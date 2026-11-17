@@ -1926,6 +1926,9 @@ class SmartView extends utils.Adapter {
         }
         this.detMem = this.detMem || new Map();
         for (const { page, tile } of this.detTiles.get(id)) {
+            if (tile.detectWhen && !this.detectArmed(tile)) {
+                continue;
+            }
             for (const g of fresh) {
                 const key = `${page.id}/${tile.id}/${g}`;
                 if (Date.now() - (this.detMem.get(key) || 0) < (this.detCooldown || 60000)) {
@@ -1936,6 +1939,17 @@ class SmartView extends utils.Adapter {
                 this.detectMessage(page, tile, g, count).catch(err => this.log.warn(`Erkennung ${tile.label || tile.camera}: ${err.message}`));
             }
         }
+    }
+
+    /** "only when the alarm system is armed": the chosen alarm tile (or the only one) in mode armed (set = also part set) */
+    detectArmed(tile) {
+        const alarms = this.store.layout.pages.flatMap(p => p.tiles).filter(x => x.type === 'alarm');
+        const a = alarms.find(x => x.id === tile.detectAlarm) || (alarms.length === 1 ? alarms[0] : null);
+        if (!a) {
+            this.log.warn(`Erkennung ${tile.label || tile.camera}: keine Alarm-Kachel für „nur wenn scharf“ gewählt`);
+            return false;
+        }
+        return SceneLogic.alarmArmed(a, id => this.stateInfo(id), tile.detectWhen);
     }
 
     async detectMessage(page, tile, group, count) {

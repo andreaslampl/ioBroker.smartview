@@ -216,7 +216,16 @@
   /** all ids the button would write (for the PIN and permission check) */
   const ids = p => [...p.now.keys(), ...p.later.keys(), ...(p.alarmLater ? p.alarmLater.keys() : [])];
 
-  const api = { plan, ids, isLight, typed, truthy };
+    /** alarm tile armed? 'armed' = one of the areas fully armed, 'set' = also part set (intern scharf) */
+  function alarmArmed(a, st, how) {
+    if (!a) return false;
+    return areasOf(a).some(area => {
+      const m = areaMode(st, area);
+      return m === 'armed' || (how === 'set' && m === 'home');
+    });
+  }
+
+  const api = { plan, ids, isLight, typed, truthy, alarmArmed };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.SceneLogic = api;
 })(this);

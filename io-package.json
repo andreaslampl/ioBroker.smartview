@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.73.0",
+    "version": "0.74.0",
     "news": {
+      "0.74.0": {
+        "en": "Camera tile: report detections always or only while the alarm system is armed",
+        "de": "Kamera-Kachel: Erkennungen immer melden oder nur, wenn die Alarmanlage scharf ist"
+      },
       "0.73.0": {
         "en": "Camera tile: boxes of livecam's AI detection on the live picture; detections with photo in the list \"Meldungen\" (optionally as a message)",
         "de": "Kamera-Kachel: Rahmen der KI-Erkennung von livecam im Livebild; Erkennungen mit Foto in der Liste „Meldungen“ (wahlweise auch als Mitteilung)"

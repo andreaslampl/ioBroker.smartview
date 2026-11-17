@@ -195,6 +195,8 @@ const TYPE_FIELDS = {
     ['camera', 'Kamera (aus dem livecam-Adapter)', 'camera'],
     ['detect', 'KI-Erkennung anzeigen (Rahmen um Personen, Fahrzeuge, Tiere)', 'check', 'Braucht livecam 0.5.1 mit eingeschalteter „KI-Erkennung“ für diese Kamera (livecam-Einstellungen → Kameratabelle).'],
     ['detectLog', 'Erkennungen in die Meldungen', 'select:=nein;list=nur in die Liste (mit Foto);push=in die Liste und als Mitteilung', 'Jede neue Erkennung mit Foto unter ⚙ → Meldungen; „als Mitteilung“ schickt sie zusätzlich über die gewählten Wege (Telegram mit Foto).'],
+    ['detectWhen', 'Erkennungen melden', 'select:=immer;armed=nur wenn die Alarmanlage scharf ist;set=wenn scharf oder intern scharf', 'Betrifft nur die Meldungen – die Rahmen im Bild sieht man immer.'],
+    ['detectAlarm', 'Alarmanlage dafür', 'alarmtile', 'Die Alarm-Kachel, deren Zustand gilt (bei mehreren Bereichen: einer davon reicht).'],
     ['channels', 'Mitteilung senden an', 'channels'],
   ],
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
@@ -1805,7 +1807,7 @@ const Editor = (() => {
           inputs[key] = { type: 'custom', get: () => boxes.filter(i => i.checked).map(i => i.value) };
         } else if (kind === 'alarmtile') {
           const alarms = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'alarm').map(x => [x.id, (x.label || 'Alarmanlage') + ' (' + p.name + ')' + (x.control ? '' : ' – Schalten nicht erlaubt')]));
-          inputs[key] = field(body, label, select([['', '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
+          inputs[key] = field(body, label, select([['', key === 'detectAlarm' ? '(keine)' : '(nicht scharf schalten)']].concat(alarms), t[key] || ''), help);
         } else if (kind === 'cartile') {
           const cars = SV.draft.pages.flatMap(p => p.tiles.filter(x => x.type === 'car').map(x => [x.id, (x.label || 'Auto') + ' (' + p.name + ')']));
           inputs[key] = field(body, label, select([['', '(keine)']].concat(cars), t[key] || ''), help);

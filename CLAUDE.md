@@ -676,6 +676,9 @@ switches/buttons on them.
   `recordMessage(..., image)`; PushLog stores `pushlog/<id>.jpg` (pruned with the entry), GET `/api/pushlog/<id>.jpg` (page
   filter); push: app + `telegramPhoto()` + WhatsApp text. meldungen.js `.logimg` thumbnail, tap -> `.photoview`. Adapter test
   + Playwright (sv/det-ui.js). Not yet with the owner's cameras.
+- 0.74.0: owner asked to report detections only while the alarm is armed -> camera options `detectWhen` ''|armed|set (set = also
+  part set) + `detectAlarm` (alarm tile id, editor kind alarmtile; only alarm tile = default); main `detectArmed()` ->
+  `SceneLogic.alarmArmed(a, st, how)` (any area of the tile). Boxes on the picture stay always. Adapter test.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
