@@ -191,7 +191,12 @@ const TYPE_FIELDS = {
     ['unit', 'Einheit', 'text', 'Standard °C'],
     ['circuits', 'Weitere Heizkreise / Räume (optional)', 'circuits'],
   ],
-  camera: [['camera', 'Kamera (aus dem livecam-Adapter)', 'camera']],
+  camera: [
+    ['camera', 'Kamera (aus dem livecam-Adapter)', 'camera'],
+    ['detect', 'KI-Erkennung anzeigen (Rahmen um Personen, Fahrzeuge, Tiere)', 'check', 'Braucht livecam 0.5.1 mit eingeschalteter „KI-Erkennung“ für diese Kamera (livecam-Einstellungen → Kameratabelle).'],
+    ['detectLog', 'Erkennungen in die Meldungen', 'select:=nein;list=nur in die Liste (mit Foto);push=in die Liste und als Mitteilung', 'Jede neue Erkennung mit Foto unter ⚙ → Meldungen; „als Mitteilung“ schickt sie zusätzlich über die gewählten Wege (Telegram mit Foto).'],
+    ['channels', 'Mitteilung senden an', 'channels'],
+  ],
   link: [['url', 'Adresse', 'text', 'z. B. http://192.168.1.x:8096/radio – http-Seiten öffnen sich am iPhone (HTTPS) in einem eigenen Fenster']],
   page: [['target', 'Seite, die geöffnet wird', 'page']],
   multi: [['rows', 'Werte', 'rows']],

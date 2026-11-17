@@ -668,6 +668,14 @@ switches/buttons on them.
 - Field, confirmed: talking with the real 2N works from the iPhone (after livecam 0.4.2 port range + firewall rules between
   the Security and Smarthome VLANs) and from the Debian kiosk touch PC (after re-running kiosk-setup.sh - the mDNS flag
   of 0.69.1 was missing).
+- 0.73.0: owner asked to see livecam's AI detection on the live pictures and in the Meldungen list -> camera options `detect`
+  (cleanTile sets `detectBoxes` = `<camera>.detect.boxes`, AFTER the options loop) and `detectLog` ''|list|push (+ `channels`).
+  app.js `drawDetect()` overlay `.detov` (object-fit cover/contain mapped, boxes per group + `.detbadge`) on tiles, list rows and
+  the full view (`openCam(..., t)`). main `detTiles` (subscribed boxes ids), `checkDetect()` (group new in the boxes, 60 s per
+  tile+group, `detCooldown`), `detectMessage()` (waits `detPhotoWait` 3 s for a fresh `detect.photoUrl`, else camera jpg),
+  `recordMessage(..., image)`; PushLog stores `pushlog/<id>.jpg` (pruned with the entry), GET `/api/pushlog/<id>.jpg` (page
+  filter); push: app + `telegramPhoto()` + WhatsApp text. meldungen.js `.logimg` thumbnail, tap -> `.photoview`. Adapter test
+  + Playwright (sv/det-ui.js). Not yet with the owner's cameras.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

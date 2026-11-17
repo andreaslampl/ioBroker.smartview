@@ -86,10 +86,12 @@ const Meldungen = (() => {
         html += '<h4 class="logday">' + esc(label) + '</h4>';
       }
       const time = new Date(e.ts).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
-      const ways = [e.ways && e.ways.app ? 'App' : '', e.ways && e.ways.telegram ? 'Telegram' : '', e.ways && e.ways.whatsapp ? 'WhatsApp' : ''].filter(Boolean).join(', ');
+      const ways = [e.ways && e.ways.app ? 'App' : '', e.ways && e.ways.telegram ? 'Telegram' : '', e.ways && e.ways.whatsapp ? 'WhatsApp' : ''].filter(Boolean).join(', ') || 'nur Liste';
       const page = e.page && pageName(e.page);
       html += '<div class="logitem' + (e.id === highlight ? ' hl' : '') + (e.ts > since ? ' new' : '') + '" data-id="' + esc(e.id) + '">' +
-        '<div class="logtime">' + esc(time) + '</div><div class="logtext"><b>' + esc(e.title) + '</b>' +
+        '<div class="logtime">' + esc(time) + '</div>' +
+        (e.image ? '<img class="logimg" loading="lazy" alt="" draggable="false" src="api/pushlog/' + esc(e.id) + '.jpg" title="Antippen = groß">' : '') +
+        '<div class="logtext"><b>' + esc(e.title) + '</b>' +
         (e.body ? '<div>' + esc(e.body) + '</div>' : '') +
         '<div class="muted small">' + esc(ways) + '</div></div>' +
         (page ? '<button type="button" class="logpage" data-page="' + esc(e.page) + '" title="Seite öffnen, zu der diese Meldung gehört"><small>zur Seite</small>' + esc(page) + ' ›</button>' : '') + '</div>';
@@ -101,8 +103,30 @@ const Meldungen = (() => {
         location.hash = encodeURIComponent(b.dataset.page);
       };
     }
+    for (const img of box.querySelectorAll('.logimg')) {
+      img.onclick = () => photo(img.src, img.closest('.logitem').querySelector('.logtext b').textContent);
+    }
     const hl = highlight && box.querySelector('.logitem.hl');
     if (hl) hl.scrollIntoView({ block: 'center' });
+  }
+
+  /** photo of a detection full screen; tap, ✕ or Esc closes */
+  function photo(src, caption) {
+    const ov = document.createElement('div');
+    ov.className = 'photoview';
+    ov.innerHTML = '<img alt="" draggable="false"><div class="pvbar"><span class="pvcap grow"></span><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></div>';
+    ov.querySelector('img').src = src;
+    ov.querySelector('.pvcap').textContent = caption;
+    const key = ev => {
+      if (ev.key === 'Escape') done();
+    };
+    const done = () => {
+      ov.remove();
+      document.removeEventListener('keydown', key);
+    };
+    ov.onclick = done;
+    document.addEventListener('keydown', key);
+    document.body.appendChild(ov);
   }
 
   function close() {

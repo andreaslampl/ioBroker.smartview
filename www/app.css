@@ -656,6 +656,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .meldungen .logday { margin: 10px 0 2px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .logitem { display: flex; gap: 12px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
 .logitem.new { border-color: var(--accent, var(--ok)); }
+.logitem .logimg { flex: none; width: 96px; height: 64px; object-fit: cover; border-radius: 8px; cursor: zoom-in; background: #000; }
 .logitem.hl { border-color: var(--bad); box-shadow: 0 0 0 2px var(--bad) inset; }
 .logitem .logtime { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; }
 .logitem .logtext { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -664,3 +665,17 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .logitem .logpage small { font-size: 11px; color: var(--muted); }
 .lognew { color: var(--bad); margin-left: 6px; }
 .muted.small { font-size: 12px; margin-top: 2px; }
+
+/* livecam AI detection over camera pictures */
+.detov { position: absolute; pointer-events: none; overflow: hidden; }
+.detbox { position: absolute; border: 2px solid #f85149; border-radius: 4px; box-sizing: border-box; }
+.detbox.vehicle { border-color: #f0b429; }
+.detbox.animal { border-color: #3fb950; }
+.detbox span { position: absolute; left: -2px; top: -18px; font-size: 11px; line-height: 16px; padding: 0 4px; border-radius: 3px; background: #f85149; color: #fff; white-space: nowrap; }
+.detbox.vehicle span { background: #f0b429; color: #000; }
+.detbox.animal span { background: #3fb950; color: #000; }
+.detbadge { position: absolute; right: 6px; top: 6px; padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 13px; }
+.detbadge:empty { display: none; }
+.camfull .camwrap { flex: 1; min-height: 0; position: relative; }
+.camfull .camwrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.lcamwrap { position: relative; display: block; width: 100%; }

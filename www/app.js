@@ -2312,9 +2312,14 @@ function fillRow(el, t) {
       ctl = tileEntries(t) ? '<button type="button" data-a="entries">AUSWAHL</button>' : '<button type="button" data-a="press">Auslösen</button>';
       break;
     case 'camera':
-      el.innerHTML = head + (t.camera ? '<img class="camimg lcam" alt="" data-cam="' + esc(t.camera) + '">' : '');
+      el.innerHTML = head + (t.camera ? '<span class="lcamwrap"><img class="camimg lcam" alt="" data-cam="' + esc(t.camera) + '"></span>' : '');
       const img = el.querySelector('img.camimg');
       if (img) {
+        if (t.detectBoxes) {
+          const wrap = img.parentElement;
+          wrap.dataset.det = '1';
+          wrap._det = () => drawDetect(wrap, t);
+        }
         loadCam(img);
         startCams();
       }
@@ -2363,7 +2368,7 @@ function tileTap(t) {
   if (swPush(t)) return;
   if (t.type === 'switch' || t.type === 'dimmer') return toggle(t);
   if (t.type === 'button') return press(t);
-  if (t.type === 'camera') return openCam(t.camera, t.label);
+  if (t.type === 'camera') return openCam(t.camera, t.label, false, t);
   if (t.type === 'link') return openLink(t);
   if (t.type === 'blind' || t.type === 'gate' || t.type === 'thermostat' || t.type === 'value' || t.type === 'wallbox' || t.type === 'alarm' || t.type === 'radio' || t.type === 'climate' || t.type === 'contact' || t.type === 'leave' || t.type === 'arrive' || t.type === 'fire' || t.type === 'color' || t.type === 'robot' || t.type === 'car' || t.type === 'firedet') return openSheet(t);
 }
@@ -2560,6 +2565,11 @@ function fillTile(el, t) {
   el.classList.toggle('multirow', t.type === 'multi' && (t.rows || []).length > 1);
   if (t.type === 'camera') {
     const img = el.querySelector('img.camimg');
+    if (t.detectBoxes) {
+      el.dataset.det = '1';
+      el._det = () => drawDetect(el, t);
+      if (img && img.complete && img.naturalWidth) drawDetect(el, t);
+    }
     if (img) loadCam(img);
     startCams();
   }
@@ -3387,11 +3397,60 @@ function fillSheet(sh, t) {
 
 let camTimer = null;
 /** Next single image of a camera tile (only one request per tile at a time). */
+// ---------------- livecam AI detection: boxes over the picture ----------------
+
+const DET_ICON = { person: '🧍', vehicle: '🚗', animal: '🐾' };
+
+function detectList(t) {
+  if (!t || !t.detectBoxes) return [];
+  try {
+    const v = JSON.parse(val(t.detectBoxes) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/** boxes (fractions of the picture) over the camera image inside `host`; object-fit cover / contain respected */
+function drawDetect(host, t) {
+  const img = host && host.querySelector('img');
+  if (!img || !t || !t.detectBoxes) return;
+  let ov = host.querySelector('.detov');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.className = 'detov';
+    img.insertAdjacentElement('afterend', ov);
+  }
+  const boxes = detectList(t);
+  const W = img.clientWidth;
+  const H = img.clientHeight;
+  const nw = img.naturalWidth;
+  const nh = img.naturalHeight;
+  Object.assign(ov.style, { left: img.offsetLeft + 'px', top: img.offsetTop + 'px', width: W + 'px', height: H + 'px' });
+  if (!boxes.length || !nw || !nh || !W || !H) {
+    ov.innerHTML = '';
+    return;
+  }
+  const cover = getComputedStyle(img).objectFit === 'cover';
+  const k = cover ? Math.max(W / nw, H / nh) : Math.min(W / nw, H / nh);
+  const dw = nw * k;
+  const dh = nh * k;
+  const ox = (W - dw) / 2;
+  const oy = (H - dh) / 2;
+  const count = {};
+  for (const b of boxes) count[b.g] = (count[b.g] || 0) + 1;
+  ov.innerHTML = boxes.map(b => '<div class="detbox ' + esc(b.g) + '" style="left:' + (ox + b.x * dw).toFixed(1) + 'px;top:' + (oy + b.y * dh).toFixed(1) +
+    'px;width:' + (b.w * dw).toFixed(1) + 'px;height:' + (b.h * dh).toFixed(1) + 'px"><span>' + esc(b.l) + (b.s ? ' ' + b.s + ' %' : '') + '</span></div>').join('') +
+    '<div class="detbadge">' + Object.entries(count).map(([g, n]) => (DET_ICON[g] || '•') + ' ' + n).join(' ') + '</div>';
+}
+
 function loadCam(img) {
   if (img.dataset.loading === '1') return;
   img.dataset.loading = '1';
   const done = () => {
     img.dataset.loading = '0';
+    const host = img.closest('[data-det]');
+    if (host && host._det) host._det();
   };
   img.onload = done;
   img.onerror = () => setTimeout(done, 3000);
@@ -3407,13 +3466,13 @@ function startCams() {
   camTimer = setInterval(tick, device() === 'phone' ? 1500 : 1000);
 }
 
-function openCam(id, name, ring) {
+function openCam(id, name, ring, t) {
   if (!id) return toast('Keine Kamera gewählt', true);
   closeCam();
   const el = document.createElement('div');
   el.className = 'camfull' + (ring ? ' ring' : '');
   const door = ring && layout().ring.door;
-  el.innerHTML = '<img alt="">' + '<div class="bar"><span class="name">' + esc(ring ? 'Es läutet' + (name ? ' – ' + name : '') : name || '') + '</span>' +
+  el.innerHTML = '<div class="camwrap"><img alt=""></div>' + '<div class="bar"><span class="name">' + esc(ring ? 'Es läutet' + (name ? ' – ' + name : '') : name || '') + '</span>' +
     (door ? '<button type="button" class="door" data-door>Tür öffnen</button>' : '') + '<button type="button" data-close>Schließen</button></div>';
   el.querySelector('img').src = 'cam/' + encodeURIComponent(id) + '.mjpeg';
   el.querySelector('[data-close]').onclick = () => {
@@ -3426,10 +3485,19 @@ function openCam(id, name, ring) {
     toast('Tür wird geöffnet');
   };
   document.body.appendChild(el);
-  SV.cam = { el, id, ring: Boolean(ring) };
+  SV.cam = { el, id, ring: Boolean(ring), t: t && t.detectBoxes ? t : null };
+  if (SV.cam.t) {
+    const wrap = el.querySelector('.camwrap');
+    const draw = () => drawDetect(wrap, SV.cam && SV.cam.t);
+    el.querySelector('img').onload = draw;
+    window.addEventListener('resize', draw);
+    SV.cam.draw = draw;
+    SV.cam.unbind = () => window.removeEventListener('resize', draw);
+  }
 }
 
 function closeCam() {
+  if (SV.cam && SV.cam.unbind) SV.cam.unbind();
   if (SV.cam) {
     // stop the stream
     const img = SV.cam.el.querySelector('img');
@@ -3705,6 +3773,7 @@ function connect() {
     } else if (msg.type === 'state') {
       SV.states[msg.id] = msg.state;
       refresh(msg.id);
+      if (SV.cam && SV.cam.t && SV.cam.t.detectBoxes === msg.id && SV.cam.draw) SV.cam.draw();
     } else if (msg.type === 'timers') {
       Timers.load();
     } else if (msg.type === 'layout') {

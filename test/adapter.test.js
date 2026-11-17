@@ -1662,3 +1662,47 @@ test('adapter: waste calendar tile (fetch iCal, reminder once the evening before
     assert.equal(sent[0][1], 'Morgen: Bio, Restmüll (Klagenfurt) · Gelber Sack (Ferlach)');
     assert.equal(sent[0][3], 'waste-start/m');
 });
+
+test('adapter: livecam detection -> list "Meldungen" with photo, push only when chosen', async t => {
+    const { adapter, api, pushed, base } = await startAdapter(t, {}, a => {
+        a.detPhotoWait = 50;
+        a.add('livecam.0.cameras.einfahrt.detect.boxes', { name: 'Boxen', type: 'string', role: 'json', write: false }, '[]');
+        a.add('livecam.0.cameras.einfahrt.detect.photoUrl', { name: 'Foto', type: 'string', role: 'url', write: false }, '');
+    });
+    await api('push/subscribe', { method: 'POST', body: JSON.stringify({ subscription: { endpoint: 'https://web.push.apple.com/d', keys: { p256dh: 'p', auth: 'a' } }, name: 'iPhone' }) });
+    const layout = (detectLog, extra = {}) => ({
+        pages: [{ id: 'cams', name: 'Kameras', tiles: [{ id: 'c1', type: 'camera', label: 'Einfahrt', camera: 'livecam.0.cameras.einfahrt', detect: true, detectLog, ...extra }] }],
+    });
+    const saved = await api('layout', { method: 'PUT', body: JSON.stringify(layout('list')) });
+    assert.equal(saved.body.pages[0].tiles[0].detectBoxes, 'livecam.0.cameras.einfahrt.detect.boxes');
+    const box = g => JSON.stringify([{ g, l: g === 'person' ? 'Person' : 'Auto', s: 88, x: 0.1, y: 0.2, w: 0.1, h: 0.4 }]);
+    // list only: entry with the picture of the camera (no photoUrl yet), no push
+    adapter.change('livecam.0.cameras.einfahrt.detect.boxes', box('person'));
+    await until(() => adapter.pushLog.entries.length === 1);
+    let e = adapter.pushLog.entries[0];
+    assert.equal(e.title, '🧍 Einfahrt');
+    assert.equal(e.body, 'Person erkannt');
+    assert.equal(e.image, true);
+    assert.deepEqual(e.ways, { app: false, telegram: false, whatsapp: false });
+    const photo = await fetch(`${base}api/pushlog/${e.id}.jpg`);
+    assert.equal(photo.headers.get('content-type'), 'image/jpeg');
+    assert.match(await photo.text(), /^JPEG \/cam\/einfahrt\.jpg/);
+    assert.equal(pushed.length, 0);
+    // same person again within the cooldown: nothing new; a car: own entry
+    adapter.change('livecam.0.cameras.einfahrt.detect.boxes', '[]');
+    adapter.change('livecam.0.cameras.einfahrt.detect.boxes', box('person'));
+    await new Promise(r => setTimeout(r, 200));
+    assert.equal(adapter.pushLog.entries.length, 1);
+    // push: app message with the fresh livecam photo
+    await api('layout', { method: 'PUT', body: JSON.stringify(layout('push', { channels: { app: true, telegram: false, whatsapp: false } })) });
+    adapter.change('livecam.0.cameras.einfahrt.detect.photoUrl', 'http://127.0.0.1:1/none');
+    setTimeout(() => adapter.change('livecam.0.cameras.einfahrt.detect.photoUrl', `${new URL(adapter.foreign['livecam.0.cameras.einfahrt.snapshotUrl'].val).origin}/detect/einfahrt.jpg?t=1`), 10);
+    adapter.change('livecam.0.cameras.einfahrt.detect.boxes', box('vehicle'));
+    await until(() => pushed.length === 1);
+    e = adapter.pushLog.entries[0];
+    assert.equal(e.body, 'Fahrzeug erkannt');
+    assert.equal(pushed[0].id, e.id);
+    assert.equal(pushed[0].tag, 'det-cams-c1');
+    assert.match(await (await fetch(`${base}api/pushlog/${e.id}.jpg`)).text(), /^JPEG \/detect\/einfahrt\.jpg/);
+    assert.equal((await fetch(`${base}api/pushlog/zzz.jpg`)).status, 404);
+});

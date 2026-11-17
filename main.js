@@ -211,6 +211,7 @@ class SmartView extends utils.Adapter {
                 colorCommand: (key, action, arg, source) => this.colorLights().command(key, action, arg, source),
                 // any doorbell source: the layout's ring state or livecam's intercom (SIP call)
                 pushLog: () => this.pushLog.list(this.store.layout.pushKeep),
+                pushLogImage: id => this.pushLog.imagePath(id),
                 ringing: () => this.ringIds().some(id => {
                     const st = this.liveStates.get(id);
                     return Boolean(st && SceneLogic.truthy(st.val));
@@ -324,6 +325,16 @@ class SmartView extends utils.Adapter {
         // the doorbell state: for Telegram / WhatsApp and /api/ring (monitor wake-up script)
         for (const id of this.ringIds()) {
             ids.add(id);
+        }
+        // camera tiles with "Erkennungen in die Meldungen": livecam's boxes data point
+        this.detTiles = new Map();
+        for (const page of layout.pages) {
+            for (const t of page.tiles) {
+                if (t.type === 'camera' && t.detectLog && t.detectBoxes) {
+                    this.detTiles.set(t.detectBoxes, [...(this.detTiles.get(t.detectBoxes) || []), { page, tile: t }]);
+                    ids.add(t.detectBoxes);
+                }
+            }
         }
         for (const id of this.subscribed) {
             if (!ids.has(id)) {
@@ -866,6 +877,9 @@ class SmartView extends utils.Adapter {
         const val = state ? state.val : null;
         this.pushPrev.set(id, val);
         this.checkRules(id, val, prev);
+        if (this.detTiles && this.detTiles.has(id)) {
+            this.checkDetect(id, val, prev);
+        }
         if (this.winIds && this.winIds.has(id)) {
             this.checkWindows();
         }
@@ -1892,9 +1906,91 @@ class SmartView extends utils.Adapter {
         }
     }
 
+    // ---------------- livecam AI detection -> list "Meldungen" (with photo) / messages ----------------
+
+    /** a group (person / vehicle / animal) that was not in the boxes before: one entry per tile, at most every 60 s */
+    checkDetect(id, val, prev) {
+        const groups = v => {
+            try {
+                const list = JSON.parse(v || '[]');
+                return Array.isArray(list) ? list : [];
+            } catch {
+                return [];
+            }
+        };
+        const now = groups(val);
+        const before = new Set(groups(prev).map(b => b.g));
+        const fresh = [...new Set(now.map(b => b.g))].filter(g => !before.has(g));
+        if (!fresh.length) {
+            return;
+        }
+        this.detMem = this.detMem || new Map();
+        for (const { page, tile } of this.detTiles.get(id)) {
+            for (const g of fresh) {
+                const key = `${page.id}/${tile.id}/${g}`;
+                if (Date.now() - (this.detMem.get(key) || 0) < (this.detCooldown || 60000)) {
+                    continue;
+                }
+                this.detMem.set(key, Date.now());
+                const count = now.filter(b => b.g === g).length;
+                this.detectMessage(page, tile, g, count).catch(err => this.log.warn(`Erkennung ${tile.label || tile.camera}: ${err.message}`));
+            }
+        }
+    }
+
+    async detectMessage(page, tile, group, count) {
+        const words = { person: ['Person', 'Personen', '🧍'], vehicle: ['Fahrzeug', 'Fahrzeuge', '🚗'], animal: ['Tier', 'Tiere', '🐾'] }[group] || [group, group, '•'];
+        const title = `${words[2]} ${tile.label || tile.camera.split('.').pop()}`;
+        const body = `${count > 1 ? `${count} ${words[1]}` : words[0]} erkannt`;
+        // livecam makes the photo with boxes a moment after the detection; else a plain picture of the camera
+        const since = Date.now();
+        await new Promise(r => setTimeout(r, this.detPhotoWait === undefined ? 3000 : this.detPhotoWait));
+        let image = null;
+        const ph = await this.getForeignStateAsync(`${tile.camera}.detect.photoUrl`).catch(() => null);
+        if (ph && ph.val && ph.ts >= since - 15000) {
+            image = await getBuffer(String(ph.val)).catch(() => null);
+        }
+        if (!image) {
+            const url = await this.cameraUrl(tile.camera, 'jpg').catch(() => null);
+            image = url ? await getBuffer(url).catch(() => null) : null;
+        }
+        const push = tile.detectLog === 'push';
+        const ch = push ? (tile.channels && typeof tile.channels === 'object' ? tile.channels : { app: true, telegram: true, whatsapp: true }) : { app: false, telegram: false, whatsapp: false };
+        const entry = this.recordMessage(title, body, page.id, ch, image);
+        if (!push) {
+            return;
+        }
+        this.log.info(`Mitteilung: ${title} - ${body}`);
+        if (ch.app) {
+            this.push.send(this.pushPayload(entry, `det-${page.id}-${tile.id}`)).catch(err => this.log.warn(`Push: ${err.message}`));
+        }
+        if (ch.telegram) {
+            this.telegramPhoto(title, body, page.id, image).catch(err => this.log.warn(`Telegram: ${err.message}`));
+        }
+        if (ch.whatsapp) {
+            this.whatsapp({ title, body, page: page.id }).catch(err => this.log.warn(`WhatsApp: ${err.message}`));
+        }
+    }
+
+    /** Telegram with a photo (caption = title + text), without photo as text */
+    async telegramPhoto(title, body, page, image) {
+        const tg = this.store.layout.telegram;
+        if (!tg.instance) {
+            return false;
+        }
+        if (!image) {
+            return this.telegram({ title, body, page });
+        }
+        const msg = { text: image, type: 'photo', caption: `${title}\n${body}` };
+        if (tg.users) {
+            msg.user = tg.users;
+        }
+        return this.tgSend(tg.instance, msg);
+    }
+
     /** into the list "Meldungen" (app menu, tap on a push); tells the open pages */
-    recordMessage(title, body, page, ways) {
-        const entry = this.pushLog.add({ title, body, page, ways }, this.store.layout.pushKeep);
+    recordMessage(title, body, page, ways, image = null) {
+        const entry = this.pushLog.add({ title, body, page, ways, image }, this.store.layout.pushKeep);
         if (this.server && this.server.pushLogChanged) {
             this.server.pushLogChanged();
         }

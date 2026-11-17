@@ -378,6 +378,17 @@ Optionen der Fenster-Kachel (alle freiwillig, ohne sie bleibt alles wie bisher):
   während etwas offen ist („Fenster: Regen! – Offen: Küche (links offen)“). Was beim Start des Adapters schon offen
   ist, wird nicht nochmal gemeldet.
 
+### KI-Erkennung im Kamerabild (livecam 0.5.1 oder neuer)
+
+Ist bei der Kamera im livecam-Adapter die **KI-Erkennung** eingeschaltet, kann die Kamera-Kachel sie anzeigen:
+
+- **„KI-Erkennung anzeigen“** ankreuzen: Personen (rot), Fahrzeuge (gelb) und Tiere (grün) bekommen im Livebild einen
+  Rahmen mit Beschriftung, oben rechts steht die Anzahl (🧍 1 🚗 2). Auch im Vollbild.
+- **„Erkennungen in die Meldungen“:** *nur in die Liste* = jede neue Erkennung landet mit Foto in der Liste
+  „Meldungen“ (⚙ → Meldungen, Foto antippen = groß); *in die Liste und als Mitteilung* = zusätzlich Push/Telegram
+  (mit Foto)/WhatsApp, je nach „Senden über“. Dieselbe Art (z. B. Person) bei derselben Kamera höchstens einmal pro
+  Minute.
+
 ### Lageplan: Ebenen und Kameras
 
 - **Ebenen (Gewerke):** Oben am Lageplan (und klein in der Lageplan-Kachel) gibt es Knöpfe für Licht, Beschattung,
