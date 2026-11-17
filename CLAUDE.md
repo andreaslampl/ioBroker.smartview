@@ -660,6 +660,11 @@ switches/buttons on them.
   error an inline offline page with the device's received messages. Editor field "Meldungen aufbewahren (Tage)".
   Adapter test + Playwright (sv/log-ui.js: badge, ?log highlight, offline page via context.setOffline). Not yet on the iPhone.
 - 0.72.1 field: owner's iPhone showed the list; the page button ("Start" = page name) was unclear -> `.logpage` "zur Seite" + name ›.
+- 0.72.2 field: owner: no audio either way on iPhone and touch PC, kiosk display did not wake. Client made safer: AudioContext
+  created inside the tap (before getUserMedia); plain mic track / unmuted <audio> by default, `micBoost()` (replaceTrack via a
+  GainNode) only when 🎤 != 100 %, `speakerBoost()` only when 🔊 > 100 %, both only with a running context (`liveCtx()`).
+  e2e (sv/call-e2e.js: real livecam Intercom + CamServer, fake answering station, SmartView proxy) passes with default
+  levels, 200/150 %, and autoplay requiring a gesture. livecam 0.4.1 logs candidates + packet counts to find the real cause.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.

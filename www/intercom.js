@@ -18,6 +18,7 @@ const Intercom = (() => {
   let actx = null; // Web Audio for the volume sliders (speaker and microphone gain up to 300 %)
   let outGain = null;
   let micGain = null;
+  let remote = null; // stream from the door station
   let overlay = null;
   let dismissed = false;
   let ringOn = false;
@@ -260,6 +261,8 @@ const Intercom = (() => {
     }
     if (!ws || ws.readyState !== 1) return toast('Keine Verbindung zur Sprechstelle', true);
     if (!outgoing) ring(false);
+    // still inside the tap: an AudioContext created / resumed later would stay suspended (iPhone) and be silent
+    audioCtx();
     try {
       mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     } catch (e) {
@@ -274,42 +277,19 @@ const Intercom = (() => {
     }
     pc = new RTCPeerConnection();
     if (mic) {
-      // microphone through a gain (slider 🎤); without Web Audio the plain track
-      let send = mic;
-      const ctx = audioCtx();
-      if (ctx) {
-        try {
-          micGain = ctx.createGain();
-          micGain.gain.value = level('mic') / 100;
-          const dest = ctx.createMediaStreamDestination();
-          ctx.createMediaStreamSource(mic).connect(micGain).connect(dest);
-          send = dest.stream;
-        } catch {
-          micGain = null;
-          send = mic;
-        }
-      }
-      for (const t of send.getTracks()) pc.addTrack(t, send);
+      // the plain microphone track; Web Audio (slider 🎤) only when it is set to something other than 100 %
+      for (const t of mic.getTracks()) pc.addTrack(t, mic);
+      if (level('mic') !== 100) micBoost();
     } else pc.addTransceiver('audio', { direction: 'recvonly' });
     pc.ontrack = ev => {
       const a = overlay && overlay.querySelector('audio');
       if (!a) return;
-      const stream = ev.streams[0] || new MediaStream([ev.track]);
-      // Chromium only passes a remote WebRTC stream to Web Audio while a (muted) element plays it
-      a.srcObject = stream;
-      const ctx = audioCtx();
+      remote = ev.streams[0] || new MediaStream([ev.track]);
+      a.srcObject = remote;
+      a.muted = false;
+      a.volume = Math.min(1, level('vol') / 100);
       outGain = null;
-      if (ctx) {
-        try {
-          outGain = ctx.createGain();
-          outGain.gain.value = level('vol') / 100;
-          ctx.createMediaStreamSource(stream).connect(outGain).connect(ctx.destination);
-          a.muted = true;
-        } catch {
-          outGain = null;
-        }
-      }
-      if (!outGain) a.volume = Math.min(1, level('vol') / 100);
+      if (level('vol') > 100) speakerBoost();
       a.play().catch(() => {});
     };
     await pc.setLocalDescription(await pc.createOffer());
@@ -352,18 +332,64 @@ const Intercom = (() => {
     return 100;
   }
 
+  /** usable Web Audio (a suspended context would make the call silent) */
+  function liveCtx() {
+    const ctx = audioCtx();
+    return ctx && ctx.state === 'running' ? ctx : null;
+  }
+
+  /** speaker above 100 %: remote stream through a gain, the element muted (Chromium needs it playing) */
+  function speakerBoost() {
+    const ctx = liveCtx();
+    const a = overlay && overlay.querySelector('audio');
+    if (!ctx || !remote || !a || outGain) return Boolean(outGain);
+    try {
+      outGain = ctx.createGain();
+      outGain.gain.value = level('vol') / 100;
+      ctx.createMediaStreamSource(remote).connect(outGain).connect(ctx.destination);
+      a.muted = true;
+      return true;
+    } catch {
+      outGain = null;
+      a.muted = false;
+      return false;
+    }
+  }
+
+  /** microphone other than 100 %: send the track through a gain (replaceTrack, the call keeps running) */
+  function micBoost() {
+    const ctx = liveCtx();
+    if (!ctx || !mic || !pc || micGain) return Boolean(micGain);
+    try {
+      micGain = ctx.createGain();
+      micGain.gain.value = level('mic') / 100;
+      const dest = ctx.createMediaStreamDestination();
+      ctx.createMediaStreamSource(mic).connect(micGain).connect(dest);
+      const sender = pc.getSenders().find(x => x.track && x.track.kind === 'audio');
+      if (sender) sender.replaceTrack(dest.stream.getAudioTracks()[0]).catch(() => {});
+      return true;
+    } catch {
+      micGain = null;
+      return false;
+    }
+  }
+
   function setLevel(key, v) {
     try {
       localStorage.setItem('sv.call.' + key, String(v));
     } catch {
       // only for this call
     }
-    if (key === 'mic' && micGain) micGain.gain.value = v / 100;
+    if (key === 'mic') {
+      if (micGain) micGain.gain.value = v / 100;
+      else if (v !== 100) micBoost();
+    }
     if (key === 'vol') {
       if (outGain) outGain.gain.value = v / 100;
       else {
         const a = overlay && overlay.querySelector('audio');
         if (a) a.volume = Math.min(1, v / 100);
+        if (v > 100) speakerBoost();
       }
     }
   }
@@ -378,6 +404,7 @@ const Intercom = (() => {
     }
     outGain = null;
     micGain = null;
+    remote = null;
     if (pc) {
       pc.close();
       pc = null;

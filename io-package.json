@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.72.1",
+    "version": "0.72.2",
     "news": {
+      "0.72.2": {
+        "en": "Intercom: plain audio path again; volume / microphone boost only when a slider is not at 100 % (and only with a running audio context)",
+        "de": "Sprechanlage: Ton wieder direkt; Verstärkung nur, wenn ein Regler nicht auf 100 % steht (und nur mit laufendem Audio)"
+      },
       "0.72.1": {
         "en": "Messages list: the page button says 'zur Seite' (it opens the page the message belongs to)",
         "de": "Meldungen: der Seiten-Knopf heißt jetzt „zur Seite …“ (öffnet die Seite, zu der die Meldung gehört)"
