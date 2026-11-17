@@ -665,6 +665,9 @@ switches/buttons on them.
   GainNode) only when 🎤 != 100 %, `speakerBoost()` only when 🔊 > 100 %, both only with a running context (`liveCtx()`).
   e2e (sv/call-e2e.js: real livecam Intercom + CamServer, fake answering station, SmartView proxy) passes with default
   levels, 200/150 %, and autoplay requiring a gesture. livecam 0.4.1 logs candidates + packet counts to find the real cause.
+- Field, confirmed: talking with the real 2N works from the iPhone (after livecam 0.4.2 port range + firewall rules between
+  the Security and Smarthome VLANs) and from the Debian kiosk touch PC (after re-running kiosk-setup.sh - the mDNS flag
+  of 0.69.1 was missing).
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
