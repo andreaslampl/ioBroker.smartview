@@ -692,7 +692,9 @@ switches/buttons on them.
   high for idle (in the wall, max_cstate=1 adds heat) but no visible run-up; asked for zone types + trip points, top, and
   short vs long press. Answer: zones acpitz / soc_dts0 / soc_dts1, critical trip 100 °C on all (kernel would shut down
   orderly with a log line) -> heat ruled out as the cause. top: chromium ~1 core, load 0.35, RAM ok. Remaining: full SoC hang
-  (watchdog in the same chip) or power loss -> recommended the Shelly + ping + BIOS route; short/long press still open.
+  (watchdog in the same chip) or power loss -> recommended the Shelly + ping + BIOS route. Owner: a SHORT press starts it ->
+  it was really off = power loss / supply dip (livecam notes: the touch monitor drew too much power for its supply and switched
+  off). Advised BIOS "Restore on AC Power Loss = Power On" first + check / replace the power supply (asked for its label).
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
