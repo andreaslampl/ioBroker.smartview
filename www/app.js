@@ -3438,8 +3438,9 @@ function drawDetect(host, t) {
   const ox = (W - dw) / 2;
   const oy = (H - dh) / 2;
   const count = {};
-  for (const b of boxes) count[b.g] = (count[b.g] || 0) + 1;
-  ov.innerHTML = boxes.map(b => '<div class="detbox ' + esc(b.g) + '" style="left:' + (ox + b.x * dw).toFixed(1) + 'px;top:' + (oy + b.y * dh).toFixed(1) +
+  for (const b of boxes) if (!b.st) count[b.g] = (count[b.g] || 0) + 1;
+  // st = standing / parked still (VMS): grey dashed, not counted
+  ov.innerHTML = boxes.map(b => '<div class="detbox ' + esc(b.g) + (b.st ? ' still' : '') + '" style="left:' + (ox + b.x * dw).toFixed(1) + 'px;top:' + (oy + b.y * dh).toFixed(1) +
     'px;width:' + (b.w * dw).toFixed(1) + 'px;height:' + (b.h * dh).toFixed(1) + 'px"><span>' + esc(b.l) + (b.s ? ' ' + b.s + ' %' : '') + '</span></div>').join('') +
     '<div class="detbadge">' + Object.entries(count).map(([g, n]) => (DET_ICON[g] || '•') + ' ' + n).join(' ') + '</div>';
 }

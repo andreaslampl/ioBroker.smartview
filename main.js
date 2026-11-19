@@ -1913,7 +1913,8 @@ class SmartView extends utils.Adapter {
         const groups = v => {
             try {
                 const list = JSON.parse(v || '[]');
-                return Array.isArray(list) ? list : [];
+                // still ones (VMS: standing / parked for a while) are no new detection
+                return Array.isArray(list) ? list.filter(b => b && !b.st) : [];
             } catch {
                 return [];
             }

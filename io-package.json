@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.74.0",
+    "version": "0.74.1",
     "news": {
+      "0.74.1": {
+        "en": "Camera boxes: objects standing still (from the VMS) grey dashed and not reported again",
+        "de": "Kamera-Rahmen: stillstehende Objekte (von der VMS) grau gestrichelt und nicht erneut gemeldet"
+      },
       "0.74.0": {
         "en": "Camera tile: report detections always or only while the alarm system is armed",
         "de": "Kamera-Kachel: Erkennungen immer melden oder nur, wenn die Alarmanlage scharf ist"

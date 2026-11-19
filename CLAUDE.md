@@ -679,6 +679,8 @@ switches/buttons on them.
 - 0.74.0: owner asked to report detections only while the alarm is armed -> camera options `detectWhen` ''|armed|set (set = also
   part set) + `detectAlarm` (alarm tile id, editor kind alarmtile; only alarm tile = default); main `detectArmed()` ->
   `SceneLogic.alarmArmed(a, st, how)` (any area of the tile). Boxes on the picture stay always. Adapter test.
+- 0.74.1: livecam 0.9.0 writes the VMS's boxes into `cameras.<id>.detect.boxes` (with `st: 1` = standing still / parked):
+  `drawDetect()` draws them grey dashed (`.detbox.still`) and leaves them out of the count; `checkDetect()` ignores them.
 - Kiosk field (Nov 2026): touch PC still goes "off" at night (needs the power button) although
   `intel_idle.max_cstate=1` is active (checked in /proc/cmdline). Journal just stops (18.11. after 08:17 and 23:05:55, no
   shutdown). Hardware watchdog iTCO_wdt runs (systemd 1 min) and DID reboot after a sysrq crash test - so either a full

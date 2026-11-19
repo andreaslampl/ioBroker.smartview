@@ -674,6 +674,8 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .detbox span { position: absolute; left: -2px; top: -18px; font-size: 11px; line-height: 16px; padding: 0 4px; border-radius: 3px; background: #f85149; color: #fff; white-space: nowrap; }
 .detbox.vehicle span { background: #f0b429; color: #000; }
 .detbox.animal span { background: #3fb950; color: #000; }
+.detbox.still { border: 2px dashed #9aa0a6; }
+.detbox.still span { background: #9aa0a6; color: #000; }
 .detbadge { position: absolute; right: 6px; top: 6px; padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,.6); color: #fff; font-size: 13px; }
 .detbadge:empty { display: none; }
 .camfull .camwrap { flex: 1; min-height: 0; position: relative; }
