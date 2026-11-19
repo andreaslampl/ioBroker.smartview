@@ -684,7 +684,8 @@ switches/buttons on them.
   shutdown). Hardware watchdog iTCO_wdt runs (systemd 1 min) and DID reboot after a sysrq crash test - so either a full
   SoC hang (Bay Trail Linux freeze, watchdog in the same chip) or power loss / thermal cut. Owner doubts heat (Windows ran
   heavier and was rarely off). Waiting: owner added /etc/cron.d/temp-log (logger -t temp, thermal zones every minute) ->
-  after the next outage `journalctl -b -1 -t temp -n 15` (time of the stop + temperature) and whether the power LED was on.
+  after the next outage `journalctl -b -1 -t temp -n 15` (time of the stop + temperature). Power LED is not visible (PC inside
+  the wall) -> tell apart by the power button (short press starts = was off, long press needed = hung) / switch port link.
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
