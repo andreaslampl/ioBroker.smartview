@@ -679,6 +679,14 @@ switches/buttons on them.
 - 0.74.0: owner asked to report detections only while the alarm is armed -> camera options `detectWhen` ''|armed|set (set = also
   part set) + `detectAlarm` (alarm tile id, editor kind alarmtile; only alarm tile = default); main `detectArmed()` ->
   `SceneLogic.alarmArmed(a, st, how)` (any area of the tile). Boxes on the picture stay always. Adapter test.
+- Kiosk field (Nov 2026): touch PC still goes "off" at night (needs the power button) although
+  `intel_idle.max_cstate=1` is active (checked in /proc/cmdline). Journal just stops (18.11. after 08:17 and 23:05:55, no
+  shutdown). Hardware watchdog iTCO_wdt runs (systemd 1 min) and DID reboot after a sysrq crash test - so either a full
+  SoC hang (Bay Trail Linux freeze, watchdog in the same chip) or power loss / thermal cut. Owner doubts heat (Windows ran
+  heavier and was rarely off). Waiting: owner added /etc/cron.d/temp-log (logger -t temp, thermal zones every minute) ->
+  after the next outage `journalctl -b -1 -t temp -n 15` (time of the stop + temperature) and whether the power LED was on.
+  Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
+  unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
