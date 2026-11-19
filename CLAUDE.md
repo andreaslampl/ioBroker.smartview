@@ -688,6 +688,9 @@ switches/buttons on them.
   heavier and was rarely off). Waiting: owner added /etc/cron.d/temp-log (logger -t temp, thermal zones every minute) ->
   after the next outage `journalctl -b -1 -t temp -n 15` (time of the stop + temperature). Power LED is not visible (PC inside
   the wall) -> tell apart by the power button (short press starts = was off, long press needed = hung) / switch port link.
+  Result 19.11.: off again, last temp-log 15:40 (zone values 79-80 / 70-71 / 70-71 °C, steady, no rise before the stop) ->
+  high for idle (in the wall, max_cstate=1 adds heat) but no visible run-up; asked for zone types + trip points, top, and
+  short vs long press.
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
