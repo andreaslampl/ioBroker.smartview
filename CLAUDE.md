@@ -690,7 +690,9 @@ switches/buttons on them.
   the wall) -> tell apart by the power button (short press starts = was off, long press needed = hung) / switch port link.
   Result 19.11.: off again, last temp-log 15:40 (zone values 79-80 / 70-71 / 70-71 °C, steady, no rise before the stop) ->
   high for idle (in the wall, max_cstate=1 adds heat) but no visible run-up; asked for zone types + trip points, top, and
-  short vs long press.
+  short vs long press. Answer: zones acpitz / soc_dts0 / soc_dts1, critical trip 100 °C on all (kernel would shut down
+  orderly with a log line) -> heat ruled out as the cause. top: chromium ~1 core, load 0.35, RAM ok. Remaining: full SoC hang
+  (watchdog in the same chip) or power loss -> recommended the Shelly + ping + BIOS route; short/long press still open.
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
