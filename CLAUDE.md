@@ -698,7 +698,8 @@ switches/buttons on them.
   Owner: Windows 11 was rarely off -> differences: kiosk SCREEN_OFF_MIN default 0 (monitor backlight on 24/7, Windows turned
   it off) and max_cstate=1 -> advised SCREEN_OFF_MIN=10 + remove max_cstate=1 again. Supply label: 12 V 5 A (60 W) - enough on
   paper for the panel PC, so an aged / cheap supply or a loose plug is suspected; suggested a quality 12 V supply with
-  reserve (e.g. Mean Well GST90A12, same barrel plug - measure it).
+  reserve (e.g. Mean Well GST90A12, same barrel plug - measure it). Owner's conf already has SCREEN_OFF_MIN='2' (real DPMS off),
+  so the backlight is not the difference -> next: BIOS power-on after AC loss, measure the 12 V at the plug, replace the supply.
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
