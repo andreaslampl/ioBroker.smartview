@@ -700,6 +700,10 @@ switches/buttons on them.
   paper for the panel PC, so an aged / cheap supply or a loose plug is suspected; suggested a quality 12 V supply with
   reserve (e.g. Mean Well GST90A12, same barrel plug - measure it). Owner's conf already has SCREEN_OFF_MIN='2' (real DPMS off),
   so the backlight is not the difference -> next: BIOS power-on after AC loss, measure the 12 V at the plug, replace the supply.
+  SOLVED (22.11., owner): after switching SmartView's own "Bildschirm aus" (black overlay of www/screen.js) to "nie" and leaving
+  only the kiosk DPMS (SCREEN_OFF_MIN), the touch PC never went off again. Most likely the overlay's screen wake lock kept
+  Chromium from letting X blank the monitor -> backlight on 24/7 -> the 12 V 5 A supply gave up. ANLEITUNG.md now says to set
+  "Bildschirm aus" to "nie" on the kiosk. (If touching screen.js: a wake lock blocks DPMS on X kiosks.)
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
 - Ideas not done yet: charts/history.
