@@ -76,10 +76,11 @@ dafür erscheint eine **Bildschirmtastatur** (ab SmartView 0.67.2). Danach bleib
 - Einstellungen ändern: an der Tastatur **Strg+Alt+F2**, anmelden, `sudo -i`, `nano /etc/smartview-kiosk.conf`, speichern,
   `reboot`. Zurück zu SmartView: **Strg+Alt+F1**.
   - `SCREEN_OFF_MIN` – Monitor aus nach so vielen Minuten ohne Berühren (`0` = nie). Antippen oder Klingeln weckt ihn.
-    **Wichtig:** Im SmartView-Menü auf dem Touch-PC „Bildschirm aus“ auf **nie** stellen. Diese Funktion legt nur ein
-    schwarzes Bild darüber und hält den Bildschirm wach. Dann schaltet `SCREEN_OFF_MIN` den Monitor nicht mehr aus, die
-    Hintergrundbeleuchtung läuft rund um die Uhr, und ein knappes Netzteil kann den Touch-PC abschalten (so beim Besitzer
-    passiert).
+    **Wichtig (ab SmartView 0.74.2):** Im SmartView-Menü (⚙) auf dem Touch-PC **„Bildschirm wach halten: nein“** einstellen und
+    **„Bildschirm aus nach“ etwas kürzer** als `SCREEN_OFF_MIN`, z. B. SmartView 1 Min., `SCREEN_OFF_MIN` 2. Dann legt SmartView
+    zuerst das schwarze Bild darüber (die erste Berührung weckt nur, sie schaltet nichts), und danach schaltet Linux den
+    Monitor wirklich aus. Mit „wach halten: ja“ würde der Monitor nie ausgehen, die Hintergrundbeleuchtung liefe rund um die
+    Uhr, und ein knappes Netzteil kann den Touch-PC abschalten (so beim Besitzer passiert).
   - `WAKE_DURING_DND` – `1` = auch bei „Nicht stören“ wecken (Bild ohne Klingelton)
   - `SPK_VOL` – Lautsprecher beim Start (`1.0` = 100 %)
   - `MIC_VOL` – Mikrofon beim Start (`0.8` = 80 %)

@@ -8,6 +8,22 @@
  */
 const Screen = (() => {
   const KEY = 'sv.screenOff';
+  // 'no' = do not keep the screen awake (a kiosk where the system switches the monitor off itself, e.g. the Linux kiosk with
+  // SCREEN_OFF_MIN: a wake lock would stop it from doing that). The black screen and its "first tap only wakes" stay.
+  const LOCKKEY = 'sv.screenLock';
+  try {
+    const q = new URLSearchParams(location.search).get('wakelock');
+    if (q === '0' || q === '1') localStorage.setItem(LOCKKEY, q === '0' ? 'no' : 'yes');
+  } catch (e) {
+    // ignore
+  }
+  function keepAwake() {
+    try {
+      return localStorage.getItem(LOCKKEY) !== 'no';
+    } catch (e) {
+      return true;
+    }
+  }
   const STEPS = [0, 1, 2, 5, 10, 30, 60];
   let blank = null;
   let timer = null;
@@ -27,7 +43,9 @@ const Screen = (() => {
     return Boolean(document.querySelector('.camfull.ring, .camfull.call')) || SV.editing;
   }
 
-  async function holdLock(on) {
+  async function holdLock(on, ringing) {
+    // without "keep awake" only a ring may hold the screen (wakes a monitor Windows turned off)
+    if (on && !ringing && !keepAwake()) on = false;
     try {
       if (on) {
         if (!lock && 'wakeLock' in navigator && document.visibilityState === 'visible') {
@@ -84,11 +102,11 @@ const Screen = (() => {
   /** doorbell / intercom rings: screen on at once */
   function ring() {
     wake();
-    holdLock(true);
+    holdLock(true, true);
     // without the screen-off feature the wake lock is only for the call
     clearTimeout(ringTimer);
     ringTimer = setTimeout(() => {
-      if (minutes() <= 0 && !busy()) holdLock(false);
+      if ((minutes() <= 0 || !keepAwake()) && !busy()) holdLock(false);
     }, 180000);
   }
 
@@ -193,6 +211,20 @@ const Screen = (() => {
         holdLock(false);
       }
     };
+    const keep = document.createElement('button');
+    keep.type = 'button';
+    keep.className = 'item';
+    const keepLabel = () => icon('moon') + 'Bildschirm wach halten (dieses Gerät): <b>' + (keepAwake() ? 'ja' : 'nein – das System schaltet den Monitor ab') + '</b>';
+    keep.innerHTML = keepLabel();
+    keep.onclick = () => {
+      try {
+        localStorage.setItem(LOCKKEY, keepAwake() ? 'no' : 'yes');
+      } catch (e) {
+        // ignore
+      }
+      keep.innerHTML = keepLabel();
+      holdLock(minutes() > 0 && !blank);
+    };
     const now = document.createElement('button');
     now.type = 'button';
     now.className = 'item';
@@ -201,7 +233,7 @@ const Screen = (() => {
       box.closest('.overlay').remove();
       off();
     };
-    box.append(b, now);
+    box.append(b, keep, now);
   }
 
   return { ring, wake, off, menuItems, fullscreen };

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.74.1",
+    "version": "0.74.2",
     "news": {
+      "0.74.2": {
+        "en": "Screen off: new per-device option 'keep the screen awake: no' (black screen catches the first tap, the system / Linux kiosk switches the monitor off)",
+        "de": "Bildschirm aus: neue Einstellung pro Gerät „Bildschirm wach halten: nein“ (schwarzes Bild fängt die erste Berührung ab, das System / der Linux-Kiosk schaltet den Monitor aus)"
+      },
       "0.74.1": {
         "en": "Camera boxes: objects standing still (from the VMS) grey dashed and not reported again",
         "de": "Kamera-Rahmen: stillstehende Objekte (von der VMS) grau gestrichelt und nicht erneut gemeldet"
