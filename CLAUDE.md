@@ -710,7 +710,10 @@ switches/buttons on them.
   "Bildschirm aus" to "nie" on the kiosk. (If touching screen.js: a wake lock blocks DPMS on X kiosks.)
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
-- Ideas not done yet: charts/history.
+- Ideas not done yet: charts/history. Owner idea (22.11., not ordered yet): own "ioBroker-Brücke" adapter to pass chosen data points
+  between the owner's three ioBroker sites (home, hair salon, solarium; all on VPN to home) - every site keeps running alone,
+  list of data points per site, per point read only / read + write, access key, connection state, reconnect. Owner finds an
+  MQTT broker too complicated; multihost advised against (shared DB, sites depend on the VPN).
 - 0.43.1: wallbox tile with the ocpp adapter (owner's FoxESS-made wallbox): `OCPP_TEXT` / `wbStatusText()` translate the connector
   status for status/plugged.
 
