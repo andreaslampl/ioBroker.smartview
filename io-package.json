@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.74.2",
+    "version": "0.75.0",
     "news": {
+      "0.75.0": {
+        "en": "Access from outside without VPN app and open port: Tailscale Funnel or an own server with the VMS relay (alvms-relay.py); requests on the internal ports count as outside (visitor address for lockouts and log); two-factor with 10 recovery codes; two-factor and remote access only changeable at home; menu 'Fernzugang' with status, address, QR code and the line for the server",
+        "de": "Zugriff von unterwegs ohne VPN-App und ohne offenen Port: Tailscale Funnel oder eigener Server mit dem Relay der VMS (alvms-relay.py); Anfragen über die internen Ports gelten als „von außen“ (Besucher-Adresse für Sperre und Log); Zwei-Faktor mit 10 Wiederherstellungs-Codes; Zwei-Faktor und Fernzugang nur im Heimnetz änderbar; Menü „Fernzugang“ mit Status, Adresse, QR-Code und der Zeile für den Server"
+      },
       "0.74.2": {
         "en": "Screen off: new per-device option 'keep the screen awake: no' (black screen catches the first tap, the system / Linux kiosk switches the monitor off)",
         "de": "Bildschirm aus: neue Einstellung pro Gerät „Bildschirm wach halten: nein“ (schwarzes Bild fängt die erste Berührung ab, das System / der Linux-Kiosk schaltet den Monitor aus)"
@@ -640,7 +644,13 @@
     "proxyIps": "",
     "externalLock": "none",
     "external2fa": true,
-    "externalUrl": ""
+    "externalUrl": "",
+    "remoteMode": "",
+    "funnelHttps": 443,
+    "relayServer": "",
+    "relayPort": 443,
+    "relayDomain": "",
+    "relayCertCollection": ""
   },
   "protectedNative": [
     "accessKey"
@@ -787,6 +797,38 @@
         "read": true,
         "write": false,
         "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.remote",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Remote access (status)",
+          "de": "Fernzugang (Status)"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "def": ""
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.remoteUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Remote access: address for outside",
+          "de": "Fernzugang: Adresse für unterwegs"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false,
+        "def": ""
       },
       "native": {}
     }

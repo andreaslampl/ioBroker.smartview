@@ -710,6 +710,21 @@ switches/buttons on them.
   "Bildschirm aus" to "nie" on the kiosk. (If touching screen.js: a wake lock blocks DPMS on X kiosks.)
   Offered next: BIOS "Restore on AC Power Loss = Power On" + Shelly plug + ping adapter + logik rule (off/on after 5 min
   unreachable); long term an N100 mini PC.
+- 0.75.0: owner pasted the VMS chat's guide "Fernzugang ohne VPN" + its relay server `alvms-relay.py` (now in tools/remote, the
+  owner's own VMS code) -> instance option `remoteMode` ''|funnel|relay. Requests on internal ports on 127.0.0.1 count as outside
+  (`SmartServer._remoteKind()` by req.socket.localPort; proxyIps still works): funnel = HTTP `remoteHttpPort` (8111), visitor =
+  LAST X-Forwarded-For; relay = HTTPS `remoteTlsPort` (8112, cert from `relayCertCollection` or the main one, else own + warn),
+  visitor from `RelayClient.visitor(localPort)`. `lib/funnel.js` (tailscale status/funnel status --json, `funnel --bg --https=p
+  http://127.0.0.1:port`, approval link login.tailscale.com caught within `funnelWaitMs`, operator hint, off only our port, never
+  reset; remote.json remembers it to switch off when the mode changes), check every 5 min. `lib/relay.js` (ALVMS1 HMAC line, OK/ERR,
+  P->p, G<ip>\n + raw TLS piped to the local TLS port, pool 8 refilled at once, backoff 2…30 s, key 24 bytes base64url in
+  remote.json - never in the instance config). States info.remote / info.remoteUrl; appLink uses the remote URL when externalUrl is
+  empty. users.js recovery codes (10, abcde-fghij without 0o1li, sha256 only, once each, kept on save, dropped with totp); 2fa API
+  and /api/remote* refused from outside; me.recoveryLeft/me.remote. www/users.js: menu "Fernzugang" (admin, home: state, approval
+  link, URL + QR, add line, new key, users without 2FA), codes shown once (copy/print), login "Handy verloren?" switches the code
+  field to text. Tests: test/remote.test.js runs the real alvms-relay.py (40 parallel requests, unknown SNI dropped) and a fake
+  tailscale CLI; Playwright sv/remote-ui.js. TURN for intercom audio from outside not built (werift 0.24.4 TURN client unchecked).
+  Not yet with the owner's Tailscale / IONOS server.
 - Ideas not done yet: charts/history. Owner idea (22.11., not ordered yet): own "ioBroker-Brücke" adapter to pass chosen data points
   between the owner's three ioBroker sites (home, hair salon, solarium; all on VPN to home) - every site keeps running alone,
   list of data points per site, per point read only / read + write, access key, connection state, reconnect. Owner finds an

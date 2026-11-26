@@ -15,6 +15,8 @@ const { SmartServer } = require('./lib/server');
 const { IntercomProxy, baseFromUrl } = require('./lib/intercom');
 const { UserStore } = require('./lib/users');
 const { Timers } = require('./lib/timers');
+const { Funnel } = require('./lib/funnel');
+const { RelayClient, newKey: newRelayKey } = require('./lib/relay');
 const WinLogic = require('./www/winlogic');
 const SceneLogic = require('./www/scenelogic');
 const RefLogic = require('./www/reflogic');
@@ -158,7 +160,15 @@ class SmartView extends utils.Adapter {
             }
         }
 
+        // remote access without VPN: internal ports on 127.0.0.1 (see lib/funnel.js / lib/relay.js)
+        this.remoteMode = ['funnel', 'relay'].includes(this.config.remoteMode) ? this.config.remoteMode : '';
+        this.remotePorts = {
+            funnelPort: this.remoteMode === 'funnel' ? Number(this.config.remoteHttpPort) || 8111 : 0,
+            relayPort: this.remoteMode === 'relay' ? Number(this.config.remoteTlsPort) || 8112 : 0,
+            visitor: p => (this.relay ? this.relay.visitor(p) : ''),
+        };
         this.server = new SmartServer({
+            remote: this.remotePorts,
             intercom: new IntercomProxy({ target: () => this.intercomTarget(), log: this.log }),
             store: this.store,
             push: this.push,
@@ -222,6 +232,8 @@ class SmartView extends utils.Adapter {
                 telegramInstances: () => this.telegramInstances(),
                 whatsappInstances: () => this.instancesOf('whatsapp-cmb'),
                 whatsappTest: () => this.whatsapp({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – WhatsApp funktioniert.' }),
+                remoteInfo: () => this.remoteInfo(),
+                remoteAction: action => this.remoteAction(action),
                 telegramTest: () => this.telegram({ title: this.store.layout.title || 'SmartView', body: 'Test-Mitteilung – Telegram funktioniert.' }),
             },
         });
@@ -245,6 +257,7 @@ class SmartView extends utils.Adapter {
                 this.urlList.https = '';
             }
         }
+        await this.startRemote(dir, certs).catch(err => this.log.error(`Fernzugang: ${err.message}`));
         const key = String(this.config.accessKey || '').trim();
         const q = key ? `?key=${encodeURIComponent(key)}` : '';
         await this.setState('info.url', this.urlList.http + q, true);
@@ -272,23 +285,23 @@ class SmartView extends utils.Adapter {
     }
 
     /** Certificate collection (acme adapter) from system.certificates; null if missing/expired. */
-    async loadCollection() {
+    async loadCollection(name = this.certCollection) {
         const obj = await this.getForeignObjectAsync('system.certificates').catch(() => null);
-        const c = obj && obj.native && obj.native.collections && obj.native.collections[this.certCollection];
+        const c = obj && obj.native && obj.native.collections && obj.native.collections[name];
         if (!c || !c.key || !c.cert) {
-            this.log.warn(`Certificate collection "${this.certCollection}" not found (acme adapter set up?) - using the own SmartView certificate`);
+            this.log.warn(`Certificate collection "${name}" not found (acme adapter set up?) - using the own SmartView certificate`);
             return null;
         }
         if (c.tsExpires && c.tsExpires < Date.now()) {
-            this.log.warn(`Certificate collection "${this.certCollection}" expired - using the own SmartView certificate`);
+            this.log.warn(`Certificate collection "${name}" expired - using the own SmartView certificate`);
             return null;
         }
         const chain = Array.isArray(c.chain) && c.chain.length ? c.chain.join('\n') : c.cert;
         const domains = Array.isArray(c.domains) ? c.domains.map(String) : [];
         if (c.staging) {
-            this.log.warn(`Certificate collection "${this.certCollection}" is a Let's Encrypt staging (test) certificate - devices will not trust it`);
+            this.log.warn(`Certificate collection "${name}" is a Let's Encrypt staging (test) certificate - devices will not trust it`);
         }
-        this.log.info(`HTTPS uses the certificate "${this.certCollection}" (${domains.join(', ')}), valid until ${c.tsExpires ? new Date(c.tsExpires).toLocaleDateString('de-DE') : '?'}`);
+        this.log.info(`HTTPS uses the certificate "${name}" (${domains.join(', ')}), valid until ${c.tsExpires ? new Date(c.tsExpires).toLocaleDateString('de-DE') : '?'}`);
         return { cert: chain, key: c.key, domains, tsExpires: c.tsExpires || 0 };
     }
 
@@ -305,7 +318,156 @@ class SmartView extends utils.Adapter {
         return name;
     }
 
+    // ---------------- remote access without VPN (Tailscale Funnel / own relay server) ----------------
+
+    _remoteFile() {
+        return path.join(this.dataDir || utils.getAbsoluteInstanceDataDir(this), 'remote.json');
+    }
+
+    _remoteRead() {
+        try {
+            return JSON.parse(fs.readFileSync(this._remoteFile(), 'utf8'));
+        } catch {
+            return {};
+        }
+    }
+
+    _remoteWrite(data) {
+        fs.mkdirSync(path.dirname(this._remoteFile()), { recursive: true });
+        fs.writeFileSync(this._remoteFile(), JSON.stringify(data, null, 1), { mode: 0o600 });
+    }
+
+    async startRemote(dir, certs) {
+        const saved = this._remoteRead();
+        // Funnel switched on by us earlier but not wanted any more: switch it off again (only our port)
+        if (this.remoteMode !== 'funnel' && saved.funnel) {
+            await new Funnel({ bin: this.config.tailscaleBin || 'tailscale', https: saved.funnel.https, local: saved.funnel.local, log: this.log }).stop().catch(() => {});
+            delete saved.funnel;
+            this._remoteWrite(saved);
+        }
+        if (!this.remoteMode) {
+            await this.setState('info.remote', 'aus', true);
+            await this.setState('info.remoteUrl', '', true);
+            return;
+        }
+        if (!this.users || !this.users.enabled) {
+            this.log.warn('Fernzugang: ohne Benutzer ist SmartView von außen gesperrt - zuerst im Heimnetz Benutzer anlegen (Menü → Benutzer)');
+        }
+        if (this.remoteMode === 'funnel') {
+            const local = this.remotePorts.funnelPort;
+            await this.server.listen(local, false, '127.0.0.1');
+            this.funnel = new Funnel({ bin: this.config.tailscaleBin || 'tailscale', https: this.config.funnelHttps, local, log: this.log, waitMs: Number(this.config.funnelWaitMs) || 20000 });
+            await this.funnelCheck();
+            this.remoteTimer = setInterval(() => this.funnelCheck(), 5 * 60000);
+            return;
+        }
+        // own relay server
+        const server = String(this.config.relayServer || '').trim();
+        const domain = String(this.config.relayDomain || '').trim().toLowerCase();
+        if (!server || !domain) {
+            await this.setState('info.remote', 'eigener Server: Adresse des Servers und DuckDNS-Name fehlen (Instanz-Einstellungen)', true);
+            return;
+        }
+        if (!saved.relayKey) {
+            saved.relayKey = newRelayKey();
+            this._remoteWrite(saved);
+        }
+        // certificate for the relay name: own collection, else the main one, else the own SmartView certificate
+        this.relayCollection = String(this.config.relayCertCollection || '').trim();
+        let t = this.relayCollection ? await this.loadCollection(this.relayCollection) : certs && certs.trusted;
+        if (!t && certs) {
+            this.log.warn(`Fernzugang: kein Let's-Encrypt-Zertifikat für ${domain} - Browser warnen dann (acme-Adapter, Sammlung in den Einstellungen eintragen)`);
+            t = certs.server;
+        }
+        if (!t) {
+            await this.setState('info.remote', 'eigener Server: kein Zertifikat (HTTPS in den Einstellungen eingeschaltet lassen)', true);
+            return;
+        }
+        if (t.domains && !t.domains.some(d => d === domain || (d.startsWith('*.') && domain.endsWith(d.slice(1))))) {
+            this.log.warn(`Fernzugang: das Zertifikat (${t.domains.join(', ')}) enthält ${domain} nicht - Browser warnen dann`);
+        }
+        this.relayTls = { cert: t.cert, key: t.key };
+        await this.server.listen(this.remotePorts.relayPort, true, '127.0.0.1', () => this.relayTls);
+        if (this.relayCollection) {
+            this.subscribeForeignObjects('system.certificates');
+        }
+        this.relay = new RelayClient({ server, port: Number(this.config.relayPort) || 443, domain, key: saved.relayKey, local: this.remotePorts.relayPort, log: this.log });
+        this.relay.on('status', st => {
+            this.log[st.state === 'on' ? 'info' : 'warn'](`Fernzugang (eigener Server): ${st.text}`);
+            this.setState('info.remote', st.text, true);
+        });
+        await this.setState('info.remoteUrl', this.remoteUrl(), true);
+        this.relay.start();
+    }
+
+    async funnelCheck() {
+        const st = await this.funnel.start();
+        if (st.state === 'on') {
+            const saved = this._remoteRead();
+            saved.funnel = { https: this.funnel.https, local: this.funnel.local };
+            this._remoteWrite(saved);
+        } else if (this.lastFunnelText !== st.text) {
+            this.log.warn(`Fernzugang (Tailscale Funnel): ${st.text}${st.link ? ` ${st.link}` : ''}`);
+        }
+        this.lastFunnelText = st.text;
+        await this.setState('info.remote', st.text, true);
+        await this.setState('info.remoteUrl', st.url || '', true);
+    }
+
+    remoteUrl() {
+        if (this.remoteMode === 'funnel') {
+            return (this.funnel && this.funnel.url) || '';
+        }
+        if (this.remoteMode === 'relay' && this.relay) {
+            const p = Number(this.config.relayPort) || 443;
+            return `https://${this.relay.domain}${p === 443 ? '' : `:${p}`}/`;
+        }
+        return '';
+    }
+
+    async remoteInfo() {
+        const out = { mode: this.remoteMode, url: this.remoteUrl() };
+        if (this.remoteMode === 'funnel' && this.funnel) {
+            Object.assign(out, { state: this.funnel.status.state, text: this.funnel.status.text, link: this.funnel.status.link || '' });
+        } else if (this.remoteMode === 'relay') {
+            const saved = this._remoteRead();
+            Object.assign(out, this.relay ? { state: this.relay.status.state, text: this.relay.status.text, served: this.relay.served } : { state: 'error', text: 'Server und DuckDNS-Name in den Instanz-Einstellungen eintragen' });
+            if (this.relay && saved.relayKey) {
+                out.addLine = `sudo alvms-relay add ${this.relay.domain} ${saved.relayKey}`;
+                out.server = this.relay.server;
+                out.port = this.relay.port;
+            }
+        } else {
+            Object.assign(out, { state: 'off', text: 'aus (Instanz-Einstellungen → Fernzugang)' });
+        }
+        return out;
+    }
+
+    async remoteAction(action) {
+        if (action === 'retry' && this.funnel) {
+            await this.funnelCheck();
+        } else if (action === 'newkey' && this.relay) {
+            const saved = this._remoteRead();
+            saved.relayKey = newRelayKey();
+            this._remoteWrite(saved);
+            this.relay.stop();
+            this.relay.key = saved.relayKey;
+            this.relay.backoff = 2000;
+            this.log.info('Fernzugang: neuer Schlüssel für den eigenen Server - am Server die neue „alvms-relay add …“-Zeile ausführen');
+            this.relay.start();
+        } else {
+            throw new Error('Nicht möglich');
+        }
+    }
+
     async onObjectChange(id) {
+        if (id === 'system.certificates' && this.relayCollection && this.relayTls) {
+            const t = await this.loadCollection(this.relayCollection);
+            if (t && t.cert !== this.relayTls.cert) {
+                Object.assign(this.relayTls, { cert: t.cert, key: t.key });
+                this.server.updateCertificate();
+            }
+        }
         if (id === 'system.certificates' && this.certCollection && this.server && this.server.certs) {
             const trusted = await this.loadCollection();
             const old = this.server.certs.trusted;
@@ -978,7 +1140,7 @@ class SmartView extends utils.Adapter {
     /** Link to SmartView for messages: https when it has a public certificate, else http. */
     appLink(page = '') {
         // access from outside (reverse proxy): links in messages work everywhere
-        const ext = String(this.config.externalUrl || '').trim().replace(/\/*$/, '/');
+        const ext = (String(this.config.externalUrl || '').trim() || this.remoteUrl()).replace(/\/*$/, '/');
         const trusted = this.server && this.server.certs && this.server.certs.trusted && this.urlList.https;
         const base = /^https?:\/\/[^/]/.test(ext) ? ext : (trusted ? this.urlList.https : this.urlList.http).replace(/:443\/$/, '/');
         const key = String(this.config.accessKey || '').trim();
@@ -2445,6 +2607,10 @@ class SmartView extends utils.Adapter {
                 clearTimeout(g.timer);
             }
             clearInterval(this.dndTimer);
+            clearInterval(this.remoteTimer);
+            if (this.relay) {
+                this.relay.stop();
+            }
             if (this.colors) {
                 this.colors.stop();
             }

@@ -429,6 +429,13 @@ Port 8098). In VIS-2 als iframe: `allow="microphone; autoplay"`. Der Ton muss ei
 der Seite freigegeben werden (Browser-Regel); im Kiosk-Betrieb hilft
 `--autoplay-policy=no-user-gesture-required` in der Edge-Verknüpfung.
 
+### Zugriff von unterwegs (ohne VPN-App)
+
+SmartView von überall öffnen, **ohne VPN-App und ohne offenen Port am Router** – über **Tailscale Funnel** (kostenlos) oder
+einen **eigenen Server** mit dem Relay-Programm der VMS (`tools/remote/alvms-relay.py`). Von außen nur mit Benutzer, Passwort und
+Authenticator-Code (dazu 10 Wiederherstellungs-Codes); Zwei-Faktor und Fernzugang lassen sich nur im Heimnetz ändern. Status,
+Adresse mit QR-Code und die Zeile für den Server: Menü → Fernzugang. Anleitung: `tools/remote/FERNZUGANG.md`.
+
 ### Nicht stören (kein Klingelton)
 
 - **⚙ → „Nicht stören (kein Klingelton)“** schaltet den Klingelton auf **allen** Geräten aus; beim Läuten erscheint das

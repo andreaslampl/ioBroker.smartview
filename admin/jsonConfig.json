@@ -74,14 +74,122 @@
     },
     "remoteHeader": {
       "type": "header",
-      "text": "Access from outside via an own VPS server (optional)",
+      "text": "Access from outside (optional)",
       "size": 3,
+      "newLine": true,
+      "xs": 12
+    },
+    "remoteModeInfo": {
+      "type": "staticText",
+      "text": "Open SmartView from anywhere without VPN app and without an open port on the router. Only SmartView is reachable, never the ioBroker admin. From outside a user login with the authenticator code is always required - set up users and two-factor at home first (menu).",
+      "newLine": true,
+      "xs": 12
+    },
+    "remoteMode": {
+      "type": "select",
+      "label": "Way",
+      "options": [
+        {
+          "label": "off",
+          "value": ""
+        },
+        {
+          "label": "Tailscale Funnel (free, no own server)",
+          "value": "funnel"
+        },
+        {
+          "label": "Own server (relay program of the VMS, e.g. IONOS)",
+          "value": "relay"
+        }
+      ],
+      "default": "",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "funnelHttps": {
+      "type": "select",
+      "label": "Funnel port",
+      "help": "443 = address without port. 8443 / 10000 if the VMS already uses 443 on this computer",
+      "options": [
+        {
+          "label": "443",
+          "value": 443
+        },
+        {
+          "label": "8443",
+          "value": 8443
+        },
+        {
+          "label": "10000",
+          "value": 10000
+        }
+      ],
+      "default": 443,
+      "hidden": "data.remoteMode !== 'funnel'",
+      "xs": 12,
+      "sm": 3
+    },
+    "funnelHelp": {
+      "type": "staticText",
+      "text": "Tailscale must be installed and logged in on the ioBroker computer (tailscale.com/download/linux, then 'sudo tailscale up' and once 'sudo tailscale set --operator=iobroker'). Status, address and the approval link: in SmartView menu → Fernzugang. Sound of the intercom does not work from outside (TCP only).",
+      "hidden": "data.remoteMode !== 'funnel'",
+      "newLine": true,
+      "xs": 12
+    },
+    "relayServer": {
+      "type": "text",
+      "label": "Own server (address)",
+      "help": "Public IP or name of the server running alvms-relay",
+      "hidden": "data.remoteMode !== 'relay'",
+      "newLine": true,
+      "xs": 12,
+      "sm": 4
+    },
+    "relayPort": {
+      "type": "number",
+      "label": "Port",
+      "min": 1,
+      "max": 65535,
+      "default": 443,
+      "hidden": "data.remoteMode !== 'relay'",
+      "xs": 6,
+      "sm": 2
+    },
+    "relayDomain": {
+      "type": "text",
+      "label": "Name for outside (DuckDNS)",
+      "help": "e.g. my-smartview.duckdns.org - a second DuckDNS name pointing to the server IP",
+      "hidden": "data.remoteMode !== 'relay'",
+      "xs": 12,
+      "sm": 4
+    },
+    "relayCertCollection": {
+      "type": "text",
+      "label": "Certificate collection for this name (acme)",
+      "help": "Empty = the collection of HTTPS above. The certificate must contain the name for outside.",
+      "hidden": "data.remoteMode !== 'relay'",
+      "newLine": true,
+      "xs": 12,
+      "sm": 5
+    },
+    "relayHelp": {
+      "type": "staticText",
+      "text": "The key and the line for the server (alvms-relay add …) are shown in SmartView menu → Fernzugang. The server only passes the encrypted connection on; the certificate stays here. Program and guide: tools/remote.",
+      "hidden": "data.remoteMode !== 'relay'",
+      "newLine": true,
+      "xs": 12
+    },
+    "vpsHeader": {
+      "type": "header",
+      "text": "Or: own VPS with WireGuard + reverse proxy",
+      "size": 4,
       "newLine": true,
       "xs": 12
     },
     "remoteInfo": {
       "type": "staticText",
-      "text": "Only for an own VPS server in the internet that forwards SmartView (guide: tools/remote/ANLEITUNG.md). Without a VPS leave these fields empty - then nothing changes.",
+      "text": "Only for an own VPS that forwards SmartView through WireGuard (guide: tools/remote/ANLEITUNG.md). Otherwise leave empty.",
       "newLine": true,
       "xs": 12
     },
@@ -111,7 +219,7 @@
         }
       ],
       "default": "none",
-      "hidden": "!data.proxyIps",
+      "hidden": "!data.proxyIps && !data.remoteMode",
       "xs": 12,
       "sm": 5
     },
@@ -120,15 +228,15 @@
       "label": "From outside also the authenticator code (two-factor)",
       "help": "Recommended. Each user sets it up once at home: menu → Zwei-Faktor (Microsoft/Google Authenticator).",
       "default": true,
-      "hidden": "!data.proxyIps",
+      "hidden": "!data.proxyIps && !data.remoteMode",
       "xs": 12,
       "sm": 5
     },
     "externalUrl": {
       "type": "text",
       "label": "Address from outside (for links in messages)",
-      "help": "e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere",
-      "hidden": "!data.proxyIps",
+      "help": "Empty = the address of the way above. e.g. https://smartview.example.com - Telegram/WhatsApp/push links then work everywhere",
+      "hidden": "!data.proxyIps && !data.remoteMode",
       "newLine": true,
       "xs": 12,
       "sm": 5

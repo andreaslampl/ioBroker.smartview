@@ -1,5 +1,8 @@
 # SmartView von unterwegs – ohne VPN am Handy
 
+> **Einfacher:** Tailscale Funnel oder ein eigener Server mit `alvms-relay.py` (ohne WireGuard, ohne Caddy) – siehe
+> **FERNZUGANG.md**. Diese Anleitung beschreibt den älteren Weg mit WireGuard + Caddy.
+
 Mit einem eigenen Server im Internet (z. B. einem **Debian-VPS bei IONOS**, auf dem schon RustDesk läuft) ist SmartView
 unter einer eigenen Adresse wie `https://smartview.deine-firma.at` erreichbar – zu Hause und unterwegs, ohne VPN-App.
 

@@ -23,10 +23,19 @@ const Users = (() => {
     box.innerHTML = '<h3>' + icon('lock') + '<span class="grow">Anmelden</span></h3>' +
       '<label for="lgName">Name</label><input id="lgName" type="text" autocomplete="username" autocapitalize="none" required>' +
       '<label for="lgPw">Passwort / PIN</label><input id="lgPw" type="password" autocomplete="current-password" required>' +
-      (twofa ? '<label for="lgCode">Code aus der Authenticator-App</label><input id="lgCode" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required>' : '') +
-      '<p class="hint">' + (twofa ? 'Zugriff von außen: Passwort und der 6-stellige Code aus der Authenticator-App. ' : '') + 'Dieses Gerät bleibt angemeldet, bis du dich abmeldest.</p>' +
+      (twofa ? '<label for="lgCode">Code aus der Authenticator-App</label><input id="lgCode" type="text" inputmode="numeric" maxlength="12" autocomplete="one-time-code" autocapitalize="none" required>' +
+        '<button type="button" class="link" data-rec>Handy verloren? Wiederherstellungs-Code eingeben</button>' : '') +
+      '<p class="hint">' + (twofa ? '🌍 Zugriff von unterwegs: Anmeldung nur mit Passwort und dem 6-stelligen Code aus der Authenticator-App. ' : '') + 'Dieses Gerät bleibt angemeldet, bis du dich abmeldest.</p>' +
       '<div class="row"><button type="submit" class="primary">Anmelden</button></div>';
     main.appendChild(box);
+    const rec = box.querySelector('[data-rec]');
+    if (rec) rec.onclick = () => {
+      // recovery codes contain letters: normal keyboard
+      $('lgCode').setAttribute('inputmode', 'text');
+      $('lgCode').placeholder = 'abcde-fghij';
+      $('lgCode').focus();
+      rec.hidden = true;
+    };
     keyboard(box);
     try {
       const last = localStorage.getItem('sv.user');
@@ -167,7 +176,8 @@ const Users = (() => {
     if (me.usersEnabled) {
       html += '<p class="hint">Angemeldet als <b>' + esc(me.name) + '</b>' + (me.admin ? ' (Administrator)' : '') + '</p>';
     }
-    if (me.usersEnabled && me.name) html += '<button type="button" class="item" data-twofa>' + icon('lock') + 'Zwei-Faktor für VPS-Zugriff: ' + (me.totp ? 'ein' : 'aus') + '</button>';
+    if (me.usersEnabled && me.name) html += '<button type="button" class="item" data-twofa>' + icon('lock') + 'Zwei-Faktor für Zugriff von unterwegs: ' + (me.totp ? 'ein' : 'aus') + '</button>';
+    if (me.admin && !me.external) html += '<button type="button" class="item" data-remote>' + icon('globe') + 'Fernzugang (von unterwegs)</button>';
     if (me.manageUsers) html += '<button type="button" class="item" data-users>' + icon('shield') + 'Benutzer verwalten</button>';
     if (me.usersEnabled) html += '<button type="button" class="item" data-logout>' + icon('close') + 'Abmelden</button>';
     box.innerHTML = html;
@@ -180,6 +190,11 @@ const Users = (() => {
     if (tf) tf.onclick = () => {
       box.closest('.overlay').remove();
       twofa();
+    };
+    const rm = box.querySelector('[data-remote]');
+    if (rm) rm.onclick = () => {
+      box.closest('.overlay').remove();
+      remote();
     };
     const l = box.querySelector('[data-logout]');
     if (l) l.onclick = logout;
@@ -198,14 +213,40 @@ const Users = (() => {
       if (e.target === ov) close();
     });
     const head = '<h3>' + icon('lock') + '<span class="grow">Zwei-Faktor-Anmeldung</span><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></h3>';
-    const vpsHint = '<p class="hint">Nur für den Zugriff von außen über einen eigenen <b>VPS-Server</b> (Anleitung tools/remote). Im Heimnetz wird der Code nie verlangt. Ohne VPS ist das nicht nötig.</p>';
+    const vpsHint = '<p class="hint">Nur für den Zugriff <b>von unterwegs</b> (Fernzugang über Tailscale Funnel, eigenen Server oder VPS). Im Heimnetz wird der Code nie verlangt.</p>';
     const codeField = '<label for="tfCode">6-stelliger Code aus der App</label><input id="tfCode" type="text" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required>';
+    const showCodes = codes => {
+      sh.onsubmit = e => e.preventDefault();
+      sh.innerHTML = head + '<p class="hint ok">Fertig. Dies sind deine <b>Wiederherstellungs-Codes</b> – jeder funktioniert einmal, falls das Handy verloren geht. ' +
+        'Jetzt ausdrucken oder sicher aufbewahren, sie werden <b>nur jetzt</b> angezeigt.</p>' +
+        '<pre class="reccodes">' + codes.map(esc).join('\n') + '</pre>' +
+        '<div class="row"><button type="button" data-copy>Kopieren</button><button type="button" data-print>Drucken</button><button type="button" class="primary" data-done>Fertig</button></div>';
+      sh.querySelector('[data-x]').onclick = () => location.reload();
+      sh.querySelector('[data-done]').onclick = () => location.reload();
+      sh.querySelector('[data-copy]').onclick = () => {
+        try {
+          navigator.clipboard.writeText(codes.join('\n'));
+          toast('Kopiert');
+        } catch (err) {
+          toast('Kopieren nicht möglich – bitte abschreiben', true);
+        }
+      };
+      sh.querySelector('[data-print]').onclick = () => {
+        const w = window.open('', '_blank');
+        if (!w) return toast('Drucken nicht möglich (Popup gesperrt)', true);
+        w.document.write('<title>SmartView Wiederherstellungs-Codes</title><h2>SmartView – Wiederherstellungs-Codes (' + esc(me.name || '') + ')</h2><pre style="font-size:18px">' + codes.map(esc).join('\n') + '</pre><p>Jeder Code funktioniert einmal.</p>');
+        w.document.close();
+        w.print();
+      };
+    };
     const wire = (url, done) => {
       sh.querySelector('[data-x]').onclick = close;
       sh.onsubmit = async e => {
         e.preventDefault();
+        const target = e.submitter && e.submitter.dataset.url ? e.submitter.dataset.url : url;
         try {
-          await api(url, { method: 'POST', body: JSON.stringify({ code: $('tfCode').value }) });
+          const r = await api(target, { method: 'POST', body: JSON.stringify({ code: $('tfCode').value }) });
+          if (r && r.recovery) return showCodes(r.recovery);
           toast(done);
           close();
           setTimeout(() => location.reload(), 600);
@@ -215,10 +256,16 @@ const Users = (() => {
         }
       };
     };
+    if (me.external) {
+      sh.innerHTML = head + '<p class="hint">Zwei-Faktor lässt sich nur <b>im Heimnetz</b> einrichten oder ändern.</p>' +
+        (me.totp ? '<p class="hint ok">Eingerichtet · Wiederherstellungs-Codes übrig: ' + (me.recoveryLeft || 0) + '</p>' : '');
+      sh.querySelector('[data-x]').onclick = close;
+      return;
+    }
     if (me.totp) {
       sh.innerHTML = head + vpsHint + '<p class="hint ok">Eingerichtet: Für den Zugriff von außen braucht es Passwort und den Code aus der Authenticator-App.</p>' +
-        '<p class="hint">Ausschalten (z. B. neues Handy): aktuellen Code eingeben. Danach geht es von außen erst wieder nach neuem Einrichten.</p>' +
-        codeField + '<div class="row"><button type="submit" class="danger">Ausschalten</button></div>';
+        '<p class="hint">Wiederherstellungs-Codes übrig: <b>' + (me.recoveryLeft || 0) + '</b>. Neue Codes oder Ausschalten (z. B. neues Handy): aktuellen Code eingeben.</p>' +
+        codeField + '<div class="row"><button type="submit" data-url="2fa/recovery">Neue Wiederherstellungs-Codes</button><button type="submit" class="danger">Ausschalten</button></div>';
       return wire('2fa/off', 'Zwei-Faktor ausgeschaltet');
     }
     sh.innerHTML = head + '<p class="hint">Wird geladen …</p>';
@@ -238,6 +285,83 @@ const Users = (() => {
       '<div class="row"><button type="submit" class="primary">Einrichten</button></div>';
     wire('2fa/confirm', 'Zwei-Faktor eingerichtet');
     $('tfCode').focus();
+  }
+
+  // ---------------- remote access (admins, at home) ----------------
+
+  async function remote() {
+    const ov = el('div', 'overlay');
+    const sh = el('div', 'sheet form remote');
+    ov.appendChild(sh);
+    document.body.appendChild(ov);
+    const close = () => ov.remove();
+    ov.addEventListener('click', e => {
+      if (e.target === ov) close();
+    });
+    const head = '<h3>' + icon('globe') + '<span class="grow">Fernzugang</span><button type="button" class="iconbtn" data-x aria-label="Schließen">' + icon('close') + '</button></h3>';
+    const draw = async () => {
+      let d;
+      try {
+        d = await api('remote');
+      } catch (err) {
+        close();
+        return toast(err.message, true);
+      }
+      const mode = { funnel: 'Tailscale Funnel', relay: 'Eigener Server' }[d.mode] || 'Aus';
+      const cls = d.state === 'on' ? 'ok' : d.state === 'off' ? '' : 'bad';
+      let html = head + '<p class="hint">Art: <b>' + mode + '</b> (umstellen in den Instanz-Einstellungen von SmartView, Abschnitt „Zugriff von unterwegs“)</p>' +
+        '<p class="hint ' + cls + '">' + esc(d.text || '') + '</p>';
+      if (d.link) html += '<div class="row"><a class="btn primary" href="' + esc(d.link) + '" target="_blank" rel="noopener">Bei Tailscale freischalten</a><button type="button" data-retry>Erneut versuchen</button></div>';
+      else if (d.mode === 'funnel') html += '<div class="row"><button type="button" data-retry>Erneut prüfen</button></div>';
+      if (d.url) {
+        html += '<p class="hint">Adresse für unterwegs:</p><p><code class="secret">' + esc(d.url) + '</code></p>' +
+          '<div class="qr">' + (d.qr || '') + '</div><div class="row"><button type="button" data-copy>Adresse kopieren</button></div>';
+      }
+      if (d.addLine) {
+        html += '<p class="hint">Am eigenen Server (einmal, als root) diese Zeile ausführen:</p><pre class="reccodes">' + esc(d.addLine) + '</pre>' +
+          '<div class="row"><button type="button" data-copyline>Zeile kopieren</button><button type="button" class="danger" data-newkey>Neuer Schlüssel</button></div>' +
+          '<details class="guide"><summary>Kurzanleitung eigener Server</summary><ol>' +
+          '<li>Auf dem Server <code>alvms-relay.py</code> (liegt bei SmartView unter tools/remote) einmal mit <code>sudo python3 alvms-relay.py install</code> einrichten (Port 443, oder <code>--port 8443</code>).</li>' +
+          '<li>Beim Anbieter (IONOS: Cloud Panel → Netzwerk → Firewall) TCP 443 eingehend erlauben.</li>' +
+          '<li>Einen zweiten DuckDNS-Namen auf die IP des Servers zeigen lassen; das Zertifikat dafür holt der acme-Adapter (DuckDNS, DNS-01).</li>' +
+          '<li>Die Zeile oben am Server ausführen – SmartView verbindet sich innerhalb einer Minute.</li></ol></details>';
+      }
+      if (d.withoutTotp && d.withoutTotp.length) {
+        html += '<p class="hint bad">Ohne Zwei-Faktor (kommen von unterwegs nicht hinein): ' + d.withoutTotp.map(esc).join(', ') + '</p>';
+      }
+      if (!d.usersEnabled && d.mode) html += '<p class="hint bad">Es sind keine Benutzer angelegt – von unterwegs ist SmartView gesperrt.</p>';
+      sh.innerHTML = html;
+      sh.querySelector('[data-x]').onclick = close;
+      const on = (sel, fn) => {
+        const b = sh.querySelector(sel);
+        if (b) b.onclick = fn;
+      };
+      const act = async action => {
+        try {
+          await api('remote/action', { method: 'POST', body: JSON.stringify({ action }) });
+          draw();
+        } catch (err) {
+          toast(err.message, true);
+        }
+      };
+      on('[data-retry]', () => act('retry'));
+      on('[data-newkey]', () => {
+        if (confirm('Neuen Schlüssel erzeugen? Danach muss die neue Zeile am Server ausgeführt werden.')) act('newkey');
+      });
+      const copy = text => {
+        try {
+          navigator.clipboard.writeText(text);
+          toast('Kopiert');
+        } catch (err) {
+          toast('Kopieren nicht möglich', true);
+        }
+      };
+      on('[data-copy]', () => copy(d.url));
+      on('[data-copyline]', () => copy(d.addLine));
+    };
+    sh.innerHTML = head + '<p class="hint">Wird geladen …</p>';
+    sh.querySelector('[data-x]').onclick = close;
+    draw();
   }
 
   // ---------------- user management ----------------
@@ -349,5 +473,5 @@ const Users = (() => {
     draw();
   }
 
-  return { showLogin, menuItems, manage, logout, twofa };
+  return { showLogin, menuItems, manage, logout, twofa, remote };
 })();
