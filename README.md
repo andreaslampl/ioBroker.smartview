@@ -434,7 +434,8 @@ der Seite freigegeben werden (Browser-Regel); im Kiosk-Betrieb hilft
 SmartView von überall öffnen, **ohne VPN-App und ohne offenen Port am Router** – über **Tailscale Funnel** (kostenlos) oder
 einen **eigenen Server** mit dem Relay-Programm der VMS (`tools/remote/alvms-relay.py`). Von außen nur mit Benutzer, Passwort und
 Authenticator-Code (dazu 10 Wiederherstellungs-Codes); Zwei-Faktor und Fernzugang lassen sich nur im Heimnetz ändern. Status,
-Adresse mit QR-Code und die Zeile für den Server: Menü → Fernzugang. Anleitung: `tools/remote/FERNZUGANG.md`.
+Adresse mit QR-Code und die Zeile für den Server: Menü → Fernzugang. Anleitung: `tools/remote/FERNZUGANG.md`. Zum **Sprechen** mit
+der Sprechanlage von unterwegs zusätzlich einen TURN-Server in livecam (0.10.0+) eintragen – steht ebenfalls dort.
 
 ### Nicht stören (kein Klingelton)
 

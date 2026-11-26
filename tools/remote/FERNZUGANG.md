@@ -38,8 +38,8 @@ unter **Menü → Fernzugang** (nur für Administratoren, nur im Heimnetz).
    Tailscale-Verwaltung HTTPS / Funnel erlauben, dann „Erneut versuchen“.
 4. Fertig: Die Adresse (mit QR-Code) am Handy öffnen und als Web-App auf den Home-Bildschirm legen.
 
-Grenzen: Funnel leitet nur TCP weiter – **mit der Sprechanlage reden geht von unterwegs nicht** (Klingel-Anzeige, Bild,
-Tür öffnen schon). Die Bandbreite ist begrenzt.
+Grenzen: Funnel leitet nur TCP weiter – zum **Sprechen** mit der Sprechanlage von unterwegs braucht es zusätzlich einen
+TURN-Server (siehe unten). Klingel-Anzeige, Bild und Tür öffnen gehen auch ohne. Die Bandbreite ist begrenzt.
 
 ## Weg 2: eigener Server (z. B. IONOS-VPS)
 
@@ -63,6 +63,19 @@ Derselbe Server kann **VMS und SmartView gleichzeitig** bedienen – jeweils mit
 Der Server reicht nur die **verschlüsselte** Verbindung durch – das Zertifikat liegt bei SmartView, der Server sieht weder
 Passwörter noch Bilder. „Neuer Schlüssel“ im Fernzugang-Fenster macht den alten ungültig (dann die neue Zeile am Server
 ausführen).
+
+## Sprechanlage von unterwegs (TURN-Server)
+
+Der Ton läuft über WebRTC (UDP) – Funnel und der eigene Server leiten nur TCP weiter. Damit man von unterwegs auch **reden**
+kann, braucht es einen **TURN-Server (coturn)**, am einfachsten auf demselben eigenen Server:
+
+1. Am Server: `sudo bash turn-setup.sh` (liegt im livecam-Adapter unter `tools/`). Es zeigt am Ende die Adresse und das Geheimnis.
+2. Beim Anbieter eingehend erlauben: **UDP 3478** und **UDP 49160-49200** (IONOS: Cloud Panel → Netzwerk → Firewall-Richtlinien).
+3. Firewall daheim: der ioBroker darf **UDP zum Server, Port 3478** senden.
+4. In **livecam** (Instanz-Einstellungen, Sprechanlage): „TURN-Server“ `turn:<server>:3478` und „TURN-Geheimnis“ eintragen.
+
+SmartView braucht dafür nichts – es bekommt die Zugangsdaten (12 Stunden gültig) von livecam. Das Geheimnis bleibt im ioBroker,
+der Ton bleibt verschlüsselt. Ist der TURN-Server nicht erreichbar, geht der Ton daheim wie bisher.
 
 ## Hinweise
 

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "smartview",
-    "version": "0.75.0",
+    "version": "0.75.1",
     "news": {
+      "0.75.1": {
+        "en": "Intercom: uses livecam's TURN server (livecam 0.10.0) so talking also works from outside",
+        "de": "Sprechanlage: nutzt den TURN-Server von livecam (ab 0.10.0), damit das Sprechen auch von unterwegs geht"
+      },
       "0.75.0": {
         "en": "Access from outside without VPN app and open port: Tailscale Funnel or an own server with the VMS relay (alvms-relay.py); requests on the internal ports count as outside (visitor address for lockouts and log); two-factor with 10 recovery codes; two-factor and remote access only changeable at home; menu 'Fernzugang' with status, address, QR code and the line for the server",
         "de": "Zugriff von unterwegs ohne VPN-App und ohne offenen Port: Tailscale Funnel oder eigener Server mit dem Relay der VMS (alvms-relay.py); Anfragen über die internen Ports gelten als „von außen“ (Besucher-Adresse für Sperre und Log); Zwei-Faktor mit 10 Wiederherstellungs-Codes; Zwei-Faktor und Fernzugang nur im Heimnetz änderbar; Menü „Fernzugang“ mit Status, Adresse, QR-Code und der Zeile für den Server"

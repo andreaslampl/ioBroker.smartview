@@ -275,7 +275,8 @@ const Intercom = (() => {
       mic = null;
       toast(e.name === 'NotFoundError' ? 'Kein Mikrofon gefunden: nur Zuhören möglich' : 'Mikrofon von einem anderen Programm belegt: nur Zuhören möglich', true);
     }
-    pc = new RTCPeerConnection();
+    // TURN relay from livecam (sound from outside), fresh credentials in every state message
+    pc = new RTCPeerConnection(state && state.ice && state.ice.length ? { iceServers: state.ice } : undefined);
     if (mic) {
       // the plain microphone track; Web Audio (slider 🎤) only when it is set to something other than 100 %
       for (const t of mic.getTracks()) pc.addTrack(t, mic);

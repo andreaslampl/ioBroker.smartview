@@ -725,6 +725,9 @@ switches/buttons on them.
   field to text. Tests: test/remote.test.js runs the real alvms-relay.py (40 parallel requests, unknown SNI dropped) and a fake
   tailscale CLI; Playwright sv/remote-ui.js. TURN for intercom audio from outside not built (werift 0.24.4 TURN client unchecked).
   Not yet with the owner's Tailscale / IONOS server.
+- 0.75.1: owner asked to try intercom sound from outside -> livecam 0.10.0 TURN (see its CLAUDE.md); www/intercom.js passes
+  `state.ice` (only sent by livecam while its TURN server answers) to RTCPeerConnection. FERNZUGANG.md: TURN section.
+  e2e with a real coturn in the scratchpad (sv/turn-e2e.js). Not yet on the owner's server / phone.
 - Ideas not done yet: charts/history. Owner idea (22.11., not ordered yet): own "ioBroker-Brücke" adapter to pass chosen data points
   between the owner's three ioBroker sites (home, hair salon, solarium; all on VPN to home) - every site keeps running alone,
   list of data points per site, per point read only / read + write, access key, connection state, reconnect. Owner finds an
